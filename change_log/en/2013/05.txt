@@ -1,0 +1,7 @@
+==========
+2013-05-22
+==========
+
+Two new modes allow to work with **key [SEP] value** like datas using different separators **[SEP]** and not only the equal sign.
+
+

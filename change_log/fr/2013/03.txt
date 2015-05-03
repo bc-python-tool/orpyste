@@ -1,0 +1,24 @@
+==========
+2013-03-29
+==========
+
+**Simplification de l'utilisation de différents types de blocs :** avec la version dictionnaire de la variable ``mode``, il est maintenant possible de donner directement un nom seul sans le mettre dans une liste.
+
+**Mise en forme des données suivant deux types de dictionnaire :** dorénavant, l'attribut ``dict`` sera un dictionnaire sans les numéros des lignes pour les contenus de type "bloc" ou "ligne", tandis que ``dictNbLine`` proposera l'ancien type de dictionnaire si l'on souhaite aussi connaître le numéro de ligne d'un contenu de type "bloc" ou "ligne" pour par exemple indiquer finement une erreur.
+
+
+==========
+2013-03-18
+==========
+
+**Simplification du mode mixte :** dorénavant on utilise directement le dictionnaire avec la variable ``mode``. Par conséquent, la variable ``mixedModes`` n'existe plus. De plus, l'argument ``striplinesWithNb`` a été renommé plus simplement ``strip``.
+
+**Correction d'une coccille :** il y a avait une gestion erronée du mode mixte avec des blocs conteneurs par défaut.
+
+
+==========
+2013-03-17
+==========
+
+**Mise à jour au changement de nom du package ``pytool``:** ce package, qui est utilisé en partie en interne, porte dorénavant le nom ``mistool``.
+

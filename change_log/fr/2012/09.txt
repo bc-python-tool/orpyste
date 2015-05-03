@@ -1,0 +1,12 @@
+==========
+2012-09-11
+==========
+
+**Correction d'un oubli :** lors de l'utilisation du mode ``"block"``, les retours à la ligne en fin de contenu n'étaient pas nettoyés.
+
+
+==========
+2012-09-02
+==========
+
+**Disparition de la classe ``MultiBuild`` :** étant données les fonctionnalités proposées par le module ``osPlus`` du package ``pytool``, dont l'auteur est aussi celui de ``orpyste``, cela n'a plus de sens de garder la classe ``MultiBuild``. Se reporter à la documentation de ``orpyste`` pour un exemple concret d'utilisation conjointe de ``osPlus`` et ``orpyste``.

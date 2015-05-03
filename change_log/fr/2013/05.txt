@@ -1,0 +1,7 @@
+==========
+2013-05-22
+==========
+
+**Amélioration des modes ``equal`` et ``equal+``:** on peut indiquer un autre séparateur que le signe égal ``=``, voire même une liste de séparateurs ayant tous la même valeur sémantique (contrairement à ce que permettent les nouveaux modes``keyval`` et ``keyval+`` présentés ci-dessous).
+
+**Naissance de deux nouveaux modes ``keyval`` et ``keyval+``:** il est maintenant possible via le mode ``keyval`` d'utiliser des données du type ``clé _SEP_ valeur`` où ``_SEP_`` appartient à une liste de séparateurs autorisés. Chaque séparateur aura sa valeur sémantique propre. Quant à ``keyval+``, il est à ``keyval`` ce que ``equal+`` est à ``equal``.

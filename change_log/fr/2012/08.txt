@@ -1,0 +1,12 @@
+==========
+2012-08-05
+==========
+
+**Correction d'un bogue avec le mode ``mix`` :** le cas de fichiers utilisant des blocs contenant que des blocs n'était pas pris en compte.
+
+
+==========
+2012-08-01
+==========
+
+**Correction d'un bogue avec le mode ``block`` :** les lignes vides dans le contenu n'étaient pas gardées.

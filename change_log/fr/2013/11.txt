@@ -1,0 +1,12 @@
+==========
+2013-11-11
+==========
+
+**Simplification de la documentation technique au sein du code:** la syntaxe se veut plus syntéthique pour ne pas trop polluer les commentaires (¨pybadoc se chargera plus tard des fioritures de présentation).
+
+
+==========
+2013-11-10
+==========
+
+**Refonte légère du code:** les noms de constantes et de variables n'utilisent plus la casse en bosse de chameau. Ceci a permis de changer certains noms peu pratiques. Par contre, aucun changement côté interface.

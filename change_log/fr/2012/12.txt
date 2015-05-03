@@ -1,0 +1,12 @@
+==========
+2012-12-28
+==========
+
+**Ajout d'un nouveau mode ``equal+`` :** il est maintenant possible d'utiliser un système ``clé = valeur`` avec des valeurs contenant des retours à la ligne.
+
+
+==========
+2012-12-25
+==========
+
+**Possibilité de donner directement un contenu :** on peut dorénavant soit demander d'analyser le contenu d'un fichier, soit donner directement ce contenu. On peut donc dorénavant appeler la classe ``reader`` avec une variable de type ``str``.

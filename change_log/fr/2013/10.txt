@@ -1,0 +1,18 @@
+==========
+2013-10-23
+==========
+
+**Nettoyage du package ``orpyste``:** les importations se font maintenant de manière économique en important le minimum de choses via ``from unModule import uneFonction``, et non via des importations brutales du type ``import unModule``.
+
+
+**Mise à jour relativement au package ``mistool``:** le code du package ``mistool`` a été réorganisé, il a donc fallu tenir compte de ces changements.
+
+
+==========
+2013-10-05
+==========
+
+**Correction d'un gros bug:** les contenus vides provoquaient une erreur dans certaines circonstances.
+
+
+**Automatisation de l'historique anglais des changements:** le nouveau système permet de ne garder que les derniers changements dans la description pour ¨pypi, et date automatiquement la nouvelle version mise en ligne.

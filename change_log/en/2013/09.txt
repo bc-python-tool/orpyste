@@ -1,0 +1,5 @@
+==========
+2013-09-15
+==========
+
+Block like contents starting with empty lines caused the crash of the program.

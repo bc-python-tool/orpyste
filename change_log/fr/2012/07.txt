@@ -1,0 +1,14 @@
+==========
+2012-07-31
+==========
+
+**Gestion du contenu d'un dossier :** la classe ``MultiBuild`` permet de faire agir ``orpyste`` dans un dossier sur des fichiers ayant des extensions connues. Cette fonctionnalité utilise l'itérateur ``osUse.nextFile`` et la fonction ``osUse.relativePath`` du package ``pytool``.
+
+**Vérification des noms des blocs :** cette fonctionnalité est maintenant prise en compte grâce à la fonction ``regexPlus.isPeufBlockName`` du package ``pytool``.
+
+
+==========
+2012-07-29
+==========
+
+**Deux petites améliorations :** changement du format des réponses indiquant des contenus de type ``line``, et aussi pour ceux de type ``block``. Dorénavant, pour le mode ``line``, c'est une liste de couples de la forme ``(noLigne, contenuLigne)`` qui est renvoyé, tandis que pour le mode ``block``, c'est juste un couple de la forme ``(noLigneDebutBloc, contenuBloc)``.

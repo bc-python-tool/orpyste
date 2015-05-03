@@ -1,0 +1,12 @@
+==========
+2013-04-13
+==========
+
+One big bug has been fixed : the second level of indentation was ignored in block and line modes.
+
+
+==========
+2013-04-01
+==========
+
+First downloadable version of the package.

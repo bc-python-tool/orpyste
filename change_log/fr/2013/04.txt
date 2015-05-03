@@ -1,0 +1,40 @@
+==========
+2013-04-30
+==========
+
+**Normalisation des docstrings:** ceci prépare le travail pour le futur package ¨pybadoc.
+
+
+==========
+2013-04-16
+==========
+
+**Échappement classique des caractères spéciaux:** on utilisera dorénavant ``\::`` et ``\=`` au lieu des hérétiques et fantasques ``:::`` et ``"="`` (on se demande bien qui a pu avoir de telles idées).
+
+
+==========
+2013-04-13
+==========
+
+**Correction d'une grosse coccille:** les indentations de ¨2nd niveau étaient supprimées à tors ce qui décalait ensuite à tors tous les autres niveaux d'indentation.
+
+
+**Mise à jour relativement au package ``mistool``:** des normalisations de noms ont été appliquées au package ``mistool``, il a donc fallu tenir compte de ces changements.
+
+
+==========
+2013-04-03
+==========
+
+**Réorganisation du code:** un module ``model`` a été créé. Il contient une classe abstraite qui sera utilisée pour un futur module ``cleaner`` qui permettra d'obtenir une version nettoyée de fichiers ¨peuf.
+
+
+==========
+2013-04-01
+==========
+
+**Mise en place de tests unitaires:** ceci permet d'empêcher des régressions tout en vérifiant le bon fonctionnement sur différents environnements.
+
+**Correction de diverses coccilles:** les tests unitaires ont révélé des coccilles plus ou moins graves qu'il a fallu faire s'envoler.
+
+**Mise en ligne du module :** le module sera dorénavant disponible sur ¨pypi.

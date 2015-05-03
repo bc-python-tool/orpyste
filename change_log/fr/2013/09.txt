@@ -1,0 +1,5 @@
+==========
+2013-09-15
+==========
+
+**Correction d'un gros bug:** les contenus bien formatés de type ``block`` qui commençaient par des lignes vides mettaient en défaut la classe ``reader.Build``.

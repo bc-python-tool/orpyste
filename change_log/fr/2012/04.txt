@@ -1,0 +1,5 @@
+==========
+2012-04-13
+==========
+
+**Première version du package ``orpyste`` :** ce mini-package a pour but d'extraire des données de fichiers suivant une spécification maison appelée ``peuf``. Ce projet est né d'un besoin de pouvoir rédiger très rapidement des fichiers de configuration ou de test.
