@@ -3,56 +3,49 @@ orPySte - TODO
 ==============
 
 
------> pathlib: https://docs.python.org/3/library/pathlib.html
+> ---------------------------- <
+
+???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est à la fois hebergé sur le site ¨github et us ¨pypi.
 
 
+???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
 
 
-
-**Refonte complète du package:** cette nouvelle version n'est plus compatible avec la précédente. Voici ce qui a été fait.
-
-    1) La fonction ``DEFAULT_IS_BLOCK_NAME`` a été supprimée car on utilise maintenant des motifs ¨regex.
-
-    2) Le module ``Read`` et sa classe ``Build`` deviennent ¨resp le module ``data`` et la classe ``Read``, cette dernière subissant les modifications suivantes.
-
-        a) La classe ``Read`` pourra être utilisée comme un itérateur afin de pouvoir avoir éventuellement des blocs de même niveau et de même nom dans un contexte commun. Il est bien entendu possible d'imposer l'utilisation de noms uniques pour des blocs de même niveau dans un contexte commun (cela reste d'ailleurs le comportement par défaut).
-
-        a) L'argument ``path`` n'existe plus. On utilisera juste ``content``.
-
-        a) L'argument ``strip`` a été supprimé car dorénavant tous les espaces finaux d'un contenu seront toujours nettoyés.
-
-        a) Pour un mode portant sur différents types de blocs, le nouvel argument booléen ``strict`` permet d'autoriser ou non l'utilisation de noms de blocs conteneurs non indiqués dans la variable ``mode``. Par défaut, ``strict = False`` indique que l'on accepte tous les noms de blocs comme conteneur.
-
-        b) L'ancien attribut de type dictionnaire ``dict`` a été remplacé par
+???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``, cette version ayant pour numéro ``0.0.0`` car le projet ¨mistool reste à l'état très `¨beta`. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair...
 
 
-        ``????``
+???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
 
 
-        pour les nouveaux afin de gérer les représentations des nouveaux modes ``"multiequal"`` et ``"multikeyval"``.
+???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
 
 
+> ---------------------------- <
 
-        c) Le mode ``"equal+"`` a été supprimé car dorénavant le mode ``"equal"`` gère de facto les retours à la ligne. De même, le mode ``"keyval+"`` n'existe plus.
+???? ---------->    **Amélioration et mise à jour des tests :** voici ce qui a été fait.
 
-        d) Il existe un nouveau mode ``"multiequal"`` similaire au nouveau mode ``"equal"`` excepté qu'une clé peut apparaître plusieurs fois. De même, le mode ``"multikeyval"`` a été ajouté.
+    1) On utilise maintenant ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
 
-        e) La classe ``Read`` travaille en coulisse avec un fichier temporaire stockant les informations découvertes. Cette méthode limite la mémoire vive utilisée, et autorise donc l'utilisation de gros fichiers.
+    2) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool).
 
+    1) Les tests sont disponibles sur ¨github et ¨pypi (afin que les utilisateurs puissent tester leur installation).
+
+
+> ---------------------------- <
+
+**Amélioration côté développement interne :** voici ce qui a évolué.
+
+    1) L'effacité des tests est évaluée à l'aide de ¨coverage.
+
+    2) ¨pep8py et ¨pylint sont aussi consultés pour améliorer le code de ¨orpyste lorsque cela paraît pertinent.
+
+
+> ---------------------------- <
 
 **Ajout du module ``clean``:** ce module contient une classe ``Beautify`` qui produit une version propre et standardisée d'un fichier ¨peuf.
 
 
-**Simplification des messages d'erreurs:** le programme utilisera dorénavant préférentiellement les erreurs standards de ¨python.
-
-
-**Utilisation de ¨github:** le projet est enfin géré via ¨git et hebergé sur le site ¨github.
-
-
-
-
-
-
+> ---------------------------- <
 
 **Mise en ligne d'une documentation non technique en français :** ceci a été rendu possible grâce au projet ¨pyba qui lui aussi est disponible sur ¨pypi et ¨github.
 
@@ -60,13 +53,6 @@ orPySte - TODO
 **Mise en ligne de la documentation technique en anglais uniquement :** ceci a été rendu possible grâce au projet ¨pybadoc qui lui aussi est disponible sur ¨pypi et ¨github.
 
 
-**Une belle amélioration !** Il est maintenant possible d'indiquer un modèle de données éventuellement typées (ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue cf::``aux schémas JSON ; http://json-schema.org``).
+> ---------------------------- <
 
-
-**Utilisation de ¨pytest :** tous les tests unitaires sont faits dorénavant bien plus efficacement grâce à ¨pytest.
-
-
-**Utilisation de ¨setuptools :** le fichier ``setup.py`` se base maintenant sur ¨setuptools. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨orpyste. ¨setytup est disponible sur ¨pypi et ¨github.
-
-
-**Utilisation de ¨pyvenv :** afin d'éviter des dégâts colatéraux non négligeables, les nouvelles versions sont développées et testées dans un environnement virtuel.
+**Une belle amélioration !** Il est maintenant possible d'indiquer un modèle de données éventuellement typées. Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue cf::``aux schémas JSON ; http://json-schema.org``.

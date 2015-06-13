@@ -1,19 +1,4 @@
 ==========
-2015-03-10 ????
-==========
-
-**Amélioration côté développement interne :** voici ce qui a évolué.
-
-    1) Les tests unitaires sont faits via ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
-
-    2) Le package maison provisoire ``pdt`` n'est plus du tout utilisé (le nouveau module ``pathlib`` permet maintenant de travailler facilement avec le contenu d'un dossier).
-
-    3) L'effacité des tests est évaluée à l'aide de ¨coverage.
-
-    4) Pour finir, ¨pep8py et ¨pylint sont aussi consultés pour améliorer le code de ¨mistool lorsque cela paraît pertinent.
-
-
-==========
 2015-03-01
 ==========
 

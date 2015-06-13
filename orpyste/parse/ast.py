@@ -1,627 +1,458 @@
 #! /usr/bin/env python3
 
 """
-Directory : orpyste/parse
-Name      : build
-Version   : 2015.01
-Author    : Christophe BAL
-Mail      : projetmbc@gmail.com
+prototype::
+    date = 2015-????
+
+
+This module ????
 
 This module only contains one abstract class implementing methods needed for
 parsing the ``orpyste`` files.
 """
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
+from pathlib import Path
 import re
 
-from mistool.os_use import isfile, makedir
+
+# ------------------------- #
+# -- FOR ERRORS TO RAISE -- #
+# ------------------------- #
+
+class ASTError(ValueError):
+    """
+prototype::
+    type = cls ;
+           base class for errors specific to the Abstract Syntax Tree.
+    """
+    pass
 
 
 # --------- #
 # -- AST -- #
 # --------- #
 
-INDENT = 0
+CtxtInfos = namedtuple('CtxtInfos', ['kind', 'name', 'id_matcher'])
 
 class AST():
     """
-This abstract class implements the methods needs to build an AST view of an
+prototype::
+    arg = ???
+
+This class implements the methods needs to build an AST view of an
 ``orpyste`` file.
     """
 
-    MODES = [
-        "equal" , "multiequal",
-        "keyval", "multikeyval",
-        "line"  , "block",
-        "container"
-    ]
+# SOME CONSTANTS
+    _CONTAINER, _EQUAL, _LINE, _MULTIEQUAL, _VERBATIM \
+    = "container", "equal", "line", "multiequal", "verbatim"
 
-    PATTERN_BLOCKNAME = re.compile("^[\d_a-zA-Z]+$")
+    _MODES = [_CONTAINER, _EQUAL, _LINE, _MULTIEQUAL, _VERBATIM]
 
+    _LONG_MODES = {}
+
+    for name in _MODES:
+        if name.startswith("multi"):
+            _LONG_MODES["m{0}".format(name[5])] = name
+
+        else:
+            _LONG_MODES[name[0]] = name
+
+# PATTERNS
+#
 # We use an ugly hack to know if something is a regex.
     RE_TYPE = type(re.compile('j'))
 
+# CONFIGURATIONS OF THE CONTEXTS [human form]
+#
+# The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
+    _FORMATTING_KIND_CTXT = "{0}-{1}"
+
+    INDENT, OPEN, CLOSE, AUTOCLOSE = "indent", "open", "close", "autoclose"
+
+    CLOSED_BY_INDENT, NOTHING = range(2)
+
+# If the two following key are not used, this will means "use all possible
+# contexts inside me". The name of the context cannot look like ``:onename:``
+# with double points.
+    SUBCTXTS = "subcontexts"
+
+    CTXTS_CONFIGS = OrderedDict()
+
+# The missing ``CLOSE`` indicates an auto-close context.
+    CTXTS_CONFIGS["comment-singleline"] = {
+        OPEN: "^//"
+    }
+
+    CTXTS_CONFIGS["comment-multilines"] =  {
+        OPEN    : "^/\*",
+        CLOSE   : "\*/$",
+        SUBCTXTS: NOTHING,      # This indicates no subcontexts.
+    }
+
+# ``CLOSE: CLOSED_BY_INDENT`` indicates a context using indentation for its
+# content.
+#
+# We can use tuple to indicate several patterns, and we can also use a special
+# keyword ``not::`` for negate a regex (doing this in pure regex can be very
+# messy).
+    CTXTS_CONFIGS["block"] = {
+        OPEN: (
+            "^[\d_a-zA-Z]+::$",             # TO MATCH
+            "not::^[\d_a-zA-Z]+\\\\::$"     # TO NOT MATCH
+        ),
+        CLOSE: CLOSED_BY_INDENT
+    }
+
+# MATCHERS FOR THE CONTEXTS [E.T. form]
+#
+# We build ¨python none human list for research with the following constraints.
+#
+#     1) We test all the open contexts and then the close ones.
+#     2) We stop as soon as we find a winning matching.
+#     3) We have to take care of subcontexts.
+#     4) We store the regex objects in a list (think about the subcontexts).
+#
+# << Warning ! >> We add a matcher for empty line at the very beginning because
+# we want to keep them but we have also to skip them when searching for
+# contexts.
+    CTXTINFOS_EMPTYLINE = CtxtInfos(":emptyline:", "", 0)
+    CTXTINFOS_CONTENT   = CtxtInfos(":content:", "", None)
+
+    MATCHERS       = [{True: [re.compile("^$")]}]
+    CTXTS_MATCHERS = [CTXTINFOS_EMPTYLINE]
+    CTXTS_SUBCTXTS = {}
+
+    id_matcher = 0
+    __name2id  = {}
+
+    for kind_ctxt in [OPEN, CLOSE]:
+        for name, configs in CTXTS_CONFIGS.items():
+            for kind, spec in configs.items():
+# We do not keep the special keyword CLOSED_BY_INDENT.
+                if kind == CLOSE and spec == CLOSED_BY_INDENT:
+                    continue
+
+# We have to take care of the use of the special keyword CLOSED_BY_INDENT.
+                if kind == kind_ctxt:
+                    if isinstance(spec, (str, int)):
+                        spec = [spec]
+
+                    matcher = {}
+
+                    for s in spec:
+                        if isinstance(s, str):
+                            if s.startswith("not::"):
+                                boolwanted = False
+                                s = s[5:]
+
+                            else:
+                                boolwanted = True
+
+                            s = re.compile(s)
+
+                        else:
+                            boolwanted = True
+
+                        if boolwanted in matcher:
+                            matcher[boolwanted].append(s)
+
+                        else:
+                            matcher[boolwanted] = [s]
+
+                    id_matcher += 1
+                    MATCHERS.append(matcher)
+
+                    if CLOSE in configs:
+                        if configs[CLOSE] == CLOSED_BY_INDENT:
+                            kind = "indent"
+
+                    else:
+                        kind = AUTOCLOSE
+
+                    CTXTS_MATCHERS.append(
+                        CtxtInfos(kind, name, id_matcher)
+                    )
+
+                    __name2id[(kind, name)] = id_matcher
+
+# SUBCONTEXTS
+    for name, configs in CTXTS_CONFIGS.items():
+        if SUBCTXTS in configs:
+# Empty lines can appear anywhere !
+            subctxts = [CTXTINFOS_EMPTYLINE.name]
+
+            if configs[SUBCTXTS] == NOTHING:
+                if (CLOSE, name) in __name2id:
+                    subctxts.append(name)
+
+            else:
+                for ctxt in configs[SUBCTXTS]:
+                    for kind in [OPEN, CLOSE]:
+                        if (kind, ctxt) in __name2id:
+                            subctxts.append(ctxt)
+
+            CTXTS_SUBCTXTS[name] = subctxts
+
+    __name2id = None
+
+
     def __init__(
         self,
-        content  = "",
-        encoding = "utf8",
-        mode     = "equal",
-        seps     = "=",
-        patterns = None,
-        strict   = False
+        iotxt,
+        mode,
+        seps
     ):
 # API attributs
-        self.content  = content
-        self.encoding = encoding
-        self.mode     = mode
-        self.seps     = seps
-        self.patterns = patterns
-        self.strict   = strict
-
-# Looking for...
-        self._store_in   = None
-        self._tobestored = None
-        self._temp_path  = None
-
-        self._nextline = None
-        self._line     = None
-        self._level    = None
-        self._before   = None
-
-# Human friendly definition of the ctxts
-        self.ctxts_config = None
-
-        self.give_ctxts_config()
-
-# Python friendly definition of the ctxts
-        self._subctxts       = []
-        self._actions        = []
-        self._ctxts_pointers = []
-        self._ctxts_stack    = []
-        self._ctxt_id        = None
-
-        self.build_actions()
-
-
-# ------------- #
-# -- ACTIONS -- #
-# ------------- #
-
-    def build_actions(self):
-# To each method ``is_ctxt``, there must have an associated method ``add_ctxt``,
-# and vice versa.
-        addlike_methods = set()
-        islike_methods  = set()
-
-        for method in dir(self):
-            if method.startswith("add_"):
-                addlike_methods.add(method[4:])
-
-            elif method.startswith("is_"):
-                islike_methods.add(method[3:])
-
-        if addlike_methods != islike_methods:
-            message = "TTT"
-
-            raise NotImplementedError(message)
-
-# We have to look for the configuration of the ctxts.
-        self._ctxts_pointers = []
-        _id = -1
-
-        print(self.ctxts_config)
-        print()
-
-        for onectxt in self.ctxts_config:
-            _id += 1
-
-            if isinstance(onectxt, str):
-                name  = onectxt
-                infos = None
-
-            else:
-                if len(onectxt) != 1:
-                    raise ValueError("????")
-
-                for name, infos in onectxt.items():
-                    ...
-
-            if name not in addlike_methods:
-                raise ValueError("????")
-
-            self._ctxts_pointers.append(name)
-            self._actions.append(infos)
-
-        print(self._ctxts_pointers)
-        print(self._actions)
-        exit()
-
-
-
-
-        if set(methods_sorted) != addlike_methods & islike_methods:
-            methods            = addlike_methods & islike_methods
-            methods_sorted_set = set(methods_sorted)
-
-            message = []
-
-            if methods - methods_sorted_set:
-                message.append("methode non rangée : {}".format(methods - methods_sorted_set))
-
-            if methods_sorted_set - methods:
-                message.append("methode manquante : {}".format(methods_sorted_set - methods))
-
-            raise ValueError(message)
-
-        for method in methods_sorted:
-            self._actions[method] = (
-                getattr(self, "is_{0}".format(method)),
-                getattr(self, "add_{0}".format(method))
-            )
-
-        print(self._subctxts)
-        exit()
-
-
-# --------- #
-# -- AST -- #
-# --------- #
-
-    def build(self):
-        """
-This method builds the representations
-        """
-        self.normalize()
-
-        self.build_ast()
-
-        print("self._mode")
-        print(self._mode)
-
-        print("self._ctxt_stack")
-        print(self._ctxt_stack)
-
-
-
-
-    def build_ast(self):
-        """
-This method builds an intermediate AST.
-        """
-        for line in self._nextline():
-            self._line = line.rstrip()
-            self.indentlevel()
-
-            print('>>>', self._line)
-
-            for id, (matcher, adder) in self._actions.items():
-                self._id = id
-
-                if matcher():
-                    self.addctxt()
-                    adder()
-                    self._store_in()
-
-                    break
-
-            print()
-
-
-# ---------------- #
-# -- MISC TOOLS -- #
-# ---------------- #
-
-    def addctxt(self):
-        self._ctxt_stack.append(self._id)
-
-    def match(self, text):
-        """
-This method ???.
-        """
-        pattern = self.patterns[self._id]
-
-        if pattern == None:
-            return True
-
-        else:
-            return bool(pattern.search(text))
-
-
-# ------------------------------ #
-# -- CONFIGURING THE ctxtS -- #
-# ------------------------------ #
-
-    def give_ctxts_config(self):
-        """
-global logic of ctxts it is verbose but prépare chemin pour lexTex (solution de test passagère)
-
-concordance des noms !!! via is_ et add_
-        """
-        self.ctxts_config = [
-            "singlecomment",
-            "multicomment_start_end",
-            {
-                "multicomment_start": {
-                    "closedby": "multicomment_end",
-                    "subctxts": None,
-                }
-            },
-            {
-                "block": {"closedby": INDENT}
-            },
-            "content"
-        ]
-
-
-# -------------- #
-# -- COMMENTS -- #
-# -------------- #
-
-    def is_singlecomment(self):
-        """
-This method returns a boolean indicating if the line is a single line comment.
-        """
-        return self._line.startswith('//')
-
-    def add_singlecomment(self):
-        """
-This method ???
-        """
-        self._tobestored = {
-            'kind'   : "singlecomment",
-            'content': self._line[2:]
-        }
-
-
-    def is_multicomment_start_end(self):
-        """
-This method returns a boolean indicating if the line is a complete multiline
-comment.
-        """
-        return self.is_multicomment_start() and self.is_multicomment_end()
-
-    def add_multicomment_start_end(self):
-        """
-This method ???
-        """
-        self._tobestored = {
-            'kind'   : "multicomment_start_end",
-            'content': self._line[2:-2]
-        }
-
-    def is_multicomment_start(self):
-        """
-This method returns a boolean indicating if the line is the beginning of a
-multiline comment.
-        """
-        return self._line.startswith('/*')
-
-    def add_multicomment_start(self):
-        """
-This method ???
-        """
-        self._tobestored = {
-            'kind'   : "multicomment_start",
-            'content': self._line[2:]
-        }
-
-
-    def is_multicomment_end(self):
-        """
-This method returns a boolean indicating if the line is the end of a multiline
-comment.
-        """
-        return self._line.strip().endswith('*/')
-
-    def add_multicomment_end(self):
-        """
-This method ???
-        """
-        self._tobestored = {
-            'kind'   : "multicomment_end",
-            'content': self._line[:-2]
-        }
-
-
-# -------------------- #
-# -- STARTING BLOCK -- #
-# -------------------- #
-
-    def is_block(self):
-        """
-This method returns a boolean indicating if the line can be the start of a block.
-        """
-        line = self._line.lstrip()
-
-        if line.endswith('::') and not line.endswith('\::'):
-            if not self.match(line[:-2]):
-                raise ValueError(
-                    "in line {0}, illegal name << {1} >> for a block.".format(
-                        self._nbline,
-                        line[:-2]
-                    )
-                )
-
-            else:
-                return True
-
-        else:
-            return False
-
-    def add_block(self):
-        """
-This method ???
-        """
-        self._tobestored = {
-            'kind' : "block",
-            'name' : self._line.lstrip()[:-2],
-            'level': self._level
-        }
-
-
-# ------------- #
-# -- CONTENT -- #
-# ------------- #
-
-# Here we have to use the metadata ``search_index`` such as to indicate to
-# search first all the other ctxts which have by default a searching index
-# equal to 0.
-
-    def is_content(self):
-        """
-???
-        """
-        return True
-
-    def add_content(self):
-        """
-This method ???
-        """
-        self.noindent()
-
-        if self._line:
-            self._tobestored = {
-                'kind' : "content",
-                'line' : self._line,
-                'level': self._level
-            }
-
-        else:
-            self._tobestored = {'kind': "emptyline"}
-
-
-# ----------------- #
-# -- INDENTATION -- #
-# ----------------- #
-
-    def indentlevel(self):
-        """
-This method returns the level of indention of a line where each tabulation is
-equal to four spaces.
-        """
-        self._level  = 0
-        self._before = ''
-
-        for char in self._line:
-            if char == ' ':
-                self._before += ' '
-                self._level += 1
-
-            elif char == '\t':
-                self._before += '    '
-                self._level += 4
-
-            else:
-                break
-
-        self._before = self._before[:- self._level % 4]
-        self._level //= 4
-
-    def noindent(self):
-        """
-This method cleans the leading indentation characters.
-        """
-        if self._before:
-            self._line = self._before + self._line.lstrip()
+        self.iotxt = iotxt
+        self.mode  = mode
+        self.seps  = seps
+
+# Internal attributs
+        self._nbline = 0
+        self._line   = None
+
+        self._level              = 0
+        self._levels_stack       = []
+        self._ctxtname_stack     = []
+        self._ctxt_sbctxts_stack = []
 
 
 # ---------------------------- #
 # -- WALKING IN THE CONTENT -- #
 # ---------------------------- #
 
-    def nextline_file(self):
+    def nextline(self):
         """
-This method is an iterator for walking line by line in a file.
+property::
+    yield = str ;
+            the lines of ``self.iotxt``.
         """
-        with open(self.content) as f:
-            self._nbline = 0
-
-            for line in f:
-                self._nbline += 1
-                yield line.rstrip()
-
-    def nextline_str(self):
-        """
-This method is an iterator for walking line by line in a string.
-        """
-        for n, line in enumerate(self.content.splitlines(), start = 1):
-            self._nbline = n
+        for line in self.iotxt:
+            self._nbline += 1
             yield line.rstrip()
 
 
-# ----------------------- #
-# -- STORING THE DATAS -- #
-# ----------------------- #
+# ----------------- #
+# -- INDENTATION -- #
+# ----------------- #
 
-    def store_in_file(self):
+    def manage_indent(self):
         """
-This method ???
+property::
+    action = the level of indention is calculated and the leading indentation
+             of ``self._line`` is removed (one tabulation is equal to four
+             spaces).
         """
-        RRR
+        before = ''
 
-    def store_in_str(self):
+        for char in self._line:
+            if char == ' ':
+                self._level += 1
+                before      += ' '
+
+            elif char == '\t':
+                self._level += 4
+                before      += '    '
+
+            else:
+                break
+
+        self._line    = before[:- self._level % 4] + self._line.lstrip()
+        self._level //= 4
+
+
+# ------------- #
+# -- REGEXES -- #
+# ------------- #
+
+    def match(self, text, id_matcher):
         """
-This method ???
+property::
+    arg = str: text ;
+          ????
         """
-        print('---', self._tobestored, sep="\n")
+# Looking for the first winning matching.
+        for boolwanted, thematchers in self.MATCHERS[id_matcher].items():
+            for onematcher in thematchers:
+                if bool(onematcher.search(text)) != boolwanted:
+                    return False
+
+# We have a winning mathcing.
+        return True
+
+# -------------------------- #
+# -- LOOKING FOR CONTEXTS -- #
+# -------------------------- #
+
+    def search_ctxts(self):
+        nocontextfound = True
+
+        for ctxtinfos in self.CTXTS_MATCHERS:
+            if self._ctxt_sbctxts_stack != [] \
+            and ctxtinfos.name not in self._ctxt_sbctxts_stack[-1]:
+                continue
+
+# A new context.
+            if self.match(self._line, ctxtinfos.id_matcher):
+                nocontextfound = False
+
+# We can store the infos.
+                self.store_ctxts(ctxtinfos)
 
 
-# ----------------------------------- #
-# -- NORMALIZED INTERNAL ATTRIBUTS -- #
-# ----------------------------------- #
+# A new opening context.
+                if ctxtinfos.kind in [self.OPEN, self.INDENT]:
+                    self._ctxtname_stack.append(ctxtinfos.name)
 
-    def normalize(self):
-        """
-This method ???
-        """
-# << WARNING ! >> The order is important.
-        self._normalize_content()
-        self._normalize_patterns()
-        self._normalize_mode()
-        self._normalize_seps()
+# Do we have to use subcontexts.
+                    if ctxtinfos.kind == self.OPEN \
+                    and ctxtinfos.name in self.CTXTS_SUBCTXTS:
+                        self._ctxt_sbctxts_stack.append(
+                            self.CTXTS_SUBCTXTS[ctxtinfos.name]
+                        )
 
-    def _normalize_content(self):
-        if isfile(self.content):
-            self._nextline = self.nextline_file
-            self._store_in = self.store_in_file
-
-            self._temp_path = "?: file"
-
-        else:
-            self._nextline = self.nextline_str
-            self._store_in = self.store_in_str
-
-            self._temp_path = "?: str"
-
-    def _normalize_patterns(self):
-        if self.patterns == None:
-            self.patterns = {
-                'block': self.PATTERN_BLOCKNAME,
-                'key'  : self.PATTERN_BLOCKNAME,
-                'value': None
-            }
-
-        elif not isinstance(self.patterns, dict):
-            self.patterns = {
-                'block': self.patterns,
-                'key'  : self.patterns,
-                'value': None
-            }
-
-        for k, v in self.patterns.items():
-            if k not in {'block', 'key', 'value'}:
-                raise KeyError(
-                    'you can only use the keys "block", "key", "value"'
-                    'in the argument ``patterns``.'
-                )
-
-            if v == "":
-                self.patterns[k] = None
-
-# We use an ugly hack to know if something is or not a regex.
-            elif v != None and not isinstance(v, self.RE_TYPE):
-                raise ValueError(
-                    'value of "{0}" in the dictionary ``patterns``'.format(k) \
-                    + ' is neither ``None``, nor a compiled regex.'
-                )
-
-    def _test_mode_keys(self, mode):
-        if mode not in self.MODES:
-            raise ValueError('unknown mode << {0} >>.'.format(mode))
-
-    def _test_mode_blocks(self, blocks):
-        self._id = 'block'
-
-        if isinstance(blocks, list):
-            for b in blocks:
-                self._test_mode_blocks(b)
-
-        elif not isinstance(blocks, str):
-            raise ValueError(
-                'in the argument ``mode``, names of blocks must be strings.'
-                ' Look at << {0} >>.'.format(blocks)
-            )
-
-        elif self.patterns['block'] \
-        and not self.match(blocks):
-            raise ValueError(
-                'in the argument ``mode``, the name "{0}"'.format(blocks) \
-                + ' does no match the regex pattern ``{0}``.'.format(
-                    self.patterns['block']
-                )
-            )
-
-        self._id = None
-
-    def _normalize_mode(self):
-        self._mode = {}
-
-        if isinstance(self.mode, (dict, OrderedDict)):
-            self._mode["id"] = "multi"
-
-            _mode_infos = {}
-
-            for mode, blocks in self.mode.items():
-                self._test_mode_keys(mode)
-                self._test_mode_blocks(blocks)
-
-                if mode == 'default':
-                    if isinstance(blocks, list):
-                        if len(blocks) != 1:
-                            raise ValueError(
-                                'you can only use one default mode '
-                                'in the argument ``mode``.'
+# A closing context.
+                elif ctxtinfos.kind == self.CLOSE:
+                    if not self._ctxtname_stack:
+                        raise ASTError(
+                            "wrong closing context: see line #{0}".format(
+                                self._nbline
                             )
+                        )
 
-                        blocks = blocks[0]
+                    lastctxtname = self._ctxtname_stack.pop(-1)
 
-                    self._mode["default"] = self.mode
+                    if lastctxtname != ctxtinfos.name:
+                        raise ASTError(
+                            "wrong closing context: " \
+                            + "see line no.{0} and context \"{1}\"".format(
+                                self._nbline, ctxtinfos.name
+                            )
+                        )
 
-                else:
-                    if isinstance(blocks, str):
-                        blocks = [blocks]
+                    self._ctxt_sbctxts_stack.pop(-1)
 
-                    _mode_infos[mode] = blocks
 
-            if not 'default' in self._mode:
-                self._mode["default"] = "container"
+                break
 
-        else:
-            self._test_mode_keys(self.mode)
+# Not a vsisble new context (be careful of indentation closing)
+        if nocontextfound:
+            self.store_ctxts(self.CTXTINFOS_CONTENT)
 
-# We must use a general behavior !
-            self._mode["id"]    = "single"
-            self._mode["default"] = self.mode
 
-# We build now easy-to-use variables.
-        self._mode["used"]  = []
-        self._mode["assos"] = {}
+    def store_ctxts(self, ctxtinfos):
+# we take care of indetation problems.
+        if ctxtinfos.kind == "indent":
+            if self._levels_stack:
+                self._levels_stack.append(self._level)
+            else:
+                self._levels_stack = [self._level]
 
-        i = -1
+# We can store the main infos.
+        print('self._levels_stack={4}\nself._ctxtname_stack = {3}\n\n{0}:[{1}]\n>>>{2}\n---'.format(
+            ctxtinfos, self._level, self._line, self._ctxtname_stack, self._levels_stack
+        ))
 
-        for id, blocks in _mode_infos.items():
-            i += 1
-            self._mode["used"].append(id)
 
-            for b in blocks:
-                self._mode["assos"][b] = i
+# ------------------- #
+# -- BUILD THE AST -- #
+# ------------------- #
 
-    def _normalize_seps(self):
-        if isinstance(self.seps, str):
-            self._seps = [self.seps]
+    def build(self):
+        """
+This method builds an intermediate AST.
+        """
+        for line in self.nextline():
+            print("nb", self._nbline)
+            self._line = line
+            self.manage_indent()
+            self.search_ctxts()
 
-        else:
-            self._seps = sorted(
-                self.seps,
-                key = lambda t: -len(t)
-            )
 
-        modesused = " ".join([
-            " ".join(y)
-            for x, y in self._mode.items() if x != ":id:"
-        ])
+            # self.cleanast()
 
-        if len(self.seps) !=1 and "equal" in modesused:
-            raise ValueError(
-                'several separators are not allowed for equal like modes.'
-            )
+
+# --------------------------- #
+# -- STORING THE METADATAS -- #
+# --------------------------- #
+
+
+# --------------------------------- #
+# -- NORMALIZE USER'S PARAMETERS -- #
+# --------------------------------- #
+
+#
+#     def _normalize_mode(self):
+#         self._mode = {}
+#
+#         if isinstance(self.mode, (dict, OrderedDict)):
+#             self._mode["id"] = "multi"
+#
+#             _mode_infos = {}
+#
+#             for mode, blocks in self.mode.items():
+#                 self._test_mode_keys(mode)
+#                 self._test_mode_blocks(blocks)
+#
+#                 if mode == 'default':
+#                     if isinstance(blocks, list):
+#                         if len(blocks) != 1:
+#                             raise ValueError(
+#                                 'you can only use one default mode '
+#                                 'in the argument ``mode``.'
+#                             )
+#
+#                         blocks = blocks[0]
+#
+#                     self._mode["default"] = self.mode
+#
+#                 else:
+#                     if isinstance(blocks, str):
+#                         blocks = [blocks]
+#
+#                     _mode_infos[mode] = blocks
+#
+#             if not 'default' in self._mode:
+#                 self._mode["default"] = "container"
+#
+#         else:
+#             self._test_mode_keys(self.mode)
+#
+# # We must use a general behavior !
+#             self._mode["id"]    = "single"
+#             self._mode["default"] = self.mode
+#
+# # We build now easy-to-use variables.
+#         self._mode["used"]  = []
+#         self._mode["assos"] = {}
+#
+#         i = -1
+#
+#         for id, blocks in _mode_infos.items():
+#             i += 1
+#             self._mode["used"].append(id)
+#
+#             for b in blocks:
+#                 self._mode["assos"][b] = i
+#
+#     def _normalize_seps(self):
+#         if isinstance(self.seps, str):
+#             self._seps = [self.seps]
+#
+#         else:
+#             self._seps = sorted(
+#                 self.seps,
+#                 key = lambda t: -len(t)
+#             )
+#
+#         modesused = " ".join([
+#             " ".join(y)
+#             for x, y in self._mode.items() if x != ":id:"
+#         ])
+#
+#         if len(self.seps) !=1 and "equal" in modesused:
+#             raise ValueError(
+#                 'several separators are not allowed for equal like modes.'
+#             )
