@@ -2,13 +2,11 @@
 
 """
 prototype::
-    date = 2015-????
+    date = 2015-06-????
 
 
-This module ????
-
-This module only contains one abstract class implementing methods needed for
-parsing the ``orpyste`` files.
+This module only contains one class that build an Abstract Syntax Tree view of
+a file or a StringIO with a content using the ``peuf`` specifications.
 """
 
 from collections import OrderedDict, namedtuple
@@ -33,7 +31,10 @@ prototype::
 # -- AST -- #
 # --------- #
 
-CtxtInfos = namedtuple('CtxtInfos', ['kind', 'name', 'id_matcher'])
+CtxtInfos = namedtuple(
+    'CtxtInfos',
+    ['name', 'kind', 'indent', 'closed_at_end', 'id_matcher']
+)
 
 class AST():
     """
@@ -41,7 +42,7 @@ prototype::
     arg = ???
 
 This class implements the methods needs to build an AST view of an
-``orpyste`` file.
+merely ``orpyste`` file : here we allow the use of content and block at the same level. This will the job of data.Read to check if there are this kind of errors among other ones.
     """
 
 # SOME CONSTANTS
@@ -69,26 +70,34 @@ This class implements the methods needs to build an AST view of an
 # The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
     _FORMATTING_KIND_CTXT = "{0}-{1}"
 
-    INDENT, OPEN, CLOSE, AUTOCLOSE = "indent", "open", "close", "autoclose"
+    OPEN, CLOSE, AUTOCLOSE = "open", "close", "autoclose"
 
-    CLOSED_BY_INDENT, NOTHING = range(2)
+    CLOSED_BY_INDENT, CLOSED_AT_END, NOTHING = range(3)
 
 # If the two following key are not used, this will means "use all possible
 # contexts inside me". The name of the context cannot look like ``:onename:``
 # with double points.
-    SUBCTXTS = "subcontexts"
+    SUBCTXTS       = "subcontexts"
+    INFINITY_LEVEL = "inf-level"
+    INFINITY       = float('inf')
 
     CTXTS_CONFIGS = OrderedDict()
 
+# pb des commentaires qui ne ferment rien en fait car intégré dans un ocntenu , à définir dasn les sépcifications !!!!
+
+
 # The missing ``CLOSE`` indicates an auto-close context.
     CTXTS_CONFIGS["comment-singleline"] = {
-        OPEN: "^//"
+        OPEN: "^//",
+        INFINITY_LEVEL: True        # This allows to force the level.
     }
 
     CTXTS_CONFIGS["comment-multilines"] =  {
-        OPEN    : "^/\*",
-        CLOSE   : "\*/$",
-        SUBCTXTS: NOTHING,      # This indicates no subcontexts.
+        OPEN          : "^/\*",
+        CLOSE         : "\*/$",
+        SUBCTXTS      : NOTHING,    # This indicates no subcontexts.
+        INFINITY_LEVEL: True,
+        CLOSED_AT_END : True
     }
 
 # ``CLOSE: CLOSED_BY_INDENT`` indicates a context using indentation for its
@@ -102,7 +111,8 @@ This class implements the methods needs to build an AST view of an
             "^[\d_a-zA-Z]+::$",             # TO MATCH
             "not::^[\d_a-zA-Z]+\\\\::$"     # TO NOT MATCH
         ),
-        CLOSE: CLOSED_BY_INDENT
+        CLOSE        : CLOSED_BY_INDENT,
+        CLOSED_AT_END: True
     }
 
 # MATCHERS FOR THE CONTEXTS [E.T. form]
@@ -117,15 +127,22 @@ This class implements the methods needs to build an AST view of an
 # << Warning ! >> We add a matcher for empty line at the very beginning because
 # we want to keep them but we have also to skip them when searching for
 # contexts.
-    CTXTINFOS_EMPTYLINE = CtxtInfos(":emptyline:", "", 0)
-    CTXTINFOS_CONTENT   = CtxtInfos(":content:", "", None)
+#
+# CtxtInfos = namedtuple(
+#     'CtxtInfos',
+#     ['name', 'kind', 'indent', 'closed_at_end', 'id_matcher']
+# )
+    CTXTINFOS_EMPTYLINE = CtxtInfos(None, ":emptyline:", None, None, 0)
+    CTXTINFOS_CONTENT   = CtxtInfos(None, ":content:"  , None, None, None)
 
-    MATCHERS       = [{True: [re.compile("^$")]}]
-    CTXTS_MATCHERS = [CTXTINFOS_EMPTYLINE]
-    CTXTS_SUBCTXTS = {}
+    MATCHERS            = [{True: [re.compile("^$")]}]
+    CTXTS_MATCHERS      = [CTXTINFOS_EMPTYLINE]
+    CTXTS_SUBCTXTS      = {}
+    CTXTS_INF_LEVELS    = set()
+    CTXTS_CLOSED_AT_END = set()
 
-    id_matcher = 0
-    __name2id  = {}
+    __id_matcher = 0
+    __name2id    = {}
 
     for kind_ctxt in [OPEN, CLOSE]:
         for name, configs in CTXTS_CONFIGS.items():
@@ -161,24 +178,42 @@ This class implements the methods needs to build an AST view of an
                         else:
                             matcher[boolwanted] = [s]
 
-                    id_matcher += 1
+                    __id_matcher += 1
                     MATCHERS.append(matcher)
 
                     if CLOSE in configs:
                         if configs[CLOSE] == CLOSED_BY_INDENT:
-                            kind = "indent"
+                            indent = True
+
+                        else:
+                            indent = False
 
                     else:
-                        kind = AUTOCLOSE
+                        kind   = AUTOCLOSE
+                        indent = False
 
+                    closed_at_end = configs.get(CLOSED_AT_END, False)
+
+                    if closed_at_end:
+                        CTXTS_CLOSED_AT_END.add(name)
+
+# CtxtInfos = namedtuple(
+#     'CtxtInfos',
+#     ['name', 'kind', 'indent', 'closed_at_end', 'id_matcher']
+# )
                     CTXTS_MATCHERS.append(
-                        CtxtInfos(kind, name, id_matcher)
+                        CtxtInfos(
+                            name, kind, indent, closed_at_end, __id_matcher
+                        )
                     )
 
-                    __name2id[(kind, name)] = id_matcher
+                    __name2id[(kind, name)] = __id_matcher
 
-# SUBCONTEXTS
+# SUBCONTEXTS AND CONTEXT'S LEVEL
     for name, configs in CTXTS_CONFIGS.items():
+        if INFINITY_LEVEL in configs:
+            CTXTS_INF_LEVELS.add(name)
+
         if SUBCTXTS in configs:
 # Empty lines can appear anywhere !
             subctxts = [CTXTINFOS_EMPTYLINE.name]
@@ -245,22 +280,26 @@ property::
              of ``self._line`` is removed (one tabulation is equal to four
              spaces).
         """
-        before = ''
+        if self._level == self.INFINITY:
+            return None
 
-        for char in self._line:
-            if char == ' ':
-                self._level += 1
-                before      += ' '
+        if self._line:
+            before = ''
 
-            elif char == '\t':
-                self._level += 4
-                before      += '    '
+            for char in self._line:
+                if char == ' ':
+                    self._level += 1
+                    before      += ' '
 
-            else:
-                break
+                elif char == '\t':
+                    self._level += 4
+                    before      += '    '
 
-        self._line    = before[:- self._level % 4] + self._line.lstrip()
-        self._level //= 4
+                else:
+                    break
+
+            self._line    = before[:- self._level % 4] + self._line.lstrip()
+            self._level //= 4
 
 
 # ------------- #
@@ -298,15 +337,15 @@ property::
             if self.match(self._line, ctxtinfos.id_matcher):
                 nocontextfound = False
 
-# We can store the infos.
-                self.store_ctxts(ctxtinfos)
-
+# Level can be forced.
+                if ctxtinfos.name in self.CTXTS_INF_LEVELS:
+                    self._level = self.INFINITY
 
 # A new opening context.
-                if ctxtinfos.kind in [self.OPEN, self.INDENT]:
+                if ctxtinfos.kind == self.OPEN:
                     self._ctxtname_stack.append(ctxtinfos.name)
 
-# Do we have to use subcontexts.
+# Do we have to use subcontexts ?
                     if ctxtinfos.kind == self.OPEN \
                     and ctxtinfos.name in self.CTXTS_SUBCTXTS:
                         self._ctxt_sbctxts_stack.append(
@@ -334,26 +373,121 @@ property::
 
                     self._ctxt_sbctxts_stack.pop(-1)
 
-
                 break
 
 # Not a vsisble new context (be careful of indentation closing)
         if nocontextfound:
-            self.store_ctxts(self.CTXTINFOS_CONTENT)
+            ctxtinfos = self.CTXTINFOS_CONTENT
+
+# We can store the new and eventually close some old contexts.
+        self.close_indented_ctxts(ctxtinfos)
+        self.store_ctxts(ctxtinfos)
 
 
-    def store_ctxts(self, ctxtinfos):
-# we take care of indetation problems.
-        if ctxtinfos.kind == "indent":
-            if self._levels_stack:
+    def must_close_indented_ctxt(self):
+        if self._levels_stack:
+            return self._level <= self._levels_stack[-1]
+
+        return False
+
+
+    def close_indented_ctxts(self, ctxtinfos):
+# Empty lines and autoclosed context with inifinte level are the only contexts
+# that can't close an indented context.
+        if ctxtinfos != self.CTXTINFOS_EMPTYLINE \
+        or ctxtinfos.kind != self.AUTOCLOSE \
+        or self._level != self.INFINITY:
+            if self._levels_stack \
+            and self._levels_stack[-1] != self.INFINITY:
+                while self.must_close_indented_ctxt():
+                    self._levels_stack.pop(-1)
+
+                    lastctxtname = self._ctxtname_stack.pop(-1)
+
+# CtxtInfos = namedtuple(
+#     'CtxtInfos',
+#     ['name', 'kind', 'indent', 'closed_at_end', 'id_matcher']
+# )
+                    self.store_ctxts(
+                        CtxtInfos(lastctxtname, self.CLOSE, None, None , None)
+                    )
+
+# We update the stack of levels.
+        if ctxtinfos.kind == self.OPEN:
+            if self._levels_stack \
+            and self._level != self._levels_stack[-1]:
                 self._levels_stack.append(self._level)
+
             else:
                 self._levels_stack = [self._level]
 
+# Autoclose context with infinite level do not change the levels !
+        if ctxtinfos.kind == self.AUTOCLOSE \
+        and self._levels_stack \
+        and self._level == self.INFINITY:
+            self._level = self._levels_stack[-1]
+
+# Close context with infinite level need to clean the stack of levels !
+        if ctxtinfos.kind == self.CLOSE \
+        and self._levels_stack \
+        and self._level == self.INFINITY:
+            self._levels_stack.pop(-1)
+
+            if self._levels_stack:
+                self._level = self._levels_stack[-1]
+
+            else:
+                self._level = 0
+
+
+    def store_ctxts(self, ctxtinfos):
+        print(
+'''line {2} "{1}" ---> {0} [{3}]
+==='''.format(
+    ctxtinfos.kind, self._line, self._nbline + 7, ctxtinfos.name
+)
+        )
+
+        return
 # We can store the main infos.
-        print('self._levels_stack={4}\nself._ctxtname_stack = {3}\n\n{0}:[{1}]\n>>>{2}\n---'.format(
-            ctxtinfos, self._level, self._line, self._ctxtname_stack, self._levels_stack
-        ))
+        print(
+'''"{2}"
+
+[{1}]  {0}
+self._levels_stack   = {4}
+self._ctxtname_stack = {3}\n
+==='''.format(
+    ctxtinfos, self._level, self._line, self._ctxtname_stack, self._levels_stack
+)
+        )
+
+    def close_ctxt_at_end(self):
+        while self._ctxtname_stack:
+            lastctxtname = self._ctxtname_stack.pop(-1)
+
+            if lastctxtname not in self.CTXTS_CLOSED_AT_END:
+                raise ASTError(
+                    "unclosed context: " \
+                    + "see line no.{0} and context \"{1}\"".format(
+                        self._nbline, lastctxtname
+                    )
+                )
+
+# CtxtInfos = namedtuple(
+#     'CtxtInfos',
+#     ['name', 'kind', 'indent', 'closed_at_end', 'id_matcher']
+# )
+            self.store_ctxts(
+                CtxtInfos(lastctxtname, self.CLOSE, None, None , None)
+            )
+
+
+
+
+
+
+
+
 
 
 # ------------------- #
@@ -364,14 +498,18 @@ property::
         """
 This method builds an intermediate AST.
         """
+# Intermediate AST
         for line in self.nextline():
-            print("nb", self._nbline)
             self._line = line
             self.manage_indent()
             self.search_ctxts()
 
+# Some contexts can be closed automatically at the end.
+        self.close_ctxt_at_end()
 
-            # self.cleanast()
+
+# We have to build the definitive AST.
+        # self.cleanast()
 
 
 # --------------------------- #
