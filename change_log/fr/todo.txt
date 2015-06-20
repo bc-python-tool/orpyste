@@ -5,13 +5,13 @@ orPySte - TODO
 
 > ---------------------------- <
 
-???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est à la fois hebergé sur le site ¨github et us ¨pypi.
+???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est hebergé à la fois sur les sites ¨github et ¨pypi.
 
 
 ???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
 
 
-???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``, cette version ayant pour numéro ``0.0.0`` car le projet ¨mistool reste à l'état très `¨beta`. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair...
+???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... Cette version de ¨orpyste a pour numéro ``1.0.0`` car le projet est stable.
 
 
 ???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
@@ -28,7 +28,7 @@ orPySte - TODO
 
     2) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool).
 
-    1) Les tests sont disponibles sur ¨github et ¨pypi (afin que les utilisateurs puissent tester leur installation).
+    1) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
 
 
 > ---------------------------- <
@@ -51,8 +51,3 @@ orPySte - TODO
 
 
 **Mise en ligne de la documentation technique en anglais uniquement :** ceci a été rendu possible grâce au projet ¨pybadoc qui lui aussi est disponible sur ¨pypi et ¨github.
-
-
-> ---------------------------- <
-
-**Une belle amélioration !** Il est maintenant possible d'indiquer un modèle de données éventuellement typées. Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue cf::``aux schémas JSON ; http://json-schema.org``.
