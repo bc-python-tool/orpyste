@@ -11,18 +11,16 @@ allows to read efficient to type and simple structured string datas
 contained in files using the ``peuf`` specifications.
 """
 
-from orpyste.parse import ast, pyit
+from orpyste.parse import walk
 
 
 # ------------- #
 # -- READING -- #
 # ------------- #
 
-class Read():
+class Read(walk.WalkInAST):
     """
 prototype::
-    see = parse
-
     arg = file, io.StringIO: iotxt ;
           ???
           either  f = open("myfile.txt", "r", encoding="utf-8")
@@ -62,10 +60,10 @@ prototype::
 
 
 
+besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul nom de bloc pour un contexte donné, concrètement meêm nom possible si sous bloc dans deux blocs parents différents
+
 ???
     """
-    AST  = ast.AST
-    PYIT = pyit.AST2PY
 
     def __init__(
         self,
@@ -79,99 +77,25 @@ prototype::
         self.store = store
 
 
-# --------------------- #
-# -- BUILD THE DATAS -- #
-# --------------------- #
+# ---------------- #
+# -- FOR BLOCKS -- #
+# ---------------- #
 
-    def build(self):
-# We build the AST view.
-        _AST = self.AST(
-            iotxt = self.iotxt,
-            mode  = self.mode,
-            store = self.store
-        )
-
-        _AST.build()
+    def open_block(self, name):
+        print("{0}::".format(name))
 
 
+# ------------------- #
+# -- (MULTI)KEYVAL -- #
+# ------------------- #
+
+    def addkeyval(self, keyval):
+        print("    --->", keyval)
 
 
+# -------------- #
+# -- VERBATIM -- #
+# -------------- #
 
-
-# --------------------------------- #
-# -- NORMALIZE USER'S PARAMETERS -- #
-# --------------------------------- #
-
-#
-#     def _normalize_mode(self):
-#         self._mode = {}
-#
-#         if isinstance(self.mode, (dict, OrderedDict)):
-#             self._mode["id"] = "multi"
-#
-#             _mode_infos = {}
-#
-#             for mode, blocks in self.mode.items():
-#                 self._test_mode_keys(mode)
-#                 self._test_mode_blocks(blocks)
-#
-#                 if mode == 'default':
-#                     if isinstance(blocks, list):
-#                         if len(blocks) != 1:
-#                             raise ValueError(
-#                                 'you can only use one default mode '
-#                                 'in the argument ``mode``.'
-#                             )
-#
-#                         blocks = blocks[0]
-#
-#                     self._mode["default"] = self.mode
-#
-#                 else:
-#                     if isinstance(blocks, str):
-#                         blocks = [blocks]
-#
-#                     _mode_infos[mode] = blocks
-#
-#             if not 'default' in self._mode:
-#                 self._mode["default"] = "container"
-#
-#         else:
-#             self._test_mode_keys(self.mode)
-#
-# # We must use a general behavior !
-#             self._mode["id"]    = "single"
-#             self._mode["default"] = self.mode
-#
-# # We build now easy-to-use variables.
-#         self._mode["used"]  = []
-#         self._mode["assos"] = {}
-#
-#         i = -1
-#
-#         for id, blocks in _mode_infos.items():
-#             i += 1
-#             self._mode["used"].append(id)
-#
-#             for b in blocks:
-#                 self._mode["assos"][b] = i
-#
-#     def _normalize_seps(self):
-#         if isinstance(self.seps, str):
-#             self._seps = [self.seps]
-#
-#         else:
-#             self._seps = sorted(
-#                 self.seps,
-#                 key = lambda t: -len(t)
-#             )
-#
-#         modesused = " ".join([
-#             " ".join(y)
-#             for x, y in self._mode.items() if x != ":id:"
-#         ])
-#
-#         if len(self.seps) !=1 and "equal" in modesused:
-#             raise ValueError(
-#                 'several separators are not allowed for equal like modes.'
-#             )
+    def addline(self, line):
+        print("    --->", line)

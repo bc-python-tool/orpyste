@@ -2,14 +2,11 @@
 
 """
 prototype::
-    date = 2015-06-????
+    date = 2015-06-21
 
 
-This module contains  ????
-
-
- one class that build an Abstract Syntax Tree view of
-a file or a StringIO with a content using the ``peuf`` specifications.
+This module contains classes so as to build an abstract syntax tree view of
+a file or a StringIO object with a content using the ¨orpyste format.
 """
 
 from collections import OrderedDict, defaultdict
@@ -37,42 +34,135 @@ prototype::
 
 class Mode():
     """
-    arg = Mode: mode = Mode("keyval::=") ;
+prototype::
+    see = AST
 
-    passer par une classe via un mode simple de config
-        : config ;
-        str: mode = "keyval::=" with {keyval} in self.IN_CTXTS
-                                                or in self.LONG_IN_CTXTS ;
+    arg-attr = str, dict: mode ;
+               an ¨orpyste mode that can use different kinds of syntax
 
-
-==================================
-Mode defined using a single string
-==================================
-
-si string c'est que pour des blocs de niveau 1 tus du même type
-
-keyval        onekey=...
-multikeyval   multikey=...
-line          line by line content
-verbatim      single verbaitm string !!!!
-
-= ou plusieurs opérateurs sans esapce commme dans
-multikeyval:: = < >
-
-espace de début pour lisibiliré uniquement
-
+    action = this class is used by the class ``AST`` so as to know the mode of a
+             block
 
 
 ==================================
 Mode defined using a single string
 ==================================
 
+If all the blocks are of the same kind, you just have to give it using a
+single string like in the following example. You can see that the class
+``Mode`` has some useful magic properties similar to the ones of a dictionary.
 
-          dict comme avant toujours possible car pratqiue au jour le jour
+pyterm::
+    >>> from orpyste.parse.ast import Mode
+    >>> mode = Mode("keyval::=")
+    >>> for kind, infos in mode.items():
+    ...     print(kind, infos, sep = "\n    ")
+    ...
+    :default:
+        {'mode': 'keyval', 'seps': ['=']}
+    >>> print(mode[":default:"])
+    {'mode': 'keyval', 'seps': ['=']}
+    >>> print(4 in mode)
+    False
+    >>> print(":default:" in mode)
+    True
 
-          config via classe dédié pour cas complexe ou typage des données si besoin`
 
-          Z !!!! Par contre on doit passer par classe dédiée qu el'on met en fait ici
+A mode defined within a single string must follow the rules below.
+
+    1) ``"verbatim"`` indicates a line by line content where no line has to be
+    analyzed.
+
+    2) ``"keyval::="`` is made of two parts separated by ``::``. Before we
+    have a kind ``keyval`` which is for key-value associations separated here
+    by a sign ``=``, the one given after ``::``. Some important things to know.
+
+        a) With this kind of mode, a key can be used only one time in the same
+        block.
+
+        b) You can use different separators. Just give all of them separated
+        by one space. For example, ``"keyval::==> <== <==>"`` allows to use
+        ``==>``, ``<==`` or ``<==>``.
+
+        c) All spaces are cleaned !
+
+    3) Instead of ``"keyval"``, you can use ``"multikeyval"`` if you want to
+    allow the use of the same key several times in the same block.
+
+    4) ``"container"`` is a special kind to define blocks that can only
+    contains other blocks.
+
+
+info::
+    Internally the class uses the attribut dicoview which in our example is
+    the following dictionary and list.
+
+    ...pyterm::
+        >>> print(mode.dicoview)
+        {':default:': 0}
+        >>> print(mode.allmodes)
+        [{'mode': 'keyval', 'seps': ['=']}]
+
+
+===============================
+Mode defined using a dictionary
+===============================
+
+Let's suppose that we want to use the following kinds of blocks.
+
+    * The block ``summary`` is a verbatim one containing a summary. What a
+    surprise !
+
+    * The blocks ``player`` and ``config`` are key-value blocks with only the
+    separator ``:=``.
+
+
+The code below sjows how to do. This is very simple has you can see (we have
+used a space to allow a better readability). Just note that the keys are
+single string definition of a mode, as we have seen them in the first section,
+and values are either a single string for just one block, or a list of blocks.
+
+pyterm::
+    >>> from orpyste.parse.ast import Mode
+    >>> mode = Mode({
+    ...     "keyval:: :=": ["player", "config"],
+    ...     "verbatim"   : "summary"
+    ... })
+    >>> for kind, infos in mode.items():
+    ...     print(kind, infos, sep = "\n    ")
+    ...
+    config
+        {'seps': [':='], 'mode': 'keyval'}
+    player
+        {'seps': [':='], 'mode': 'keyval'}
+    summary
+        {'mode': 'verbatim'}
+
+
+warning::
+    Here we have not used ":default:", but we can do it, so only the blocks
+    named "config", "player" or "summary" can be used.
+
+
+================================
+About the use of ``":default:"``
+================================
+
+The following code shows the very special status of ``":default:"``. As you
+can see any block whose name has not been used when defininge modes will be
+always seen as a default block. Be aware of that !
+
+pyterm::
+    >>> from orpyste.parse.ast import Mode
+    >>> mode = Mode({
+    ...     "keyval:: :=": ["player", "config"],
+    ...     "verbatim"   : "summary",
+    ...     "container"  : ":default:"
+    ... })
+    >>> print("unknown" in mode)
+    True
+    >>> print(mode["unknown"])
+    {'mode': 'container'}
     """
 # MODES
     CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
@@ -92,10 +182,33 @@ Mode defined using a single string
     def __init__(self, mode):
         self.mode = mode
 
+
+# -------------------- #
+# -- SPECIAL SETTER -- #
+# -------------------- #
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        self._mode = value
         self.build()
 
 
+# ------------------------- #
+# -- LET'S BUILD THE AST -- #
+# ------------------------- #
+
     def build(self):
+        """
+prototype::
+    see = self._build_from_str , self._build_from_dict
+
+    action = this method calls the good method that will build a standard
+             version of the modes (some checkings are done)
+        """
 # One string.
         if isinstance(self.mode, str):
             self._build_from_str()
@@ -104,37 +217,43 @@ Mode defined using a single string
         elif isinstance(self.mode, (dict, OrderedDict)):
             self._build_from_dict()
 
-# A file or a StringIO.
+# Unsupported type of user's mode.
         else:
-            self._build_from_iotxt()
+            raise TypeError("illegal type for the argument ``mode``.")
 
 
 # ---------------------------------------- #
 # -- MODE DEFINED USING A SINGLE STRING -- #
 # ---------------------------------------- #
 
-    def _build_from_str(self):
+    def _single_mode(self, mode):
         """
-only block of indent level 0 with same kind of datas
+prototype::
+    arg = str: mode ;
+          this a mode defined using a single string
+
+    return = dict ;
+             either ``{"mode": mode}`` if mode is equal to ``"verbatim"`` or
+             ``"container"``, or ``{"mode": mode, "seps": list_of_seps}`` where
+             ``list_of_seps`` is a list of strings where each string is a legal
+             separator (this list is sorted from the longest to the shortest
+             string)
         """
-        self.dicoview = {":default:": self._single_mode(self.mode)}
+        mode = mode.strip()
+        i    = mode.find("::")
 
+# verbatim or container.
+        if i == -1:
+            mode = self.LONG_MODES.get(mode, mode)
 
-    def _single_mode(self, text):
-        """
+            if mode not in self.MODES:
+                raise ValueError("unknown single mode.")
 
-keyval        onekey=...
-multikeyval   multikey=...
-line          line by line content
-verbatim      single verbaitm string !!!!
-        """
-        text = text.strip()
-        i    = text.find("::")
+            return {"mode": mode}
 
-# key = value ? in :
-        if i != -1:
-            mode, seps = text[:i], text[i+2:]
-            mode       = mode.strip()
+# (multi)key = value
+        else:
+            mode, seps = mode[:i].strip(), mode[i+2:].strip()
             mode       = self.LONG_MODES.get(mode, mode)
 
             if mode not in [self.KEYVAL, self.MULTIKEYVAL]:
@@ -148,13 +267,20 @@ verbatim      single verbaitm string !!!!
                     key = lambda s: -len(s))
             }
 
-# Line or verbatim !
-        mode = self.LONG_MODES.get(text, text)
 
-        if mode not in self.MODES:
-            raise ValueError("unknown single mode.")
+    def _build_from_str(self):
+        """
+prototype::
+    see = self._single_mode
 
-        return {"mode": mode}
+    action = from a mode given in one string, this method builds a list
+             ``self.allmodes`` of all single modes and a dictionary
+             ``self.dicoview`` with key corresponding to names of blocks, with
+             also the spacial key ``":default:"``, and with values equal to the
+             index in  ``self.allmodes`` of the associate single mode.
+        """
+        self.allmodes = [self._single_mode(self.mode)]
+        self.dicoview = {":default:": 0}
 
 
 # ------------------------------------- #
@@ -162,46 +288,104 @@ verbatim      single verbaitm string !!!!
 # ------------------------------------- #
 
     def _build_from_dict(self):
-        TODO_FROM_DICT
+        """
+prototype::
+    see = self._single_mode
+
+    action = from a mode given in one dictionary, this method builds a list
+             ``self.allmodes`` of all single modes and a dictionary
+             ``self.dicoview`` with key corresponding to names of blocks, with
+             also the spacial key ``":default:"``, and with values equal to the
+             index in  ``self.allmodes`` of the associate single mode.
+        """
+        self.dicoview = {}
+        self.allmodes = []
+        id_mode       = -1
+
+        for mode, blocks in self.mode.items():
+            mode = self._single_mode(mode)
+
+            self.allmodes.append(mode)
+            id_mode += 1
+
+            if isinstance(blocks, str):
+                self.dicoview[blocks] = id_mode
+
+            else:
+                for oneblock in blocks:
+                    self.dicoview[oneblock] = id_mode
 
 
-# ------------------------------------- #
-# -- MODE DEFINED USING THE FILE API -- #
-# ------------------------------------- #
+# ------------------- #
+# -- MAGIC METHODS -- #
+# ------------------- #
 
-    def _build_from_iotxt(self):
-        TODO_FROM_IOTXT
+    def __getitem__(self, item):
+        if item in self.dicoview:
+            return self.allmodes[self.dicoview[item]]
 
+        elif ":default:" in self.dicoview:
+            return self.allmodes[self.dicoview[":default:"]]
+
+        raise ValueError('unknown item and no default mode.')
+
+
+    def __contains__(self, item):
+        return (
+            item in self.dicoview
+            or
+            ":default:" in self.dicoview
+        )
+
+
+    def items(self):
+        for k, v in self.dicoview.items():
+            yield k, self.allmodes[v]
 
 
 # --------- #
 # -- AST -- #
 # --------- #
 
-class CtxtInfos():
-    """"
+class _Common():
+    """
+prototype::
+    see = CtxtInfos, ContentInfos
 
-        name          = "",
-        kind          = "",
-        openclose     = "",
-        indented      = False,
-        closed_at_end = False,
-        id_matcher    = -1
+    action = this class only implements the magic method ``__repr__`` for both
+             of the classes ``CtxtInfos`` and ``ContentInfos``
+    """
+    def __repr__(self):
+        return "{0}({1})".format(
+            self.__class__.__name__,
+            ", ".join([
+                "{0}={1}".format(k, repr(self.__dict__[k]))
+                for k in sorted(self.__dict__.keys())
+            ])
+        )
 
 
-        name,                 # For name of a users block.
-        kind,                 # "block", "comment-singleline", ...
-        oc,                   # "open" or "close"
-        indent,               # Indentation is used for the content.
-        closed_at_end,        # For blocks to automatically close at the end.
-        id_matcher            # Matchers are stored separately.
+class CtxtInfos(_Common):
+    """
+prototype::
+    see = AST
+
+    arg-attr = str: kind
+    arg-attr = int, list(int): id_matcher = -1
+    arg-attr = bool: indented = False
+    arg-attr = str: openclose = ""
+    arg-attr = list(str): regex_grps = []
+    arg-attr = bool: verbatim = False
+
+    action = this class is simply an object view used by ``AST`` to store some
+             informations.
     """
     def __init__(
         self,
-        kind       = "",
-        openclose  = "",
+        kind,
         id_matcher = -1,
         indented   = False,
+        openclose  = "",
         regex_grps = [],
         verbatim   = False
     ):
@@ -217,18 +401,17 @@ class CtxtInfos():
         self.id_matcher = id_matcher
 
 
-    def __repr__(self):
-        return "CtxtInfos({0})".format(
-            ", ".join([
-                "{0}={1}".format(k, repr(self.__dict__[k]))
-                for k in sorted(self.__dict__.keys())
-            ])
-        )
+class ContentInfos(_Common):
+    """
+prototype::
+    see = AST
 
+    arg-attr = str: mode
+    arg-attr = int, list(int): id_matcher
+    arg-attr = list(str): regex_grps = []
 
-class ContentInfos():
-    """"
-    ???
+    action = this class is simply an object view used by ``AST`` to store some
+             informations.
     """
     def __init__(
         self,
@@ -245,33 +428,66 @@ class ContentInfos():
         self.id_matcher = id_matcher
 
 
-    def __repr__(self):
-        return "ContentInfos({0})".format(
-            ", ".join([
-                "{0}={1}".format(k, repr(self.__dict__[k]))
-                for k in sorted(self.__dict__.keys())
-            ])
-        )
-
-# Inutile MAIS garder pour tutos car TB !!!
-    def __eq__(self, other):
-        if not isinstance(other, ContentInfos):
-            raise TypeError("comparison impossible.")
-
-        for k in self.__dict__.keys():
-            if self.__dict__[k] != other.__getattribute__(k):
-                return False
-
-        return True
-
-
 class AST():
     """
 prototype::
-    arg = ???
+    see = Mode, CtxtInfos, ContentInfos
+
+    arg-attr = file, str: iotxt ;
+               this can be either a file like object obtaining using for example
+               ``with open("myfile.txt", "r", encoding="utf-8") as f:...``,
+               or ``f = io.StringIO("some initial text data")``, or ``iotxt``
+               can be simply a string with all a content to be analyzed
+    arg-attr = str, dict: mode ;
+               an ¨orpyste mode that can use different kinds of syntax (see the
+               documentation of ``Mode`` for examples)
+    arg-attr = str: store in self.STORING_MODES
+                          or in self.LONG_STORING_MODES ;
+               this argument indicates to store the abstract syntax tree in the
+
+               ????????????
+               ????????????
+               ????????????
+
+               attribut ``iostore`` which is either a temporary pickle file if
+               ``store = "temp"``, or a list of dictionaries if ``store =
+               "memory"``
+
+
+
+
+    attr     = file, io.StringIO: iostore ;
+               this attribut contains the the abstract syntax tree (see the
+               argument-attribut ``store``)
+
+    method = build ;
+             you have to call this method each time you have to build the
+             abstract syntax tree
+
+
+
+
+
+
+
+
+
+
+
+
+
+=============================================
+??
+=============================================
+
+documentation of ``Mode`` gives all the informations about the mode, we don't talk of this here
 
 This class implements the methods needs to build an AST view of an
 merely ``orpyste`` file : here we allow the use of content and block at the same level. This will the job of data.Read to check if there are this kind of errors among other ones.
+
+
+warning::
+    This class does not do some semantic analysis as we can see in the last example where the block ??? starts with a line value instead of a key-value first.
     """
 # STORING MODES
     STORE_TEMP, STORE_MEMORY = "temp", "memory"
@@ -299,17 +515,25 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
 
 
 # The missing ``CLOSE`` indicates an auto-close context.
+#
+# << Warning ! >> The group name ``content`` indicates to put matching in a
+# content line like context.
     CTXTS_CONFIGS["comment-singleline"] = {
         OPEN          : "^//(?P<content>.*)$",
-        INFINITY_LEVEL: True,        # This allows to force the level.
+        INFINITY_LEVEL: True,       # This allows to force the level.
+        SUBCTXTS      : VERBATIM    # This indicates no subcontext.
+    }
+
+    CTXTS_CONFIGS["comment-multilines-singleline"] = {
+        OPEN          : "^/\*(?P<content>.*)\*/$",
+        INFINITY_LEVEL: True,
         SUBCTXTS      : VERBATIM
     }
 
-# << Warning ! >> If name = content indictae to put matching in a content line like
     CTXTS_CONFIGS["comment-multilines"] =  {
         OPEN          : "^/\*(?P<content>.*)$",
         CLOSE         : "^(?P<content>.*)\*/$",
-        SUBCTXTS      : VERBATIM,    # This indicates no subcontexts.
+        SUBCTXTS      : VERBATIM,
         INFINITY_LEVEL: True,
         CLOSED_AT_END : True
     }
@@ -336,37 +560,103 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
         mode,
         store
     ):
-# For reading datas.
+# User's arguments.
         self.iotxt = iotxt
+        self.store = store
+        self.mode  = mode
 
-# Which storing method must be used ?
-        self.store = self.LONG_STORING_MODES.get(store, store)
-
-        if self.store not in self.STORING_MODES:
-            raise ValueError("unknown storing mode.")
-
-# Which modes are used ?
-        self.mode = Mode(mode)
-
-# Let's build our contexts'rules.
+# Let's build our contexts' rules.
         self.build_ctxts_rules()
         self.build_contents_rules()
 
-# Internal attributs
-        self._nbline = 0
-        self._line   = None
 
-        self._level              = 0
-        self._levels_stack       = []
-        self._ctxts_stack        = []
-        self._ctxt_sbctxts_stack = []
+# --------------------- #
+# -- SPECIAL SETTERS -- #
+# --------------------- #
+
+    @property
+    def iotxt(self):
+        return self._iotxt
+
+    @iotxt.setter
+    def iotxt(self, value):
+        if isinstance(value, str):
+            value = StringIO(value)
+
+        self._iotxt = value
 
 
-# ----------------------------- #
-# -- INTERNAL CONTEXTS'RULES -- #
-# ----------------------------- #
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        self._mode = Mode(value)
+
+
+    @property
+    def store(self):
+        return self._store
+
+
+
+
+
+
+
+
+
+
+    @store.setter
+    def store(self, value):
+        value       = value.strip()
+        self._store = self.LONG_STORING_MODES.get(value, value)
+
+        if self._store not in self.STORING_MODES:
+            raise ValueError("unknown storing mode.")
+
+# How do we store things ?
+        if self.store == "memory":
+            #
+            #
+            #
+            # paser pas stringio !!!! car besoin interface identique !!!
+            #
+            #
+
+            self.tempfile      = None
+            self._partial_view          = []
+            self.view          = []
+            self.partial_view          = []
+            self.add           = self._add_in_memory
+            self.add_partial      = self._add_partial_in_memory
+            self.next_partial_metadata= self._next_partial_meta_in_memory
+
+
+        else:
+            TODO_TEMP
+
+            self.view          = None
+            self.tempfile      = Path("???")
+            self.add           = self._add_in_temp
+            self.next_metadata = self._next_meta_in_temp
+
+
+# ------------------------------ #
+# -- INTERNAL CONTEXTS' RULES -- #
+# ------------------------------ #
 
     def build_ctxts_rules(self):
+        """
+prototype::
+    action = this method builds ¨python none human lists and dictionaries used
+             to build an intermediate abstract syntax tree of the contexts which
+             are either opening or closing blocks or comments, or empty lines,
+             or lines of contents.
+             This will be the job of ``self.build_contents_rules`` to take care
+             of lines of contents.
+        """
 # MATCHERS FOR THE CONTEXTS [E.T. form]
 #
 # We build ¨python none human list for research with the following constraints.
@@ -500,11 +790,18 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
                 self.CTXTS_KINDS_SUBCTXTS[kind] = subctxts
 
 
-# -------------------------------- #
-# -- INTERNAL IN-CONTEXTS'RULES -- #
-# -------------------------------- #
+# ------------------------------ #
+# -- INTERNAL CONTENTS' RULES -- #
+# ------------------------------ #
 
     def build_contents_rules(self):
+        """
+prototype::
+    action = this method builds ¨python none human lists and dictionaries used
+             to build frome the intermediate abstract syntax tree of the
+             contexts the final abstract syntax tree where the lines of contents
+             have been analyzed.
+        """
 # Configurations of the patterns for datas in contexts
         SPACES_PATTERN = "[ \\t]*"
         LINE_PATTERN   = "^.*$"
@@ -521,22 +818,19 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
         id_verbatim = id_matcher
 
 # Let's work !
-        for ctxt, configs in self.mode.dicoview.items():
+        for ctxt, configs in self.mode.items():
 # "keyval" or "multikeyval" modes.
             if configs["mode"] in ["keyval", "multikeyval"]:
-                can_use_multikeys = configs["mode"].startswith("multi")
-
 # We must take care of separators with several characters, and we also have to
 # escape special characters.
                 seps = []
 
                 for onesep in configs["seps"]:
                     if len(onesep) != 1:
-                        # onesep = "({0})".format(re.escape(onesep))
-                        onesep = "({0})".format(onesep)
+                        onesep = "({0})".format(re.escape(onesep))
 
-                    # else:
-                    #     onesep = re.escape(onesep)
+                    else:
+                        onesep = re.escape(onesep)
 
                     seps.append(onesep)
 
@@ -570,247 +864,6 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
                     id_matcher = id_verbatim
                 )
 
-
-# ------------------- #
-# -- BUILD THE AST -- #
-# ------------------- #
-
-    def build(self):
-        """
-This method builds an intermediate AST.
-        """
-# How do we store things ?
-        if self.store == "memory":
-            #
-            #
-            #
-            # paser pas stringio !!!! car besoin interface identique !!!
-            #
-            #
-
-            self.tempfile      = None
-            self.view          = []
-            self.add           = self._add_in_memory
-            self.next_metadata = self._next_meta_in_memory
-
-        else:
-            TODO_TEMP
-
-            self.view          = None
-            self.tempfile      = Path("???")
-            self.add           = self._add_in_temp
-            self.next_metadata = self._next_meta_in_temp
-
-
-# Intermediate AST only for contexts.
-        self._verbatim = False
-
-        for line in self.nextline():
-            self._line = line
-            self.manage_indent()
-            self.search_ctxts()
-
-        self.close_ctxt_at_end()
-
-# Final AST with datas in contents.
-        self.search_contents()
-
-
-
-# -------------------------- #
-# -- LOOKING FOR CONTEXTS -- #
-# -------------------------- #
-
-    def search_ctxts(self):
-        nocontextfound = True
-
-        # print("----> self._ctxts_stack = ", self._ctxts_stack)
-        # print("----> self._ctxt_sbctxts_stack = ", self._ctxt_sbctxts_stack)
-
-        for ctxtinfos in self.CTXTS_MATCHERS:
-# Not a subcontext ?
-            if self._ctxt_sbctxts_stack \
-            and (ctxtinfos.openclose, ctxtinfos.kind) \
-            not in self._ctxt_sbctxts_stack[-1]:
-                continue
-
-# A new context.
-            if self.match(self._line, ctxtinfos):
-                nocontextfound = False
-
-# Level can be forced to infinity.
-                if ctxtinfos.kind in self.CTXTS_KINDS_WITH_INF_LEVELS \
-                and ctxtinfos.openclose != self.AUTOCLOSE:
-                    self._level = self.INFINITY
-
-# A new opening context.
-                if ctxtinfos.openclose == self.OPEN:
-                    self._ctxts_stack.append(ctxtinfos)
-
-# Do we have to use subcontexts ?
-                    if ctxtinfos.kind in self.CTXTS_KINDS_SUBCTXTS:
-                        self._ctxt_sbctxts_stack.append(
-                            self.CTXTS_KINDS_SUBCTXTS[ctxtinfos.kind]
-                        )
-
-# A closing context.
-                elif ctxtinfos.openclose == self.CLOSE:
-                    if not self._ctxts_stack:
-                        raise ASTError(
-                            "wrong closing context: see line #{0}".format(
-                                self._nbline
-                            )
-                        )
-
-                    lastctxt = self._ctxts_stack.pop(-1)
-
-                    if lastctxt.kind != ctxtinfos.kind:
-                        raise ASTError(
-                            "wrong closing context: " \
-                            + "see line no.{0} and context \"{1}\"".format(
-                                self._nbline, ctxtinfos.kind
-                            )
-                        )
-
-                    self._ctxt_sbctxts_stack.pop(-1)
-
-                break
-
-# Not a vsisble new context (be careful of indentation closing)
-        if nocontextfound:
-            ctxtinfos = self.CTXTINFOS_CONTENT
-
-# We can store the new and eventually close some old contexts.
-        self.close_indented_ctxts(ctxtinfos)
-        self.store_one_ctxt(ctxtinfos)
-
-
-    def must_close_indented_ctxt(self):
-        if self._levels_stack:
-            return self._level <= self._levels_stack[-1]
-
-        return False
-
-
-    def close_indented_ctxts(self, ctxtinfos):
-# Empty lines and autoclosed context with infinite level are the only contexts
-# that can't close an indented context.
-        if ctxtinfos != self.CTXTINFOS_EMPTYLINE \
-        and (
-            ctxtinfos.openclose != self.AUTOCLOSE \
-            or
-            self._level != self.INFINITY
-        ):
-            if self._levels_stack \
-            and self._levels_stack[-1] != self.INFINITY:
-                while self.must_close_indented_ctxt():
-                    self._levels_stack.pop(-1)
-
-                    lastctxt = self._ctxts_stack.pop(-1)
-
-                    self.store_one_ctxt(
-                        CtxtInfos(
-                            kind                 = lastctxt.kind,
-                            openclose            = self.CLOSE),
-                            not_add_groups_alone = False
-                    )
-
-
-# We update the stack of levels.
-        if ctxtinfos.openclose == self.OPEN:
-            if self._levels_stack \
-            and self._level != self._levels_stack[-1]:
-                self._levels_stack.append(self._level)
-
-            else:
-                self._levels_stack = [self._level]
-
-# Autoclose context with infinite level do not change the levels !
-        elif ctxtinfos.openclose == self.AUTOCLOSE \
-        and self._levels_stack \
-        and self._level == self.INFINITY:
-            self._level = self._levels_stack[-1]
-
-# Close context with infinite level need to clean the stack of levels !
-        elif ctxtinfos.openclose == self.CLOSE \
-        and self._levels_stack \
-        and self._level == self.INFINITY:
-            self._levels_stack.pop(-1)
-
-            if self._levels_stack:
-                self._level = self._levels_stack[-1]
-
-            else:
-                self._level = 0
-
-
-    def close_ctxt_at_end(self):
-        while self._ctxts_stack:
-            lastctxt_kind = self._ctxts_stack.pop(-1).kind
-
-            if lastctxt_kind not in self.CTXTS_KINDS_CLOSED_AT_END:
-                raise ASTError(
-                    "unclosed context: " \
-                    + "see line no.{0} and context \"{1}\"".format(
-                        self._nbline, lastctxt_kind
-                    )
-                )
-
-            self.store_one_ctxt(
-                CtxtInfos(kind = lastctxt_kind, openclose = self.CLOSE)
-            )
-
-
-# ----------------------------------- #
-# -- LOOKING FOR DATAS IN CONTENTS -- #
-# ----------------------------------- #
-
-    def last_block_is_container(self):
-        if self._matcherstack:
-            return self._matcherstack[-1].mode == "container"
-
-        return True
-
-    def search_contents(self):
-        self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
-        self._matcherstack   = []
-
-        for onemeta in self.next_metadata():
-            # print(onemeta);continue
-# One new block.
-            if onemeta['kind'] == "block":
-                print("===>     {0}".format(onemeta))
-
-                if onemeta['openclose'] == "open":
-# Preceding block must be a container !
-                    if not self.last_block_is_container():
-                        raise ASTError("lastblock not a container, see line nb.{0}".format(onemeta['line']))
-
-                    self._matcherstack.append(
-                        self.CONTENTS_MATCHERS.get(
-                            onemeta['groups_found']['name'],
-                            self._defaultmatcher
-                        )
-                    )
-
-                else:
-                    self._matcherstack.pop(-1)
-
-# Some content.
-            elif onemeta['kind'] == ":content:":
-                if not self._matcherstack:
-                    raise ASTError("no block before, see line nb.{0}".format(onemeta['line']))
-
-# A good content ?
-                if self.match(onemeta['content'], self._matcherstack[-1]):
-                    onemeta['content'] = self._groups_found
-
-                print("--->     {0}".format(onemeta))
-
-# Other stuffs no so usefull excpet for cleaning !
-            else:
-                ...
-                print("::->     {0}".format(onemeta))
 
 # ---------------------------- #
 # -- WALKING IN THE CONTENT -- #
@@ -869,7 +922,14 @@ property::
         """
 property::
     arg = str: text ;
-          ????
+          this string is a text where we look for some metadatas (a context or a
+          data content)
+    arg = CtxtInfos, ContentInfos: infos ;
+          this indicates whcich matcher must be used to test a matching on the
+          argument ``text``
+
+    return = bool ;
+             ``True`` or ``False`` whether something matches or not
         """
         for oneid in infos.id_matcher:
             match_found = True
@@ -899,6 +959,264 @@ property::
         return match_found
 
 
+# ------------------- #
+# -- BUILD THE AST -- #
+# ------------------- #
+
+    def build(self):
+        """
+prototype::
+    action = this method calls all the methods needed so as to build the
+             abstract syntax tree.
+        """
+# Internal attributs
+        self._nbline = 0
+        self._line   = None
+
+        self._level              = 0
+        self._levels_stack       = []
+        self._ctxts_stack        = []
+        self._ctxt_sbctxts_stack = []
+
+# Intermediate AST only for contexts.
+        self._verbatim = False
+
+        for line in self.nextline():
+            # print(line)
+            self._line = line
+            self.manage_indent()
+            self.search_ctxts()
+
+        self.close_ctxt_at_end()
+
+# Final AST with datas in contents.
+        self.search_contents()
+
+
+# -------------------------- #
+# -- LOOKING FOR CONTEXTS -- #
+# -------------------------- #
+
+    def search_ctxts(self):
+        """
+prototype::
+    action = this method looks for contexts which can be either opening or
+             closing blocks or comments, or empty lines, or lines of contents.
+        """
+        nocontextfound = True
+
+        for ctxtinfos in self.CTXTS_MATCHERS:
+# Not a subcontext ?
+            if self._ctxt_sbctxts_stack \
+            and (
+                ctxtinfos.openclose,
+                ctxtinfos.kind
+            ) not in self._ctxt_sbctxts_stack[-1]:
+                continue
+
+# A new context.
+            if self.match(self._line, ctxtinfos):
+                nocontextfound = False
+
+# Level can be forced to infinity.
+                if ctxtinfos.kind in self.CTXTS_KINDS_WITH_INF_LEVELS \
+                and ctxtinfos.openclose != self.AUTOCLOSE:
+                    self._level = self.INFINITY
+
+# A new opening context.
+                if ctxtinfos.openclose == self.OPEN:
+                    self._ctxts_stack.append(ctxtinfos)
+
+# Do we have to use subcontexts ?
+                    if ctxtinfos.kind in self.CTXTS_KINDS_SUBCTXTS:
+                        self._ctxt_sbctxts_stack.append(
+                            self.CTXTS_KINDS_SUBCTXTS[ctxtinfos.kind]
+                        )
+
+# A closing context.
+                elif ctxtinfos.openclose == self.CLOSE:
+                    if not self._ctxts_stack:
+                        raise ASTError(
+                            "wrong closing context: see line #{0}".format(
+                                self._nbline
+                            )
+                        )
+
+                    lastctxt = self._ctxts_stack.pop(-1)
+
+                    if lastctxt.kind != ctxtinfos.kind:
+                        raise ASTError(
+                            "wrong closing context: " \
+                            + "see line no.{0} and context \"{1}\"".format(
+                                self._nbline, ctxtinfos.kind
+                            )
+                        )
+
+                    self._ctxt_sbctxts_stack.pop(-1)
+
+                break
+
+# Not a visible new context (be careful of indentation closing)
+        if nocontextfound:
+            ctxtinfos = self.CTXTINFOS_CONTENT
+
+# We can store the new and eventually close some old contexts.
+        # print(">>>>", ctxtinfos)
+        self.close_indented_ctxts(ctxtinfos)
+        self.store_one_ctxt(ctxtinfos)
+
+
+    def must_close_indented_ctxt(self):
+        """
+prototype::
+    return = bool ;
+             ``True`` or ``False`` whether we have to close or not the actual
+             context due to the indentation
+        """
+        # print(">>>>", self._level, self._levels_stack)
+        if self._levels_stack:
+            return self._level <= self._levels_stack[-1]
+
+        return False
+
+
+    def close_indented_ctxts(self, ctxtinfos):
+        """
+prototype::
+    action = this method closes all contexts that use indentation for their
+             content.
+        """
+# Empty lines, autoclosed context or context with infinite level are the only
+# contexts that can't close an indented context.
+        if ctxtinfos != self.CTXTINFOS_EMPTYLINE \
+        and ctxtinfos.openclose != self.AUTOCLOSE \
+        and self._level != self.INFINITY:
+            if self._levels_stack \
+            and self._levels_stack[-1] != self.INFINITY:
+                while self.must_close_indented_ctxt():
+                    self._levels_stack.pop(-1)
+
+                    lastctxt = self._ctxts_stack.pop(-1)
+
+                    self.store_one_ctxt(
+                        CtxtInfos(
+                            kind                 = lastctxt.kind,
+                            openclose            = self.CLOSE),
+                            not_add_groups_alone = False
+                    )
+
+# We update the stack of levels.
+        if ctxtinfos.openclose == self.OPEN:
+            if self._levels_stack \
+            and self._level != self._levels_stack[-1]:
+                self._levels_stack.append(self._level)
+
+            else:
+                self._levels_stack = [self._level]
+
+# Autoclose context with infinite level do not change the levels !
+        elif ctxtinfos.openclose == self.AUTOCLOSE \
+        and self._levels_stack \
+        and self._level == self.INFINITY:
+            self._level = self._levels_stack[-1]
+
+# Close context with infinite level need to clean the stack of levels !
+        elif ctxtinfos.openclose == self.CLOSE \
+        and self._levels_stack \
+        and self._level == self.INFINITY:
+            self._levels_stack.pop(-1)
+
+            if self._levels_stack:
+                self._level = self._levels_stack[-1]
+
+            else:
+                self._level = 0
+
+
+    def close_ctxt_at_end(self):
+        """
+prototype::
+    action = this method closes all contexts than can be closed automatically at
+             the very end of the ¨orpyste file
+        """
+        while self._ctxts_stack:
+            lastctxt_kind = self._ctxts_stack.pop(-1).kind
+
+            if lastctxt_kind not in self.CTXTS_KINDS_CLOSED_AT_END:
+                raise ASTError(
+                    "unclosed context: " \
+                    + "see line no.{0} and context \"{1}\"".format(
+                        self._nbline, lastctxt_kind
+                    )
+                )
+
+            self.store_one_ctxt(
+                CtxtInfos(kind = lastctxt_kind, openclose = self.CLOSE)
+            )
+
+
+# ----------------------------------- #
+# -- LOOKING FOR DATAS IN CONTENTS -- #
+# ----------------------------------- #
+
+    def search_contents(self):
+        """
+prototype::
+    action = this method looks for datas in contents regarding the mode of the
+             blocks.
+        """
+        self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
+        self._matcherstack   = []
+
+        for onemeta in self.next_partial_metadata():
+            # print(onemeta);continue
+# One new block.
+            if onemeta['kind'] == "block":
+                if onemeta['openclose'] == "open":
+# Preceding block must be a container !
+                    if not self.last_block_is_container():
+                        raise ASTError("lastblock not a container, see line nb.{0}".format(onemeta['line']))
+
+                    matcher = self.CONTENTS_MATCHERS.get(
+                        onemeta['groups_found']['name'],
+                        self._defaultmatcher
+                    )
+
+# We must know the mode used by this block.
+                    onemeta['mode'] = matcher.mode
+
+                    self._matcherstack.append(matcher)
+
+                else:
+                    self._matcherstack.pop(-1)
+
+# Some content.
+            elif onemeta['kind'] == ":content:":
+                if not self._matcherstack:
+                    raise ASTError("no block before, see line nb.{0}".format(onemeta['line']))
+
+# A good content ?
+                if self.match(onemeta['content'], self._matcherstack[-1]):
+                    onemeta['content'] = self._groups_found
+
+# Other stuffs no so usefull except for cleaning !
+#
+# We can add the metadatas.
+            self.add(onemeta)
+
+    def last_block_is_container(self):
+        """
+prototype::
+    return = bool ;
+             ``True`` or ``False`` whether the last block opened is or not a
+             container
+        """
+        if self._matcherstack:
+            return self._matcherstack[-1].mode == "container"
+
+        return True
+
+
 # --------------------------- #
 # -- STORING THE METADATAS -- #
 # --------------------------- #
@@ -913,13 +1231,15 @@ property::
     def _add_in_memory(self, metadatas):
         self.view.append(metadatas)
 
-    def _next_meta_in_memory(self):
-        for x in self.view:
+    def _add_partial_in_memory(self, metadatas):
+        self._partial_view.append(metadatas)
+
+    def _next_partial_meta_in_memory(self):
+        for x in self._partial_view:
             yield x
 
-    def store_one_ctxt(self, ctxtinfos, not_add_groups_alone = True):
-        # print('---', self._verbatim, ctxtinfos,sep="\n")
 
+    def store_one_ctxt(self, ctxtinfos, not_add_groups_alone = True):
         metadatas = {
             "kind": ctxtinfos.kind,
             "line": self._nbline,
@@ -953,7 +1273,8 @@ property::
 
         if ctxtinfos.kind == ":content:":
 # We have to keep extra indentations !
-            if self._levels_stack[-1] != self.INFINITY \
+            if self._levels_stack \
+            and self._levels_stack[-1] != self.INFINITY \
             and self._level != self.INFINITY:
                 if self._levels_stack \
                 and self._level > self._levels_stack[-1]:
@@ -970,16 +1291,14 @@ property::
             if self._verbatim:
                 metadatas["kind"] = ":verbatim:"
 
-
-
         if ctxtinfos.openclose == self.CLOSE:
             metadatas, verbatim = verbatim, metadatas
 
         if metadatas:
-            self.add(metadatas)
+            self.add_partial(metadatas)
 
         if verbatim:
-            self.add(verbatim)
+            self.add_partial(verbatim)
 
             if ctxtinfos.openclose == self.OPEN:
                 self._verbatim = True
@@ -990,4 +1309,13 @@ property::
         if ctxtinfos.openclose == self.AUTOCLOSE:
             new_metadatas = {k: v for k,v in metadatas.items()}
             new_metadatas["openclose"] = self.CLOSE
-            self.add(new_metadatas)
+            self.add_partial(new_metadatas)
+
+
+# ------------------- #
+# -- MAGIC METHODS -- #
+# ------------------- #
+
+    def __iter__(self):
+        for x in self.view:
+            yield x

@@ -5,6 +5,9 @@ orPySte - TODO
 
 > ---------------------------- <
 
+???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
+
+
 ???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est hebergé à la fois sur les sites ¨github et ¨pypi.
 
 
@@ -17,7 +20,9 @@ orPySte - TODO
 ???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
 
 
-???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
+> ---------------------------- <
+
+???? ---------->    **Une belle amélioration nécessaire à la nouvelle interface !** Un modèle de données, éventuellement typées, est indiqué . Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue cf::``aux schémas JSON ; http://json-schema.org``.
 
 
 > ---------------------------- <
