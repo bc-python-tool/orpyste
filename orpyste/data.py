@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-????
+    date = 2015-06-21
 
 
 This module ????
@@ -21,7 +21,7 @@ from orpyste.parse import walk
 class Read(walk.WalkInAST):
     """
 prototype::
-    arg = file, io.StringIO: iotxt ;
+    arg = file, io.StringIO: content ;
           ???
           either  f = open("myfile.txt", "r", encoding="utf-8")
           In-memory text streams are also available as StringIO objects:
@@ -67,14 +67,12 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
 
     def __init__(
         self,
-        iotxt,
-        mode  = "keyval::=",
-        store = "memory"
+        content,
+        mode  = "keyval::="
     ):
 # Public attributs
-        self.iotxt = iotxt
-        self.mode  = mode
-        self.store = store
+        self.content = content
+        self.mode    = mode
 
 
 # ---------------- #

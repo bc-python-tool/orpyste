@@ -47,11 +47,6 @@ orPySte - TODO
 
 > ---------------------------- <
 
-**Ajout du module ``clean``:** ce module contient une classe ``Beautify`` qui produit une version propre et standardisée d'un fichier ¨peuf.
-
-
-> ---------------------------- <
-
 **Mise en ligne d'une documentation non technique en français :** ceci a été rendu possible grâce au projet ¨pyba qui lui aussi est disponible sur ¨pypi et ¨github.
 
 

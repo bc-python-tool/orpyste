@@ -2,16 +2,18 @@
 
 """
 prototype::
-    date = 2015-06-21
+    date = 2015-06-????
 
 
 This module contains classes so as to build an abstract syntax tree view of
-a file or a StringIO object with a content using the ¨orpyste format.
+¨orpyste content stored in a file or in a string.
 """
+
 
 from collections import OrderedDict, defaultdict
 from io import StringIO
 from pathlib import Path
+import pickle
 import re
 
 
@@ -84,7 +86,8 @@ A mode defined within a single string must follow the rules below.
         by one space. For example, ``"keyval::==> <== <==>"`` allows to use
         ``==>``, ``<==`` or ``<==>``.
 
-        c) All spaces are cleaned !
+        c) All spaces are cleaned : for example, ``"   keyval ::   ==>   <==
+        <==>   "`` and ``"keyval::==> <== <==>"`` define the smae mode.
 
     3) Instead of ``"keyval"``, you can use ``"multikeyval"`` if you want to
     allow the use of the same key several times in the same block.
@@ -94,8 +97,8 @@ A mode defined within a single string must follow the rules below.
 
 
 info::
-    Internally the class uses the attribut dicoview which in our example is
-    the following dictionary and list.
+    Internally the class uses the attributs ``dicoview`` and ``allmodes`` which
+    are in our example the following dictionary and list respectively.
 
     ...pyterm::
         >>> print(mode.dicoview)
@@ -140,8 +143,8 @@ pyterm::
 
 
 warning::
-    Here we have not used ":default:", but we can do it, so only the blocks
-    named "config", "player" or "summary" can be used.
+    Here we have not used ":default:", but we can do it. This implies that only
+    the blocks named "config", "player" or "summary" can be used.
 
 
 ================================
@@ -149,8 +152,8 @@ About the use of ``":default:"``
 ================================
 
 The following code shows the very special status of ``":default:"``. As you
-can see any block whose name has not been used when defininge modes will be
-always seen as a default block. Be aware of that !
+can see any block whose name has not been used when defining the modes will be
+allways seen as a default block. Be aware of that !
 
 pyterm::
     >>> from orpyste.parse.ast import Mode
@@ -217,7 +220,7 @@ prototype::
         elif isinstance(self.mode, (dict, OrderedDict)):
             self._build_from_dict()
 
-# Unsupported type of user's mode.
+# Unsupported type.
         else:
             raise TypeError("illegal type for the argument ``mode``.")
 
@@ -264,7 +267,8 @@ prototype::
                 "mode": mode,
                 "seps": sorted(
                     [s.strip() for s in seps.split(" ")],
-                    key = lambda s: -len(s))
+                    key = lambda s: -len(s)
+                )
             }
 
 
@@ -428,41 +432,94 @@ prototype::
         self.id_matcher = id_matcher
 
 
+
+
+
+
+
+class _IOView():
+    """
+prototype::
+    see = AST
+
+    arg-attr = str: mode in ["list", "pickle"] ;
+               ????
+    arg-attr = pathlib.Path, None: path = None ;
+               ????
+    """
+    LIST, PICKLE = "list", "pickle"
+
+    MODES      = [LIST, PICKLE]
+    LONG_MODES = {x[0]: x for x in MODES}
+
+    def __init__(self, mode, path = None):
+        self.mode = mode
+        self.path = path
+
+
+    def __enter__(self):
+        if self.mode == self.LIST:
+            self._datas = []
+            self.write  = self._writeinlist
+
+        elif self.mode == self.PICKLE:
+            self._datas = self.path.open(mode = "w")
+            self.write  = self._writeinfile
+
+        else:
+            raise ValueError("unknown mode.")
+
+
+    def __exit__(self, type, value, traceback):
+        if self.mode == self.PICKLE:
+            self._file.close()
+
+
+    def _writeinlist(self, value):
+        self._datas.append(value)
+
+
+    def _writeinfile(self, value):
+        pickle.dump(value, self._datas)
+
+
+    def __iter__(self):
+        if self.mode == self.LIST:
+            for data in self._datas:
+                yield data
+
+        else:
+            try:
+                while True:
+                    yield pickle.load(self._datas)
+
+            except EOFError:
+                pass
+
+
+
+
 class AST():
     """
 prototype::
     see = Mode, CtxtInfos, ContentInfos
 
-    arg-attr = file, str: iotxt ;
-               this can be either a file like object obtaining using for example
-               ``with open("myfile.txt", "r", encoding="utf-8") as f:...``,
-               or ``f = io.StringIO("some initial text data")``, or ``iotxt``
-               can be simply a string with all a content to be analyzed
+    arg-attr = pathlib.Path, str: content ;
+               ``content`` can be an instance of the class ``pathlib.Path``,
+               that is file given using its path, or ``content`` can be a string
+               with all the content to be analyzed (se the attribut ``view``)
     arg-attr = str, dict: mode ;
                an ¨orpyste mode that can use different kinds of syntax (see the
                documentation of ``Mode`` for examples)
-    arg-attr = str: store in self.STORING_MODES
-                          or in self.LONG_STORING_MODES ;
-               this argument indicates to store the abstract syntax tree in the
 
-               ????????????
-               ????????????
-               ????????????
-
-               attribut ``iostore`` which is either a temporary pickle file if
-               ``store = "temp"``, or a list of dictionaries if ``store =
-               "memory"``
-
-
-
-
-    attr     = file, io.StringIO: iostore ;
-               this attribut contains the the abstract syntax tree (see the
-               argument-attribut ``store``)
+    attr = file, io.StringIO: view ;
+           this attribut contains an easy to read version of the abstract syntax
+           tree in either a pickle file or a ``io.StringIO`` if the argument
+           attribut ``content`` is a ``pathlib.Path`` or a string respectively
 
     method = build ;
-             you have to call this method each time you have to build the
-             abstract syntax tree
+             you have to call this method each time you must build or rebuild
+             the abstract syntax tree
 
 
 
@@ -489,13 +546,6 @@ merely ``orpyste`` file : here we allow the use of content and block at the same
 warning::
     This class does not do some semantic analysis as we can see in the last example where the block ??? starts with a line value instead of a key-value first.
     """
-# STORING MODES
-    STORE_TEMP, STORE_MEMORY = "temp", "memory"
-    STORING_MODES            = [STORE_TEMP, STORE_MEMORY]
-
-# SHORTNAMES FOR STORING MODES
-    LONG_STORING_MODES = {x[0]:x for x in STORING_MODES}
-
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
 # The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
@@ -556,14 +606,12 @@ warning::
 
     def __init__(
         self,
-        iotxt,
-        mode,
-        store
+        content,
+        mode
     ):
 # User's arguments.
-        self.iotxt = iotxt
-        self.store = store
-        self.mode  = mode
+        self.content = content
+        self.mode    = mode
 
 # Let's build our contexts' rules.
         self.build_ctxts_rules()
@@ -575,15 +623,23 @@ warning::
 # --------------------- #
 
     @property
-    def iotxt(self):
-        return self._iotxt
+    def content(self):
+        return self._content
 
-    @iotxt.setter
-    def iotxt(self, value):
+    @content.setter
+    def content(self, value):
         if isinstance(value, str):
-            value = StringIO(value)
+            self._content      = StringIO(value)
+            self._partial_view = _IOView("list")
+            self.view          = _IOView("list")
 
-        self._iotxt = value
+        elif isinstance(value, Path):
+            self._content      = value
+            self._partial_view = _IOView("pickle")
+            self.view          = _IOView("pickle")
+
+        else:
+            raise TypeError("invalid type for the attribut ``content``.")
 
 
     @property
@@ -593,54 +649,6 @@ warning::
     @mode.setter
     def mode(self, value):
         self._mode = Mode(value)
-
-
-    @property
-    def store(self):
-        return self._store
-
-
-
-
-
-
-
-
-
-
-    @store.setter
-    def store(self, value):
-        value       = value.strip()
-        self._store = self.LONG_STORING_MODES.get(value, value)
-
-        if self._store not in self.STORING_MODES:
-            raise ValueError("unknown storing mode.")
-
-# How do we store things ?
-        if self.store == "memory":
-            #
-            #
-            #
-            # paser pas stringio !!!! car besoin interface identique !!!
-            #
-            #
-
-            self.tempfile      = None
-            self._partial_view          = []
-            self.view          = []
-            self.partial_view          = []
-            self.add           = self._add_in_memory
-            self.add_partial      = self._add_partial_in_memory
-            self.next_partial_metadata= self._next_partial_meta_in_memory
-
-
-        else:
-            TODO_TEMP
-
-            self.view          = None
-            self.tempfile      = Path("???")
-            self.add           = self._add_in_temp
-            self.next_metadata = self._next_meta_in_temp
 
 
 # ------------------------------ #
@@ -873,9 +881,9 @@ prototype::
         """
 property::
     yield = str ;
-            the lines of ``self.iotxt``.
+            each line of ``self.content``.
         """
-        for line in self.iotxt:
+        for line in self.content:
             self._nbline += 1
             yield line.rstrip()
 
@@ -979,18 +987,20 @@ prototype::
         self._ctxt_sbctxts_stack = []
 
 # Intermediate AST only for contexts.
-        self._verbatim = False
+        with self._partial_view:
+            self._verbatim = False
 
-        for line in self.nextline():
-            # print(line)
-            self._line = line
-            self.manage_indent()
-            self.search_ctxts()
+            for line in self.nextline():
+                # print(line)
+                self._line = line
+                self.manage_indent()
+                self.search_ctxts()
 
-        self.close_ctxt_at_end()
+            self.close_ctxt_at_end()
 
 # Final AST with datas in contents.
-        self.search_contents()
+        with self.view:
+            self.search_contents()
 
 
 # -------------------------- #
@@ -1168,7 +1178,7 @@ prototype::
         self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
         self._matcherstack   = []
 
-        for onemeta in self.next_partial_metadata():
+        for onemeta in self.next_partial_meta():
             # print(onemeta);continue
 # One new block.
             if onemeta['kind'] == "block":
@@ -1193,7 +1203,11 @@ prototype::
 # Some content.
             elif onemeta['kind'] == ":content:":
                 if not self._matcherstack:
-                    raise ASTError("no block before, see line nb.{0}".format(onemeta['line']))
+                    raise ASTError(
+                        "no block before, see line nb.{0}".format(
+                            onemeta['line']
+                        )
+                    )
 
 # A good content ?
                 if self.match(onemeta['content'], self._matcherstack[-1]):
@@ -1221,20 +1235,13 @@ prototype::
 # -- STORING THE METADATAS -- #
 # --------------------------- #
 
-    def _add_in_temp(self):
-        ...
+    def add(self, metadatas):
+        self.view.write(metadatas)
 
-    def _next_meta_in_temp(self):
-        ...
+    def add_partial(self, metadatas):
+        self._partial_view.write(metadatas)
 
-
-    def _add_in_memory(self, metadatas):
-        self.view.append(metadatas)
-
-    def _add_partial_in_memory(self, metadatas):
-        self._partial_view.append(metadatas)
-
-    def _next_partial_meta_in_memory(self):
+    def next_partial_meta(self):
         for x in self._partial_view:
             yield x
 
@@ -1264,7 +1271,7 @@ prototype::
         if not_add_groups_alone and self._groups_found:
             metadatas["groups_found"] = self._groups_found
 
-        if verbatim:
+        if verbatim != None:
             verbatim = {
                 "kind"   : ":verbatim:",
                 "line"   : self._nbline,
