@@ -250,7 +250,7 @@ prototype::
             mode = self.LONG_MODES.get(mode, mode)
 
             if mode not in self.MODES:
-                raise ValueError("unknown single mode.")
+                raise ValueError("unknown single mode ``{0}``.".format(mode))
 
             return {"mode": mode}
 
@@ -453,7 +453,7 @@ prototype::
     LONG_MODES = {x[0]: x for x in MODES}
 
     def __init__(self, mode, path = None):
-        self.mode = mode
+        self.mode = self.LONG_MODES.get(mode, mode)
         self.path = path
 
 
@@ -472,7 +472,7 @@ prototype::
 
     def __exit__(self, type, value, traceback):
         if self.mode == self.PICKLE:
-            self._file.close()
+            self._datas.close()
 
 
     def _writeinlist(self, value):
@@ -649,6 +649,9 @@ warning::
     @mode.setter
     def mode(self, value):
         self._mode = Mode(value)
+
+        # print("self._mode.allmodes", self._mode.allmodes, sep = " = ")
+        # print("self._mode.dicoview", self._mode.dicoview, sep = " = ")
 
 
 # ------------------------------ #
@@ -865,13 +868,20 @@ prototype::
                 )
 
 
-# "verbatim" mode.
-            elif configs["mode"]== "verbatim":
+# "verbatim" en "container" modes.
+            elif configs["mode"] in ["verbatim", "container"]:
                 self.CONTENTS_MATCHERS[ctxt] = ContentInfos(
                     mode       = configs["mode"],
                     id_matcher = id_verbatim
                 )
 
+# Mode not implemented.
+            else:
+                raise ValueError(
+                    "BUG to report : mode ``{0}`` not implemented".format(
+                        configs["mode"]
+                    )
+                )
 
 # ---------------------------- #
 # -- WALKING IN THE CONTENT -- #
@@ -1175,6 +1185,7 @@ prototype::
     action = this method looks for datas in contents regarding the mode of the
              blocks.
         """
+        # print("self.CONTENTS_MATCHERS", self.CONTENTS_MATCHERS, sep = " = ")
         self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
         self._matcherstack   = []
 

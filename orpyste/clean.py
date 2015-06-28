@@ -100,6 +100,12 @@ on doit stocker commentaire, ligne vide seule, ainis que leur position pour bien
         ):
             self._text.pop(i)
 
+    def addindentation(self, text):
+        return "{0}{1}".format(
+            " "*4*self.indentlevel,
+            text
+        )
+
 
 # --------------------------- #
 # -- START AND END OF FILE -- #
@@ -142,7 +148,9 @@ on doit stocker commentaire, ligne vide seule, ainis que leur position pour bien
     @closecomments
     def open_block(self, name):
         self._blockisempty = True
-        self._text.append("{0}::".format(name))
+        self._text.append(
+            "{0}::".format(self.addindentation(name))
+        )
 
     @closecomments
     def close_block(self):
@@ -165,7 +173,7 @@ on doit stocker commentaire, ligne vide seule, ainis que leur position pour bien
 
         self._text.append(
             "    {0} {1} {2}".format(
-                key,
+                self.addindentation(key),
                 sep,
                 val
             )
@@ -180,7 +188,7 @@ on doit stocker commentaire, ligne vide seule, ainis que leur position pour bien
         if self._blockisempty == True:
             self._blockisempty = False
 
-        self._text.append("    " + line)
+        self._text.append(self.addindentation(line))
 
 
 # ---------------- #

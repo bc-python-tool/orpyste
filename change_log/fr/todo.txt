@@ -14,7 +14,7 @@ orPySte - TODO
 ???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
 
 
-???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... Cette version de ¨orpyste a pour numéro ``1.0.0`` car le projet est stable.
+???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
 
 
 ???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.

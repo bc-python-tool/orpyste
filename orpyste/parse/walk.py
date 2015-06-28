@@ -48,8 +48,9 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
         self.ast.build()
 
 # We can analyze and build our data object.
-        self.incomment = False
-        self.kv_nbline = -1
+        self.incomment   = False
+        self.kv_nbline   = -1
+        self.indentlevel = -1
 
         self.start()
 
@@ -83,6 +84,8 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
 # A new block
             elif self.kind == "block":
                 if metadata['openclose'] == "open":
+                    self.indentlevel += 1
+
                     self.open_block(metadata["groups_found"]["name"])
 
                     self.lastmode = metadata['mode']
@@ -94,6 +97,8 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
                 else:
                     if self.lastmode != "verbatim" and lastkeyval:
                         self.addkeyval(lastkeyval)
+                        lastkeyval = {}
+                        keysused   = []
 
 # We have to take care of last comments in a block
                         self.kv_nbline = float("inf")
@@ -102,6 +107,8 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
 
                     else:
                         self.close_block()
+
+                    self.indentlevel -= 1
 
             elif self.lastmode == "verbatim":
                 self.addline(metadata['content']["value_in_line"])
