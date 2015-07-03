@@ -14,15 +14,12 @@ orPySte - TODO
 ???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
 
 
-???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
+???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... De plus, ceci est compatible avec la ¨pep_440 tout en étant nécessaire pour un utilisateur souhaitant installer ¨orpyste via ¨pip.
+
+Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
 
 
 ???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
-
-
-> ---------------------------- <
-
-???? ---------->    **Une belle amélioration nécessaire à la nouvelle interface !** Un modèle de données, éventuellement typées, est indiqué . Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue cf::``aux schémas JSON ; http://json-schema.org``.
 
 
 > ---------------------------- <
@@ -34,6 +31,12 @@ orPySte - TODO
     2) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool).
 
     1) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
+
+
+> ---------------------------- <
+
+???? ---------->  Pyon ----> python object notation
+**Une belle amélioration :** un modèle de données, éventuellement typées, peut être indiqué . Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue aux cf::``schémas JSON ; http://json-schema.org``.
 
 
 > ---------------------------- <

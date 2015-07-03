@@ -2,20 +2,20 @@
 
 """
 prototype::
-    date = 2015-06-????
+    date = 2015-07-03
 
 
 This module contains classes so as to build an abstract syntax tree view of
-¨orpyste content stored in a file or in a string.
+¨orpyste content which is stored in a file or in a string.
 """
 
 
 from collections import OrderedDict, defaultdict
 from io import StringIO
 from pathlib import Path
-import pickle
 import re
 
+from orpyste.tools.ioview import IOView
 
 # ------------------------- #
 # -- FOR ERRORS TO RAISE -- #
@@ -53,6 +53,8 @@ Mode defined using a single string
 If all the blocks are of the same kind, you just have to give it using a
 single string like in the following example. You can see that the class
 ``Mode`` has some useful magic properties similar to the ones of a dictionary.
+We will talk later of the very special block name ``":default:"`` that gives the
+default kind of block.
 
 pyterm::
     >>> from orpyste.parse.ast import Mode
@@ -64,10 +66,18 @@ pyterm::
         {'mode': 'keyval', 'seps': ['=']}
     >>> print(mode[":default:"])
     {'mode': 'keyval', 'seps': ['=']}
-    >>> print(4 in mode)
-    False
     >>> print(":default:" in mode)
     True
+    >>> print("test" in mode)
+    True
+    >>> print(4 in mode)
+    Traceback (most recent call last):
+    [...]
+    TypeError: a block name must be a string.
+    >>> print("@test" in mode)
+    Traceback (most recent call last):
+    [...]
+    ValueError: illegal value for a block name.
 
 
 A mode defined within a single string must follow the rules below.
@@ -87,13 +97,13 @@ A mode defined within a single string must follow the rules below.
         ``==>``, ``<==`` or ``<==>``.
 
         c) All spaces are cleaned : for example, ``"   keyval ::   ==>   <==
-        <==>   "`` and ``"keyval::==> <== <==>"`` define the smae mode.
+        <==>   "`` and ``"keyval::==> <== <==>"`` define the same mode.
 
     3) Instead of ``"keyval"``, you can use ``"multikeyval"`` if you want to
     allow the use of the same key several times in the same block.
 
-    4) ``"container"`` is a special kind to define blocks that can only
-    contains other blocks.
+    4) ``"container"`` is a special kind for blocks that can only contains
+    other blocks.
 
 
 info::
@@ -120,8 +130,8 @@ Let's suppose that we want to use the following kinds of blocks.
     separator ``:=``.
 
 
-The code below sjows how to do. This is very simple has you can see (we have
-used a space to allow a better readability). Just note that the keys are
+The code below shows how to do that. This is very simple has you can see (we
+have used a space to allow a better readability). Just note that the keys are
 single string definition of a mode, as we have seen them in the first section,
 and values are either a single string for just one block, or a list of blocks.
 
@@ -143,8 +153,9 @@ pyterm::
 
 
 warning::
-    Here we have not used ":default:", but we can do it. This implies that only
-    the blocks named "config", "player" or "summary" can be used.
+    Here we have not used ":default:", but we can do it (just see the following
+    section). This implies that only the blocks named "config", "player" or
+    "summary" can be used.
 
 
 ================================
@@ -153,7 +164,7 @@ About the use of ``":default:"``
 
 The following code shows the very special status of ``":default:"``. As you
 can see any block whose name has not been used when defining the modes will be
-allways seen as a default block. Be aware of that !
+allways seen as a default block. **Be aware of that !**
 
 pyterm::
     >>> from orpyste.parse.ast import Mode
@@ -180,6 +191,8 @@ pyterm::
 
         else:
             LONG_MODES[name[0]] = name
+
+    LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
 
 
     def __init__(self, mode):
@@ -249,7 +262,8 @@ prototype::
         if i == -1:
             mode = self.LONG_MODES.get(mode, mode)
 
-            if mode not in self.MODES:
+            if mode not in self.MODES \
+            or mode in [self.KEYVAL, self.MULTIKEYVAL]:
                 raise ValueError("unknown single mode ``{0}``.".format(mode))
 
             return {"mode": mode}
@@ -260,7 +274,7 @@ prototype::
             mode       = self.LONG_MODES.get(mode, mode)
 
             if mode not in [self.KEYVAL, self.MULTIKEYVAL]:
-                raise ValueError("unknown single mode used with \"::\".")
+                raise ValueError('unknown single mode used with "::".')
 
 # We must first give the longest separators.
             return {
@@ -298,9 +312,9 @@ prototype::
 
     action = from a mode given in one dictionary, this method builds a list
              ``self.allmodes`` of all single modes and a dictionary
-             ``self.dicoview`` with key corresponding to names of blocks, with
-             also the spacial key ``":default:"``, and with values equal to the
-             index in  ``self.allmodes`` of the associate single mode.
+             ``self.dicoview`` with key corresponding to names of blocks,
+             with also the spacial key ``":default:"``, and with values equal
+             to the index in  ``self.allmodes`` of the associate single mode.
         """
         self.dicoview = {}
         self.allmodes = []
@@ -335,6 +349,12 @@ prototype::
 
 
     def __contains__(self, item):
+        if not isinstance(item, str):
+            raise TypeError("a block name must be a string.")
+
+        if not self.LEGAL_BLOCK_NAME.search(item):
+            raise ValueError("illegal value for a block name.")
+
         return (
             item in self.dicoview
             or
@@ -343,8 +363,8 @@ prototype::
 
 
     def items(self):
-        for k, v in self.dicoview.items():
-            yield k, self.allmodes[v]
+        for block, id_block in self.dicoview.items():
+            yield block, self.allmodes[id_block]
 
 
 # --------- #
@@ -359,6 +379,7 @@ prototype::
     action = this class only implements the magic method ``__repr__`` for both
              of the classes ``CtxtInfos`` and ``ContentInfos``
     """
+
     def __repr__(self):
         return "{0}({1})".format(
             self.__class__.__name__,
@@ -384,6 +405,7 @@ prototype::
     action = this class is simply an object view used by ``AST`` to store some
              informations.
     """
+
     def __init__(
         self,
         kind,
@@ -417,6 +439,7 @@ prototype::
     action = this class is simply an object view used by ``AST`` to store some
              informations.
     """
+
     def __init__(
         self,
         mode,
@@ -432,73 +455,6 @@ prototype::
         self.id_matcher = id_matcher
 
 
-
-
-
-
-
-class _IOView():
-    """
-prototype::
-    see = AST
-
-    arg-attr = str: mode in ["list", "pickle"] ;
-               ????
-    arg-attr = pathlib.Path, None: path = None ;
-               ????
-    """
-    LIST, PICKLE = "list", "pickle"
-
-    MODES      = [LIST, PICKLE]
-    LONG_MODES = {x[0]: x for x in MODES}
-
-    def __init__(self, mode, path = None):
-        self.mode = self.LONG_MODES.get(mode, mode)
-        self.path = path
-
-
-    def __enter__(self):
-        if self.mode == self.LIST:
-            self._datas = []
-            self.write  = self._writeinlist
-
-        elif self.mode == self.PICKLE:
-            self._datas = self.path.open(mode = "w")
-            self.write  = self._writeinfile
-
-        else:
-            raise ValueError("unknown mode.")
-
-
-    def __exit__(self, type, value, traceback):
-        if self.mode == self.PICKLE:
-            self._datas.close()
-
-
-    def _writeinlist(self, value):
-        self._datas.append(value)
-
-
-    def _writeinfile(self, value):
-        pickle.dump(value, self._datas)
-
-
-    def __iter__(self):
-        if self.mode == self.LIST:
-            for data in self._datas:
-                yield data
-
-        else:
-            try:
-                while True:
-                    yield pickle.load(self._datas)
-
-            except EOFError:
-                pass
-
-
-
-
 class AST():
     """
 prototype::
@@ -506,45 +462,65 @@ prototype::
 
     arg-attr = pathlib.Path, str: content ;
                ``content`` can be an instance of the class ``pathlib.Path``,
-               that is file given using its path, or ``content`` can be a string
-               with all the content to be analyzed (se the attribut ``view``)
+               that is a file given using its path, or ``content`` can be a
+               string with all the content to be analyzed (see the attribut
+               ``view``)
     arg-attr = str, dict: mode ;
                an ¨orpyste mode that can use different kinds of syntax (see the
-               documentation of ``Mode`` for examples)
+               documentation of the class ``Mode`` for examples)
 
     attr = file, io.StringIO: view ;
            this attribut contains an easy to read version of the abstract syntax
-           tree in either a pickle file or a ``io.StringIO`` if the argument
-           attribut ``content`` is a ``pathlib.Path`` or a string respectively
+           tree in either a pickle file if the argument attribut ``content`` is
+           a ``pathlib.Path``, or a ``io.StringIO`` if the argument attribut
+           ``content`` is a string respectively
 
     method = build ;
              you have to call this method each time you must build or rebuild
              the abstract syntax tree
 
 
+This class can build an Abstract Syntax Tree (AST) view of a merely ¨orpyste
+file: here we allow some semantic illegal ¨peuf syntaxes. This will the job of
+``parse.Walk`` to check if there are this kind of errors among other ones.
+Here is a very simple example showing how to build the AST view and how to walk
+in this view.
 
-
-
-
-
-
-
-
-
-
-
-=============================================
-??
-=============================================
-
-documentation of ``Mode`` gives all the informations about the mode, we don't talk of this here
-
-This class implements the methods needs to build an AST view of an
-merely ``orpyste`` file : here we allow the use of content and block at the same level. This will the job of data.Read to check if there are this kind of errors among other ones.
+pyterm:
+    >>> from orpyste.parse.ast import AST
+    >>> content = '''
+    ... test::
+    ...     Missing a key-val first !
+    ...     a = 3
+    ... '''.strip()
+    >>> mode = {
+    ...     'container': ":default:",
+    ...     'keyval::=': "test",
+    ...     'verbatim' : "summary"
+    ... }
+    >>> ast = AST(content = content, mode = mode)
+    >>> ast.build()
+    >>> from pprint import pprint
+    >>> for metadata in ast:
+    ...     pprint(metadata)
+    {'groups_found': {'name': 'test'},
+     'kind': 'block',
+     'line': 1,
+     'mode': 'keyval',
+     'openclose': 'open'}
+    {'content': {'value_in_line': 'Missing a key-val first !'},
+     'kind': ':content:',
+     'line': 2}
+    {'content': {'key': 'a', 'sep': '=', 'value': '3'},
+     'kind': ':content:',
+     'line': 3}
+    {'kind': 'block', 'line': 3, 'openclose': 'close'}
 
 
 warning::
-    This class does not do some semantic analysis as we can see in the last example where the block ??? starts with a line value instead of a key-value first.
+    This class does not do any semantic analysis as we can see in the example
+    where the content of the block starts with an inline value instead of a
+    key-value one.
     """
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
@@ -560,9 +536,6 @@ warning::
     INFINITY_LEVEL = "inf-level"
 
     CTXTS_CONFIGS = OrderedDict()
-
-# pb des commentaires qui ne ferment rien en fait car intégré dans un ocntenu , à définir dasn les sépcifications !!!!
-
 
 # The missing ``CLOSE`` indicates an auto-close context.
 #
@@ -630,13 +603,13 @@ warning::
     def content(self, value):
         if isinstance(value, str):
             self._content      = StringIO(value)
-            self._partial_view = _IOView("list")
-            self.view          = _IOView("list")
+            self._partial_view = IOView("list")
+            self.view          = IOView("list")
 
         elif isinstance(value, Path):
             self._content      = value
-            self._partial_view = _IOView("pickle")
-            self.view          = _IOView("pickle")
+            self._partial_view = IOView("pickle")
+            self.view          = IOView("pickle")
 
         else:
             raise TypeError("invalid type for the attribut ``content``.")
@@ -649,9 +622,6 @@ warning::
     @mode.setter
     def mode(self, value):
         self._mode = Mode(value)
-
-        # print("self._mode.allmodes", self._mode.allmodes, sep = " = ")
-        # print("self._mode.dicoview", self._mode.dicoview, sep = " = ")
 
 
 # ------------------------------ #
@@ -809,7 +779,7 @@ prototype::
         """
 prototype::
     action = this method builds ¨python none human lists and dictionaries used
-             to build frome the intermediate abstract syntax tree of the
+             to build from the intermediate abstract syntax tree of the
              contexts the final abstract syntax tree where the lines of contents
              have been analyzed.
         """
@@ -847,12 +817,12 @@ prototype::
 
                 pattern = re.compile(
                     "{spaces}{key}{spaces}(?P<sep>{seps}){spaces}{value}" \
-                    .format(
-                        spaces = SPACES_PATTERN,
-                        key    = KEY_GRP_PATTERN,
-                        value  = VALUE_GRP_PATTERN,
-                        seps   = "|".join(seps)
-                    )
+                        .format(
+                            spaces = SPACES_PATTERN,
+                            key    = KEY_GRP_PATTERN,
+                            value  = VALUE_GRP_PATTERN,
+                            seps   = "|".join(seps)
+                        )
                 )
 
                 self.MATCHERS.append({True: [pattern]})
@@ -866,7 +836,6 @@ prototype::
                     id_matcher = [id_matcher, id_verbatim],
                     regex_grps = regex_grps,
                 )
-
 
 # "verbatim" en "container" modes.
             elif configs["mode"] in ["verbatim", "container"]:
@@ -1001,7 +970,6 @@ prototype::
             self._verbatim = False
 
             for line in self.nextline():
-                # print(line)
                 self._line = line
                 self.manage_indent()
                 self.search_ctxts()
@@ -1081,7 +1049,6 @@ prototype::
             ctxtinfos = self.CTXTINFOS_CONTENT
 
 # We can store the new and eventually close some old contexts.
-        # print(">>>>", ctxtinfos)
         self.close_indented_ctxts(ctxtinfos)
         self.store_one_ctxt(ctxtinfos)
 
@@ -1093,7 +1060,6 @@ prototype::
              ``True`` or ``False`` whether we have to close or not the actual
              context due to the indentation
         """
-        # print(">>>>", self._level, self._levels_stack)
         if self._levels_stack:
             return self._level <= self._levels_stack[-1]
 
@@ -1185,12 +1151,10 @@ prototype::
     action = this method looks for datas in contents regarding the mode of the
              blocks.
         """
-        # print("self.CONTENTS_MATCHERS", self.CONTENTS_MATCHERS, sep = " = ")
         self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
         self._matcherstack   = []
 
         for onemeta in self.next_partial_meta():
-            # print(onemeta);continue
 # One new block.
             if onemeta['kind'] == "block":
                 if onemeta['openclose'] == "open":
@@ -1224,10 +1188,9 @@ prototype::
                 if self.match(onemeta['content'], self._matcherstack[-1]):
                     onemeta['content'] = self._groups_found
 
-# Other stuffs no so usefull except for cleaning !
-#
 # We can add the metadatas.
             self.add(onemeta)
+
 
     def last_block_is_container(self):
         """
@@ -1249,8 +1212,10 @@ prototype::
     def add(self, metadatas):
         self.view.write(metadatas)
 
+
     def add_partial(self, metadatas):
         self._partial_view.write(metadatas)
+
 
     def next_partial_meta(self):
         for x in self._partial_view:
@@ -1289,8 +1254,8 @@ prototype::
                 "content": verbatim,
             }
 
-        if ctxtinfos.kind == ":content:":
 # We have to keep extra indentations !
+        if ctxtinfos.kind == ":content:":
             if self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY \
             and self._level != self.INFINITY:
@@ -1308,6 +1273,11 @@ prototype::
 
             if self._verbatim:
                 metadatas["kind"] = ":verbatim:"
+
+# We must change emtylines in comment to a verbatim empty content.
+        elif ctxtinfos.kind == ":emptyline:" and self._verbatim:
+            metadatas["kind"]    = ":verbatim:"
+            metadatas["content"] = ""
 
         if ctxtinfos.openclose == self.CLOSE:
             metadatas, verbatim = verbatim, metadatas

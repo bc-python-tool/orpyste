@@ -2,10 +2,16 @@
 
 """
 prototype::
-    date = 2015-06-????
+    date = 2015-07-03
 
 
-????
+This module gives methods to walk in the intermedaite AST view made by the class
+``parse.ast.AST``.
+
+
+info::
+    Here we do semantic analysis that have not been done by the class
+    ``parse.ast.AST``.
 """
 
 from orpyste.parse import ast
@@ -19,7 +25,7 @@ class PeufError(ValueError):
     """
 prototype::
     type = cls ;
-           base class for errors specific to the peuf specifications.
+           base class for errors specific to the ¨peuf specifications.
     """
     pass
 
@@ -29,10 +35,15 @@ class WalkInAST():
 prototype::
     see = parse.ast.AST
 
-    arg-attr = ??? ;
-               ???
+    attr = ??? ;
+           ???
 
 méthode communes au Redaer et au Clenaer !!!!
+
+self.metadata  contient info du moment !!!!
+
+self.modes_stack
+
 
 methode non implemnte comme cela on implémente juste ce dont on a besoin (pour data on se fuchie lihne vide et cilmentaire)
     """
@@ -47,21 +58,25 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
 
         self.ast.build()
 
-# We can analyze and build our data object.
-        self.incomment   = False
-        self.kv_nbline   = -1
-        self.indentlevel = -1
-
+# We have to use the start method of the subclass.
         self.start()
 
-        for metadata in self.ast:
-            # print(metadata);continue
-            self.kind   = metadata['kind']
-            self.nbline = metadata['line']
+# We keep all metadatas for fine tuning in the attribut ``self.metadata`` that
+# contains all the necessary informations.
+        self.incomment   = False
+        self.indentlevel = -1
+        self.modes_stack = []
 
-# A comment
-            if self.kind.startswith("comment-"):
-                if metadata['openclose'] == "open":
+        self.kv_nbline = -1
+        lastkeyval     = {}
+
+        for self.metadata in self.ast:
+            # print(self.metadata);continue
+            kind = self.metadata['kind']
+
+# -- A comment to open or close -- #
+            if kind.startswith("comment-"):
+                if self.metadata['openclose'] == "open":
                     self.incomment = True
                     self.open_comment()
 
@@ -69,58 +84,72 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
                     self.incomment = False
                     self.close_comment()
 
-# A verbatim line (for comments indeed)
-            elif self.kind == ":verbatim:":
-                self.content_in_comment(metadata['content'])
+# -- A comment line -- #
+            elif kind == ":verbatim:":
+                self.content_in_comment(self.metadata['content'])
 
-# An empty line
-            elif self.kind == ":emptyline:":
-                if self.incomment:
-                    self.emptyline_in_comment()
+# -- An empty line -- #
+            elif kind == ":emptyline:":
+                self.addline("")
 
-                else:
-                    self.emptyline_content()
-
-# A new block
-            elif self.kind == "block":
-                if metadata['openclose'] == "open":
+# -- A new block -- #
+            elif kind == "block":
+# An opening block
+                if self.metadata['openclose'] == "open":
                     self.indentlevel += 1
 
-                    self.open_block(metadata["groups_found"]["name"])
+                    lastmode = self.metadata['mode']
+                    self.modes_stack.append(lastmode)
 
-                    self.lastmode = metadata['mode']
+                    self.open_block(self.metadata["groups_found"]["name"])
 
-                    if self.lastmode != "verbatim":
+# For block with a content, we have to augment the value of the indentation.
+                    if lastmode != "container":
+                        self.indentlevel += 1
+
+# We have to manage key-value modes fo which a value can be written over several
+# lines !
+                    if lastmode.endswith("keyval"):
                         lastkeyval = {}
                         keysused   = []
 
+# A closing block
                 else:
-                    if self.lastmode != "verbatim" and lastkeyval:
+# Do we have a key-value couple ?
+                    if lastkeyval:
                         self.addkeyval(lastkeyval)
                         lastkeyval = {}
                         keysused   = []
+                        self.indentlevel -= 1
 
 # We have to take care of last comments in a block
                         self.kv_nbline = float("inf")
                         self.close_block()
-                        self.kv_nbline = -1
+                        self.kv_nbline    = -1
 
                     else:
+# Are we closing a block with a content ?
+                        if self.modes_stack[-1] != "container":
+                            self.indentlevel -= 1
+
                         self.close_block()
 
                     self.indentlevel -= 1
+                    self.modes_stack.pop(-1)
 
-            elif self.lastmode == "verbatim":
-                self.addline(metadata['content']["value_in_line"])
+# -- A verbatim content -- #
+            elif self.modes_stack[-1] == "verbatim":
+                self.addline(self.metadata['content']["value_in_line"])
 
+# -- A key-val content -- #
             else:
-                content = metadata['content']
+                content = self.metadata['content']
 
                 if "value_in_line" in content:
                     if not lastkeyval:
                         raise PeufError(
                             "missing first key, see line #{0}".format(
-                                metadata['line']
+                                self.metadata['line']
                             )
                         )
 
@@ -130,13 +159,13 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
                     if lastkeyval:
                         self.addkeyval(lastkeyval)
 
-                    self.kv_nbline = self.nbline
+                    self.kv_nbline = self.metadata["line"]
                     key            = content['key']
 
-                    if self.lastmode == "keyval" and key in keysused:
+                    if self.modes_stack[-1] == "keyval" and key in keysused:
                         raise PeufError(
                             "key already used, see line #{0}".format(
-                                metadata['line']
+                                self.metadata['line']
                             )
                         )
 
@@ -168,9 +197,6 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
     def close_comment(self):
         ...
 
-    def emptyline_in_comment(self):
-        ...
-
     def content_in_comment(self, line):
         ...
 
@@ -199,12 +225,4 @@ methode non implemnte comme cela on implémente juste ce dont on a besoin (pour 
 # -------------- #
 
     def addline(self, line):
-        ...
-
-
-# ---------------- #
-# -- EMPTY LINE -- #
-# ---------------- #
-
-    def emptyline_content(self):
         ...

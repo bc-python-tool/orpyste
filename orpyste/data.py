@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-06-21
+    date = 2015-07-????
 
 
 This module ????
@@ -68,7 +68,7 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
     def __init__(
         self,
         content,
-        mode  = "keyval::="
+        mode
     ):
 # Public attributs
         self.content = content
