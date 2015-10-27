@@ -2,72 +2,37 @@
 
 """
 prototype::
-    date = 2015-07-03
+    date = 2015-09-15     DOCSTRING ---> À finir !!!!
 
-
-This module ????
-
-allows to read efficient to type and simple structured string datas
-contained in files using the ``peuf`` specifications.
-
-
-système un peu fin
-    --> l-gne vide qui se suive réuni sausf si ....
-    --> gestion séparé du nettoyage hors commentaire ou dans commentaire
-    --> pour le reste on garde un truc normatif malgré tout
+This module contains a class for the formating of ¨peuf files.
 """
 
 import re
-from orpyste.parse import ast, walk
+
+from orpyste.parse.walk import IOView, WalkInAST
 
 
-# -------------------------------- #
-# -- DECORATOR FOR THE LAZY MAN -- #
-# -------------------------------- #
+# --------------------------------- #
+# -- DECORATORS FOR THE LAZY MAN -- #
+# --------------------------------- #
 
 def closecomments(meth):
     """
 property::
+    see = Clean
+
     type = decorator
 
     arg = func: meth ;
-          ????
+          one method of the class ``Clean``
+
+
+This decorator helps to easily close comments in different contexts.
     """
-    def newmeth(inst, *args, **kwargs):
-        while(inst._comment):
-            if (
-                inst.modes_stack[-1].endswith("keyval") \
-                and
-                not inst._blockisempty
-                and
-                inst.kv_nbline < inst._comment[0]['line']
-            ):
-                break
+    def newmeth(self, *args, **kwargs):
+        self.close_comments()
 
-            kind = inst._comment[0]['kind']
-
-            if kind.startswith('multilines'):
-                kind = 'multilines'
-
-            inst.remove_unuseful_empty(-1)
-
-            if not inst._blockisempty:
-                inst._modes_extra_texts.append((None, ""))
-
-            inst._modes_extra_texts.append((
-                None,
-                "{0}{1}{2}".format(
-                    inst.COMMENT_DECO['open'][kind],
-                    "\n".join(inst._comment.pop(0)['content']),
-                    inst.COMMENT_DECO['close'][kind]
-                )
-            ))
-
-            for i in range(inst._space_comment):
-                inst._modes_extra_texts.append((None, ''))
-
-
-        return meth(inst, *args, **kwargs)
+        return meth(self, *args, **kwargs)
 
     return newmeth
 
@@ -76,45 +41,66 @@ property::
 # -- CLEANING -- #
 # -------------- #
 
-class Clean(walk.WalkInAST):
+class Clean(WalkInAST):
     """
+prototype::
+    see = parse.ast.AST , parse.walk.WalkInAST
+
+    arg-attr = pathlib.Path, str: content ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str, dict: mode ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str: layout = "" ;
+               see the dedicated section below
 
 
-un premier passage pour récupérer méta donné sur clé valeurs ( f mef via align)
-après end se charge de finir e travail
+===========
+One example
+===========
+
+Here is an example using the class ``Clean``. We use the argument ``mode`` for
+indicating that blocks named orpyste::``test`` are for key-value contents,
+whereas other blocks are just containers. We also use ``layout = "aline wrap"``
+so as to align the keys and their values regarding their separators, and also to
+wrap long values like the last one with ``3 and 3 and...``. As you can see
+several options can be used if they are separated by at least one
 
 
-gestion du lode wrap
 
-gestion de l'alignement face aux symbole key-val
-    ---> phase 1 avec tout sur une ligne, on en profite pour mémoriser les choses utiles (on peut ainsi bosser sur de gros dossiers même si cela complique un peu les choses)
-    ---> gérer cas d'un clé hyper longue ! dans ce cas  on fait un retour à la ligne avec une simple tabulation
+.
 
-personnalisation
-    ---> espaces pour fin de commentaire et de bloc et autre
-    ---> align pour keyval
-    ---> wrapp mode(pour keyval et verbatim à part)
-
-    layout = "space=4 space-comment=4 space-block=1 align wrap wrap-verbatim wrap-keyval"
+pyterm::
+????
 
 
-    "align"
+Here we have worked with in-memory objects. The content being stored in a
+strong, the class used internaly list of strings and returns a string. Indeed
+you can work woth files using the class ``pathlib.Path``. Here is an example
+of use.
+
+pyterm::
+????
+
+
+======================
+Settings of the layout
+======================
+
+We give above all the layout options. You must know that several options can be
+used simply if they are separated by at least one space.
+
+    1) "align" or "a"
         ---> gérer problème clé très longue
 
-    "wrap"    Z!! on doit garder les espaces multiples !!!!
+    1) "columns" or "c"
+        ---> gérer problème clé très longue
+
+    1) "wrap" or "w"    Z!! on doit garder les espaces multiples !!!!
         ---> retour à la ligne pour tout !
-    "wrap-verbatim"
+    "wrap-verbatim" or "wv"
         ---> retour à la ligne mais pas de collage
-    "wrap-keyval"
+    "wrap-keyval" or "wk"
         --->  retour à la ligne avec collage et on tient compte du spératur si align
-
-    "space = 4"
-        ---> 4 espaces après commentaires et bloc
-    "space-comment = 4"
-        ---> 4 espaces après commentaires
-    "space-block = 4"
-        ---> 4 espaces après bloc
-
     """
 
     COMMENT_DECO = {
@@ -140,7 +126,7 @@ personnalisation
         for x in BOOL_LAYOUTS
     }
 
-    PATERNS_BOOL_LAYOUTS = {
+    PATTERNS_BOOL_LAYOUTS = {
         re.compile(
             "(^|{spaces}+)(?P<kind>{name}|{abrev})({spaces}+|$)" \
                 .format(
@@ -152,19 +138,18 @@ personnalisation
         for abrev, name in LONG_BOOL_LAYOUTS.items()
     }
 
-    COLUMNS, SPACE, SPACE_COMMENT, SPACE_BLOCK \
-    = "columns", "space", "space-comment", "space-block"
+# << WARNING ! >> Keep the following lines in case of future more advanced
+# features !
+    COLUMNS = "columns"
 
-    VAL_LAYOUTS = [COLUMNS, SPACE, SPACE_COMMENT, SPACE_BLOCK]
+    VAL_LAYOUTS = [COLUMNS]
 
     LONG_VAL_LAYOUTS = {
-        "".join(
-            y[0] for y in x.split('-')
-        ): x
+        "".join(y[0] for y in x.split('-')): x
         for x in VAL_LAYOUTS
     }
 
-    PATERNS_VAL_LAYOUTS = {
+    PATTERNS_VAL_LAYOUTS = {
         re.compile(
             "^((?P<kind>{name}|{abrev})"
             "{spaces}*={spaces}*(?P<size>\d+))({spaces}+|$)" \
@@ -182,10 +167,7 @@ personnalisation
         ALIGN  : False,
 # ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
 # than ``WRAP``.
-        WRAP : False,
-# ``SPACE_BLOCK`` and ``SPACE_COMMENT`` have by default the same value
-# than ``SPACE``.
-        SPACE : 1
+        WRAP: False
     }
 
     ALL_LAYOUTS = set(BOOL_LAYOUTS + VAL_LAYOUTS)
@@ -195,8 +177,13 @@ personnalisation
     for x in ALL_LAYOUTS:
         if "-" in x:
             parent, _ = x.split('-')
+
             PARENT_LAYOUTS[x] = parent
-            DEFAULT_LAYOUTS[x] = DEFAULT_LAYOUTS[parent]
+
+            if x not in DEFAULT_LAYOUTS:
+                DEFAULT_LAYOUTS[x] = DEFAULT_LAYOUTS[parent]
+
+    ONETAB = " "*4
 
     def __init__(
         self,
@@ -204,15 +191,15 @@ personnalisation
         mode,
         layout = ""
     ):
-# Public attributs
-        self.content = content
-        self.mode    = mode
-        self.layout  = layout
+        super().__init__(content = content, mode = mode)
+
+        self.layout = layout
+        self.onetab = self.ONETAB
 
 
-# -------------------- #
-# -- SPECIAL SETTER -- #
-# -------------------- #
+# ----------------------------------- #
+# -- SPECIAL SETTER FOR THE LAYOUT -- #
+# ----------------------------------- #
 
     @property
     def layout(self):
@@ -221,10 +208,10 @@ personnalisation
     @layout.setter
     def layout(self, value):
         self._layout  = self.DEFAULT_LAYOUTS
-        settingsfound = set([])
+        settingsfound = set()
 
 # We must search first the single layout settings.
-        for regex in self.PATERNS_BOOL_LAYOUTS:
+        for regex in self.PATTERNS_BOOL_LAYOUTS:
             search = regex.search(value)
 
             if search:
@@ -244,7 +231,7 @@ personnalisation
         while value:
             nomatchfound = True
 
-            for regex in self.PATERNS_VAL_LAYOUTS:
+            for regex in self.PATTERNS_VAL_LAYOUTS:
                 search = regex.search(value)
 
                 if search:
@@ -279,12 +266,12 @@ personnalisation
                     self._layout[onelayout] = self._layout[parent]
 
 # Internal attributs so as to ease the coding.
-        self._align         = self._layout[self.ALIGN]
-        self._columns       = self._layout[self.COLUMNS]
-        self._wrap_verbatim = self._layout[self.WRAP_VERBATIM]
-        self._wrap_keyval   = self._layout[self.WRAP_KEYVAL]
-        self._space_block   = self._layout[self.SPACE_BLOCK]
-        self._space_comment = self._layout[self.SPACE_COMMENT]
+        for key, value in self._layout.items():
+            setattr(
+                self,
+                "_{0}".format(key.replace("-", "_")),
+                value
+            )
 
 
 # ------------------------ #
@@ -292,20 +279,27 @@ personnalisation
 # ------------------------ #
 
     def add_indentation(self, text, indentlevel):
-        return "{0}{1}".format(" "*4*indentlevel, text)
+        """
+prototype::
+    ???
+        """
+        return "{0}{1}".format(self.onetab*indentlevel, text)
 
 
-    def remove_unuseful_empty(self, i):
-        while(
-            self._modes_extra_texts
-            and
-            self._modes_extra_texts[i][1] == ''
-        ):
-            self._modes_extra_texts.pop(i)
+    def add_empty(self):
+        """
+prototype::
+    ???
+        """
+        if self._datasfound:
+            self.walk_view.write((None, "??"))
 
 
     def wrap(self, text):
-# TODO factorisation !!!!
+        """
+prototype::
+    ???
+        """
         if len(text) > self._columns and (
             (
                 self._mode == "keyval" and self._wrap_keyval
@@ -313,6 +307,7 @@ personnalisation
                 self._mode == "verbatim" and self._wrap_verbatim
             )
         ):
+# "key-value" mode
             if self._mode == "keyval":
                 extraspaces = self.add_indentation(
                     self._kv_extra_spaces,
@@ -324,26 +319,27 @@ personnalisation
 
                 newtext = [self._lastkeysep_indented]
 
+# "verbatim" mode
             else:
                 extraspaces = self.add_indentation("", self.indentlevel)[:-1]
 
                 newtext, *textsplitted = text.split()
-                newtext      = [
-                    self.add_indentation(newtext, self.indentlevel)
-                ]
+
+                newtext = [self.add_indentation(newtext, self.indentlevel)]
 
 
             for word in textsplitted:
-                newtext[-1] = "{0} {1}".format(
-                    newtext[-1],
-                    word
-                )
+                if len(word) + len(newtext[-1]) >= self._columns:
+                    newtext.append("{0} {1}".format(
+                        extraspaces,
+                        word
+                    ))
 
-                if len(newtext[-1]) > self._columns:
-                    newtext.append(extraspaces)
-
-            if newtext[-1] == extraspaces:
-                newtext.pop(-1)
+                else:
+                    newtext[-1] = "{0} {1}".format(
+                        newtext[-1],
+                        word
+                    )
 
             return "\n".join(newtext)
 
@@ -351,83 +347,114 @@ personnalisation
         return text
 
 
+    def close_comments(self):
+        """
+prototype::
+    ???
+        """
+        while(self._comment):
+            if (
+                self.modes_stack
+                and self.modes_stack[-1].endswith("keyval")
+                and not self._isblockempty
+                and self.kv_nbline < self._comment[0]['line']
+            ):
+                break
+
+            kind = self._comment[0]['kind']
+
+            if kind.startswith('multilines'):
+                kind = 'multilines'
+
+            if not self._isblockempty:
+                self.walk_view.write((None, ""))
+
+            self.walk_view.write((
+                None,
+                "{0}{1}{2}".format(
+                    self.COMMENT_DECO['open'][kind],
+                    "\n".join(self._comment.pop(0)['content']),
+                    self.COMMENT_DECO['close'][kind]
+                )
+            ))
+
+
 # --------------------------- #
 # -- START AND END OF FILE -- #
 # --------------------------- #
 
     def start(self):
-        self._comment           = []
-        self._modes_extra_texts = []
-        self._infos             = {}
+# We have to take care of some extra stuffs !
+        self._infos          = {}
+        self._datasfound     = False
+        self._isblockempty   = True
+        self._comment        = []
+        self._nb_empty_lines = 0
 
 
     def end(self):
-# We clean empty lines at the begining and the end of the content.
-        for i in [0, -1]:
-            self.remove_unuseful_empty(i)
+# The final job can be done !
+        self.view = IOView(self.walk_view.mode)
 
-# User's layout !
-        for (self._mode, extra_text) in self._modes_extra_texts:
-            # print((self._mode, extra_text));continue
-            if self._mode == "keyval":
-                key   = extra_text["key"]
-                sep   = extra_text["sep"]
-                value = extra_text["value"]
+        with self.view:
+# We have to follow the user's layout !
+            for (self._mode, extra_text) in self.walk_view:
+                if self._mode == "keyval":
+                    key   = extra_text["key"]
+                    sep   = extra_text["sep"]
+                    value = extra_text["value"]
 
-                if self._layout["align"]:
-                    keyformat = "{" + ":<{0}".format(lenkey) + "}"
-                    key       = keyformat.format(key)
+                    if self._layout["align"]:
+                        keyformat = "{" + ":<{0}".format(lenkey) + "}"
+                        key       = keyformat.format(key)
 
-                    sepformat = "{" + ":>{0}".format(lensep) + "}"
-                    sep       = sepformat.format(sep)
-
-
-                keysep = "{0} {1}".format(key, sep)
-
-                self._kv_extra_spaces = " "*len(keysep)
-
-                self._lastkeysep_indented = self.add_indentation(
-                    keysep,
-                    self.indentlevel
-                )
-
-                text = "{lastkeysep} {value}".format(
-                    lastkeysep = self._lastkeysep_indented,
-                    value      = value
-                )
-
-            else:
-                text = extra_text
-
-                if self._mode == "verbatim":
-                    text = self.add_indentation(text, self.indentlevel)
-
-                elif self._mode in self._infos:
-                    if self._layout["align"] \
-                    and self._infos[self._mode]["mode"] == "keyval":
-                        lenkey, lensep = self._infos[self._mode]["lenmax"]
-
-                    self.indentlevel \
-                    = self._infos[self._mode]["indentlevel"]
+                        sepformat = "{" + ":>{0}".format(lensep) + "}"
+                        sep       = sepformat.format(sep)
 
 
-            text = self.wrap(text)
-            print(text)
+                    keysep = "{0} {1}".format(key, sep)
 
+                    self._kv_extra_spaces = " "*len(keysep)
 
+                    self._lastkeysep_indented = self.add_indentation(
+                        keysep,
+                        self.indentlevel
+                    )
 
+                    text = "{lastkeysep} {value}".format(
+                        lastkeysep = self._lastkeysep_indented,
+                        value      = value
+                    )
+
+                else:
+                    text = extra_text
+
+                    if self._mode == "verbatim":
+                        text = self.add_indentation(text, self.indentlevel)
+
+                    elif self._mode in self._infos:
+                        if self._layout["align"] \
+                        and self._infos[self._mode]["mode"] == "keyval":
+                            lenkey, lensep = self._infos[self._mode]["lenmax"]
+
+                        self.indentlevel = self._infos[self._mode]["indentlevel"]
+
+                text = self.wrap(text)
+
+                self.view.write(text)
 
 
 # ------------------ #
 # -- FOR COMMENTS -- #
 # ------------------ #
 
-    def open_comment(self):
+    def open_comment(self, kind):
         self._comment.append({
             "line"   : self.metadata["line"],
-            "kind"   : self.metadata["kind"][8:],
+            "kind"   : kind,
             "content": []
         })
+
 
     def content_in_comment(self, line):
         self._comment[-1]["content"].append(line)
@@ -439,9 +466,8 @@ personnalisation
 
     @closecomments
     def open_block(self, name):
-        # print("====\nopen ??", self.metadata["line"], name)
-
-        self._blockisempty = True
+        self._datasfound   = True
+        self._isblockempty = True
 
         if self.modes_stack[-1] != "container":
             self._last_tag = "{0}@{1}".format(
@@ -461,7 +487,7 @@ personnalisation
             if self._layout["align"]:
                 self._infos[self._last_tag]["lenmax"] = (0, 0)
 
-        self._modes_extra_texts.append(
+        self.walk_view.write(
             (
                 self._last_tag,
                 "{0}::".format(
@@ -473,11 +499,7 @@ personnalisation
 
     @closecomments
     def close_block(self):
-        # print("close ??", self.indentlevel)
-        self.remove_unuseful_empty(-1)
-
-        for i in range(self._space_block):
-            self._modes_extra_texts.append((None, ''))
+        self._nb_empty_lines += 1
 
 
 # ------------------- #
@@ -485,11 +507,11 @@ personnalisation
 # ------------------- #
 
     @closecomments
-    def addkeyval(self, keyval):
-        if self._blockisempty == True:
-            self._blockisempty = False
+    def add_keyval(self, keyval):
+        if self._isblockempty:
+            self._isblockempty = False
 
-        self._modes_extra_texts.append(("keyval", keyval))
+        self.walk_view.write(("keyval", keyval))
 
         if self._layout["align"]:
             keylen, seplen = self._infos[self._last_tag]["lenmax"]
@@ -505,16 +527,16 @@ personnalisation
 # -------------- #
 
     @closecomments
-    def addline(self, line):
+    def add_line(self, line):
         if line:
-            if self._blockisempty == True:
-                self._blockisempty = False
+            if self._isblockempty:
+                self._isblockempty = False
 
-            self._modes_extra_texts.append(("verbatim", line))
+            self.walk_view.write(("verbatim", line))
 
         elif not (
-            self._blockisempty
+            self._isblockempty
             or
             self.modes_stack[-1].endswith('keyval')
         ):
-            self._modes_extra_texts.append((None, ''))
+            self._nb_empty_lines += 1

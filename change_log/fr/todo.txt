@@ -2,8 +2,40 @@
 orPySte - TODO
 ==============
 
+> ---------------------------- <
+
+fair un système via clé de hashage qui ne refait le boulot que si nécessaire dans le cas d'un IOViwe sur disque dur
+
 
 > ---------------------------- <
+
+searching path !!!!
+
+
+a::
+    b::
+        c::
+            ...
+
+
+c::
+    ...
+
+
+blocs c via "(.)c" : cf regex inrtégré
+    ---> on surcharge dict via méthode qui permet de passer d'un path à la version clé par clé
+
+
+> ---------------------------- <
+
+???? ---------->    **Amélioration et mise à jour des tests :** voici ce qui a été fait.
+
+    1) On utilise maintenant ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
+
+    2) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
+
+    3) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool). Et oui, on se professionnalise... ;-)
+
 
 ???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
 
@@ -24,18 +56,7 @@ Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose u
 
 > ---------------------------- <
 
-???? ---------->    **Amélioration et mise à jour des tests :** voici ce qui a été fait.
-
-    1) On utilise maintenant ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
-
-    2) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool).
-
-    1) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
-
-
-> ---------------------------- <
-
-???? ---------->  Pyon ----> python object notation
+???? Schema !!!!
 **Une belle amélioration :** un modèle de données, éventuellement typées, peut être indiqué . Ceci se fait simplement, et sans surprise, via la définition d'un fichier modèle de type ¨peuf d'une façon analogue aux cf::``schémas JSON ; http://json-schema.org``.
 
 
@@ -45,7 +66,7 @@ Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose u
 
     1) L'effacité des tests est évaluée à l'aide de ¨coverage.
 
-    2) ¨pep8py et ¨pylint sont aussi consultés pour améliorer le code de ¨orpyste lorsque cela paraît pertinent.
+    2) ¨pep8py et ¨pylint sont aussi consultés pour améliorer le code lorsque cela paraît pertinent.
 
 
 > ---------------------------- <
@@ -53,4 +74,12 @@ Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose u
 **Mise en ligne d'une documentation non technique en français :** ceci a été rendu possible grâce au projet ¨pyba qui lui aussi est disponible sur ¨pypi et ¨github.
 
 
+> ---------------------------- <
+
 **Mise en ligne de la documentation technique en anglais uniquement :** ceci a été rendu possible grâce au projet ¨pybadoc qui lui aussi est disponible sur ¨pypi et ¨github.
+
+
+> ---------------------------- <
+
+cleaner
+    ---> commentaire dans multi-key se placent relatovemnt à la clé-valeur en cours et no au tout début

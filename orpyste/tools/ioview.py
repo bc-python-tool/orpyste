@@ -2,13 +2,14 @@
 
 """
 prototype::
-    date = 2015-07-03
+    date = 2015-07-03     DOCSTRING ---> À finir !!!!
 
 
 This module gives an easy way to work either with a pickle file or with a list
 so as to store and read datas.
 """
 
+from os import remove
 import pickle
 
 
@@ -25,7 +26,7 @@ prototype::
 
 
 This class gives an easy way to work either with a pickle file or with a list so
-as to store datas. Herer is how to use this class.
+as to store datas. Here is how to use this class.
 
     1) The context syntax ``with ...:`` opens the IO stream like object.
 
@@ -33,9 +34,8 @@ as to store datas. Herer is how to use this class.
 
     3) To read the datas, just use the iterator syntax ``for data in ...:``.
     """
-    LIST, PICKLE = "list", "pickle"
+    MODES = LIST, PICKLE = "list", "pickle"
 
-    MODES      = [LIST, PICKLE]
     LONG_MODES = {x[0]: x for x in MODES}
 
 
@@ -46,12 +46,14 @@ as to store datas. Herer is how to use this class.
 
     def __enter__(self):
         if self.mode == self.LIST:
-            self._datas = []
-            self.write  = self._writeinlist
+            self.datas = []
+            self.write = self._writeinlist
+            self.iter  = self._iterinlist
 
         elif self.mode == self.PICKLE:
-            self._datas = self.path.open(mode = "w")
-            self.write  = self._writeinfile
+            self.datas = self.path.open(mode = "w")
+            self.write = self._writeinfile
+            self.iter  = self._iterinfile
 
         else:
             raise ValueError("unknown mode.")
@@ -59,26 +61,33 @@ as to store datas. Herer is how to use this class.
 
     def __exit__(self, type, value, traceback):
         if self.mode == self.PICKLE:
-            self._datas.close()
+            self.datas.close()
 
 
     def _writeinlist(self, value):
-        self._datas.append(value)
+        self.datas.append(value)
+
+    def _iterinlist(self):
+        for data in self.datas:
+            yield data
 
 
     def _writeinfile(self, value):
-        pickle.dump(value, self._datas)
+        pickle.dump(value, self.datas)
+
+    def _iterinfile(self):
+        try:
+            while True:
+                yield pickle.load(self.datas)
+
+        except EOFError:
+            pass
 
 
     def __iter__(self):
-        if self.mode == self.LIST:
-            for data in self._datas:
-                yield data
+        yield from self.iter()
 
-        else:
-            try:
-                while True:
-                    yield pickle.load(self._datas)
 
-            except EOFError:
-                pass
+    def remove(self):
+        if self.mode != self.LIST:
+            remove(str(self.datas))

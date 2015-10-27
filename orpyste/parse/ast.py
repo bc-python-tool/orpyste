@@ -42,8 +42,8 @@ prototype::
     arg-attr = str, dict: mode ;
                an ¨orpyste mode that can use different kinds of syntax
 
-    action = this class is used by the class ``AST`` so as to know the mode of a
-             block
+    action = this class is used by the class ``AST`` so as to know the mode of
+             a block
 
 
 ==================================
@@ -53,8 +53,8 @@ Mode defined using a single string
 If all the blocks are of the same kind, you just have to give it using a
 single string like in the following example. You can see that the class
 ``Mode`` has some useful magic properties similar to the ones of a dictionary.
-We will talk later of the very special block name ``":default:"`` that gives the
-default kind of block.
+We will talk later of the very special block name ``":default:"`` that gives
+the default kind of block.
 
 pyterm::
     >>> from orpyste.parse.ast import Mode
@@ -87,7 +87,8 @@ A mode defined within a single string must follow the rules below.
 
     2) ``"keyval::="`` is made of two parts separated by ``::``. Before we
     have a kind ``keyval`` which is for key-value associations separated here
-    by a sign ``=``, the one given after ``::``. Some important things to know.
+    by a sign ``=``, the one given after ``::``. Some important things to
+    know.
 
         a) With this kind of mode, a key can be used only one time in the same
         block.
@@ -107,8 +108,8 @@ A mode defined within a single string must follow the rules below.
 
 
 info::
-    Internally the class uses the attributs ``dicoview`` and ``allmodes`` which
-    are in our example the following dictionary and list respectively.
+    Internally the class uses the attributs ``dicoview`` and ``allmodes``
+    which are in our example the following dictionary and list respectively.
 
     ...pyterm::
         >>> print(mode.dicoview)
@@ -163,8 +164,8 @@ About the use of ``":default:"``
 ================================
 
 The following code shows the very special status of ``":default:"``. As you
-can see any block whose name has not been used when defining the modes will be
-allways seen as a default block. **Be aware of that !**
+can see any block whose name has not been used when defining the modes will
+be allways seen as a default block. **Be aware of that !**
 
 pyterm::
     >>> from orpyste.parse.ast import Mode
@@ -179,10 +180,9 @@ pyterm::
     {'mode': 'container'}
     """
 # MODES
-    CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
-    = "container", "keyval", "multikeyval", "verbatim"
+    MODES = CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
+          = "container", "keyval", "multikeyval", "verbatim"
 
-    MODES      = [CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM]
     LONG_MODES = {}
 
     for name in MODES:
@@ -500,7 +500,7 @@ pyterm:
     ... }
     >>> ast = AST(content = content, mode = mode)
     >>> ast.build()
-    >>> from pprint import pprint
+    >>> from pprint import pprint # For a pretty prints of the dictionaries.
     >>> for metadata in ast:
     ...     pprint(metadata)
     {'groups_found': {'name': 'test'},
@@ -519,8 +519,8 @@ pyterm:
 
 warning::
     This class does not do any semantic analysis as we can see in the example
-    where the content of the block starts with an inline value instead of a
-    key-value one.
+    where the content of the block orpyste::``test`` starts with an inline value
+    instead of a key-value one.
     """
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
@@ -607,9 +607,17 @@ warning::
             self.view          = IOView("list")
 
         elif isinstance(value, Path):
-            self._content      = value
-            self._partial_view = IOView("pickle")
-            self.view          = IOView("pickle")
+            self._content = value
+
+            self._partial_view = IOView(
+                mode = "pickle",
+                path = value / ".partial.ast"
+            )
+
+            self.view = IOView(
+                mode = "pickle",
+                path = value / ".ast"
+            )
 
         else:
             raise TypeError("invalid type for the attribut ``content``.")
@@ -912,7 +920,7 @@ property::
           this string is a text where we look for some metadatas (a context or a
           data content)
     arg = CtxtInfos, ContentInfos: infos ;
-          this indicates whcich matcher must be used to test a matching on the
+          this indicates which matcher must be used to test a matching on the
           argument ``text``
 
     return = bool ;
@@ -976,9 +984,14 @@ prototype::
 
             self.close_ctxt_at_end()
 
+
 # Final AST with datas in contents.
         with self.view:
             self.search_contents()
+
+
+# The partial view is not usefull in the idsk.
+        self._partial_view.remove()
 
 
 # -------------------------- #

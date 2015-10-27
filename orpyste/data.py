@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-07-????
+    date = 2015-10-???
 
 
 This module ????
@@ -11,68 +11,57 @@ allows to read efficient to type and simple structured string datas
 contained in files using the ``peuf`` specifications.
 """
 
-from orpyste.parse import walk
+from orpyste.tools.ioview import IOView
+from orpyste.parse.walk import WalkInAST
 
 
 # ------------- #
 # -- READING -- #
 # ------------- #
 
-class Read(walk.WalkInAST):
+class Read(WalkInAST):
     """
 prototype::
-    arg = file, io.StringIO: content ;
-          ???
-          either  f = open("myfile.txt", "r", encoding="utf-8")
-          In-memory text streams are also available as StringIO objects:
-          or
-          f = io.StringIO("some initial text data")
+    see = parse.ast.AST , parse.walk.WalkInAST
 
-    arg = passer par une classe via un mode simple de config
-        : config ;
-        str: mode = "keyval::=" with {keyval} in self.IN_CTXTS
-                                                or in self.LONG_IN_CTXTS ;
-
-          si string c'est que pour des blocs de niveau 1 tus du même type
+    arg-attr = pathlib.Path, str: content ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str, dict: mode ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str: ??? = "" ;
+               ???
 
 
-          keyval        onekey=...
-          multikeyval   multikey=...
-          line          line by line content
-          verbatim      single verbaitm string !!!!
+===========
+???
+===========
 
-          = ou plusieurs opérateurs sans esapce commme dans
-          multikeyval:: = < >
+???
 
-          espace de début pour lisibiliré uniquement
+prototype::
 
 
-          dict comme avant toujours possible car pratqiue au jour le jour
-
-          config via classe dédié pour cas complexe ou typage des données si besoin`
-
-          Z !!!! Par contre on doit passer par classe dédiée qu el'on met en fait ici
-
-
-
-    arg = str: store = "memory" in self.STORING_MODES
-                              or in self.LONG_STORING_MODES ;
-
-
+phase 1 on utilise IOView pour cérer une version
 
 besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul nom de bloc pour un contexte donné, concrètement meêm nom possible si sous bloc dans deux blocs parents différents
 
 ???
     """
 
-    def __init__(
-        self,
-        content,
-        mode
-    ):
-# Public attributs
-        self.content = content
-        self.mode    = mode
+# ------------------------------- #
+# -- START AND END OF THE WALK -- #
+# ------------------------------- #
+
+    def start(self):
+        self._verblines = []
+        self._keyval    = []
+        self._path      =[]
+
+        print("START - self.walk_view.mode", self.walk_view.mode)
+
+    def end(self):
+        print("END - self._verblines", self._verblines)
+        print("END - self._keyval", self._keyval)
 
 
 # ---------------- #
@@ -80,20 +69,34 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
 # ---------------- #
 
     def open_block(self, name):
-        print("{0}::".format(name))
+        self._path.append(name)
+        print("block\n    --->", name)
+        print("self._path\n    --->", self._path)
+
+    def close_block(self):
+        self._path = []
+
+        if self._verblines:
+            print("line\n    --->", self._verblines)
+            self._verblines = []
+
+        elif self._keyval:
+            print("keyval\n    --->", self._keyval)
+            self._keyval = []
 
 
 # ------------------- #
 # -- (MULTI)KEYVAL -- #
 # ------------------- #
 
-    def addkeyval(self, keyval):
-        print("    --->", keyval)
+    def add_keyval(self, keyval):
+        self._keyval.append(keyval)
 
 
 # -------------- #
 # -- VERBATIM -- #
 # -------------- #
 
-    def addline(self, line):
-        print("    --->", line)
+    def add_line(self, line):
+        if self.modes_stack and self.modes_stack[-1] == "verbatim":
+            self._verblines.append(line)
