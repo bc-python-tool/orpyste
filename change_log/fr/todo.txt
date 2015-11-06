@@ -4,6 +4,30 @@ orPySte - TODO
 
 > ---------------------------- <
 
+en gradnat list des blocs imbriqués , on peut faire des opérations impoertantes : nom unique iy schéma unique bien pour xpath !
+
+
+> ---------------------------- <
+
+???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
+
+
+???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est hebergé à la fois sur les sites ¨github et ¨pypi.
+
+
+???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
+
+
+???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... De plus, ceci est compatible avec la ¨pep_440 tout en étant nécessaire pour un utilisateur souhaitant installer ¨orpyste via ¨pip.
+
+Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
+
+
+???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
+
+
+> ---------------------------- <
+
 fair un système via clé de hashage qui ne refait le boulot que si nécessaire dans le cas d'un IOViwe sur disque dur
 
 
@@ -24,34 +48,6 @@ c::
 
 blocs c via "(.)c" : cf regex inrtégré
     ---> on surcharge dict via méthode qui permet de passer d'un path à la version clé par clé
-
-
-> ---------------------------- <
-
-???? ---------->    **Amélioration et mise à jour des tests :** voici ce qui a été fait.
-
-    1) On utilise maintenant ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
-
-    2) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
-
-    3) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool). Et oui, on se professionnalise... ;-)
-
-
-???? ---------->    **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu accélérer l'utilisation de ``setuptools``, un outil plus sympathique à employer. Ceci se fait très efficacement grâce à ¨setytup un autre projet de l'auteur de ¨mistool. ¨setytup est disponible sur ¨pypi et ¨github.
-
-
-???? ---------->    **Publication de la nouvelle version de ``orpyste`` :** le projet est hebergé à la fois sur les sites ¨github et ¨pypi.
-
-
-???? ---------->    **Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".
-
-
-???? ---------->    **Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... De plus, ceci est compatible avec la ¨pep_440 tout en étant nécessaire pour un utilisateur souhaitant installer ¨orpyste via ¨pip.
-
-Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
-
-
-???? ---------->    **Ajout d'une licence :** le projet est maintenant sous licence ???.
 
 
 > ---------------------------- <

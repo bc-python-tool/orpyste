@@ -34,6 +34,22 @@ prototype::
 # -- MODE -- #
 # ---------- #
 
+# MODES
+MODES = CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
+      = "container", "keyval", "multikeyval", "verbatim"
+
+LONG_MODES = {}
+
+for name in MODES:
+    if name.startswith("multi"):
+        LONG_MODES["m{0}".format(name[5])] = name
+
+    else:
+        LONG_MODES[name[0]] = name
+
+LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
+
+
 class Mode():
     """
 prototype::
@@ -179,21 +195,6 @@ pyterm::
     >>> print(mode["unknown"])
     {'mode': 'container'}
     """
-# MODES
-    MODES = CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
-          = "container", "keyval", "multikeyval", "verbatim"
-
-    LONG_MODES = {}
-
-    for name in MODES:
-        if name.startswith("multi"):
-            LONG_MODES["m{0}".format(name[5])] = name
-
-        else:
-            LONG_MODES[name[0]] = name
-
-    LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
-
 
     def __init__(self, mode):
         self.mode = mode
@@ -260,10 +261,10 @@ prototype::
 
 # verbatim or container.
         if i == -1:
-            mode = self.LONG_MODES.get(mode, mode)
+            mode = LONG_MODES.get(mode, mode)
 
-            if mode not in self.MODES \
-            or mode in [self.KEYVAL, self.MULTIKEYVAL]:
+            if mode not in MODES \
+            or mode in [KEYVAL, MULTIKEYVAL]:
                 raise ValueError("unknown single mode ``{0}``.".format(mode))
 
             return {"mode": mode}
@@ -271,9 +272,9 @@ prototype::
 # (multi)key = value
         else:
             mode, seps = mode[:i].strip(), mode[i+2:].strip()
-            mode       = self.LONG_MODES.get(mode, mode)
+            mode       = LONG_MODES.get(mode, mode)
 
-            if mode not in [self.KEYVAL, self.MULTIKEYVAL]:
+            if mode not in [KEYVAL, MULTIKEYVAL]:
                 raise ValueError('unknown single mode used with "::".')
 
 # We must first give the longest separators.
@@ -352,7 +353,7 @@ prototype::
         if not isinstance(item, str):
             raise TypeError("a block name must be a string.")
 
-        if not self.LEGAL_BLOCK_NAME.search(item):
+        if not LEGAL_BLOCK_NAME.search(item):
             raise ValueError("illegal value for a block name.")
 
         return (

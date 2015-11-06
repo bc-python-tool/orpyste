@@ -2,7 +2,7 @@
 2013-10-23
 ==========
 
-**Nettoyage du package ``orpyste``:** les importations se font maintenant de manière économique en important le minimum de choses via ``from unModule import uneFonction``, et non via des importations brutales du type ``import unModule``.
+**Nettoyage du package ``orpyste``:** les importations se font maintenant de manière économique en important le minimum de choses via ``from un_module import unefonction``, et non via des importations brutales du type ``import un_module``.
 
 
 **Mise à jour relativement au package ``mistool``:** le code du package ``mistool`` a été réorganisé, il a donc fallu tenir compte de ces changements.

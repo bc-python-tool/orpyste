@@ -498,7 +498,7 @@ prototype::
 
 
     @closecomments
-    def close_block(self):
+    def close_block(self, name):
         self._nb_empty_lines += 1
 
 

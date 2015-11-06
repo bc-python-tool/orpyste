@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-07-07     DOCSTRING ---> À finir !!!!
+    date = 2015-11-06     DOCSTRING ---> À finir !!!!
 
 
 This module gives methods to walk in the intermediate AST view made by the class
@@ -14,7 +14,8 @@ info::
     ``parse.ast.AST``.
 """
 
-from orpyste.parse import ast
+from orpyste.parse.ast import AST, \
+                              CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM
 from orpyste.tools.ioview import IOView
 
 
@@ -48,6 +49,8 @@ prototype::
            this is a dictionary sent when using ``for metadata in oneast: ...``
            where ``oneast`` is an instance of ``parse.ast.AST``. This gives you
            all informations about the current piece of the AST.
+    attr = str: last_mode ;
+           this string is the mode of the very last block opened 
     attr = list: modes_stack ;
            this stack list contains the modes of the last blocks opened 
 
@@ -67,7 +70,7 @@ warning::
         * ``add_keyval``
         * ``add_line``
     """
-    AST = ast.AST
+    AST = AST
 
     def __init__(
         self,
@@ -76,6 +79,8 @@ warning::
     ):
         self.content = content
         self.mode    = mode
+
+        self.builddone = False
 
 
     def build(self):
@@ -97,7 +102,10 @@ warning::
 # that contains all the necessary informations.
             self.incomment   = False
             self.indentlevel = -1
+
+            self.last_mode   = ""
             self.modes_stack = []
+            self.names_stack = []
 
             self.kv_nbline = -1
             lastkeyval     = {}
@@ -127,9 +135,8 @@ warning::
                     if self.incomment:
                         self.content_in_comment("")
 
-                    else:
+                    elif self.last_mode == VERBATIM:
                         self.add_line("")
-
 
 # -- BLOCK -- #
                 elif kind == "block":
@@ -137,23 +144,27 @@ warning::
                     if self.metadata['openclose'] == "open":
                         self.indentlevel += 1
 
-                        lastmode = self.metadata['mode']
-                        self.modes_stack.append(lastmode)
+                        self.last_mode = self.metadata['mode']
+                        self.modes_stack.append(self.last_mode)
 
-                        self.open_block(self.metadata["groups_found"]["name"])
+                        name = self.metadata["groups_found"]["name"]
+                        self.names_stack.append(name)
+                        self.open_block(name)
 
 # For block with a content, we have to augment the value of the indentation.
-                        if lastmode != "container":
+                        if self.last_mode != CONTAINER:
                             self.indentlevel += 1
 
 # We have to manage key-value modes fo which a value can be written over several
 # lines !
-                        if lastmode.endswith("keyval"):
+                        if self.last_mode.endswith(KEYVAL):
                             lastkeyval = {}
                             keysused   = []
 
 # A closing block
                     else:
+                        name = self.names_stack.pop(-1)
+
 # Do we have a key-value couple ?
                         if lastkeyval:
                             self.add_keyval(lastkeyval)
@@ -163,22 +174,27 @@ warning::
 
 # We have to take care of last comments in a block
                             self.kv_nbline = float("inf")
-                            self.close_block()
+                            self.close_block(name)
                             self.kv_nbline = -1
 
                         else:
 # Are we closing a block with a content ?
-                            if self.modes_stack[-1] != "container":
+                            if self.last_mode != CONTAINER:
                                 self.indentlevel -= 1
 
-                            self.close_block()
+                            self.close_block(name)
 
                         self.indentlevel -= 1
                         self.modes_stack.pop(-1)
 
+                        if self.modes_stack:
+                            self.last_mode = self.modes_stack[-1]
+                        else:
+                            self.last_mode = ""
+
 
 # -- VERBATIM CONTENT -- #
-                elif self.modes_stack[-1] == "verbatim":
+                elif self.last_mode == VERBATIM:
                     self.add_line(self.metadata['content']["value_in_line"])
 
 
@@ -204,7 +220,7 @@ warning::
                         self.kv_nbline = self.metadata["line"]
                         key            = content['key']
 
-                        if self.modes_stack[-1] == "keyval" and key in keysused:
+                        if self.last_mode == KEYVAL and key in keysused:
                             raise PeufError(
                                 "key already used, see line #{0}".format(
                                     self.metadata['line']
@@ -219,6 +235,7 @@ warning::
 # -- END OF THE WALK -- #
             self.end()
 
+        self.builddone = True
 
 # ------------------------------- #
 # -- START AND END OF THE WALK -- #
@@ -296,7 +313,7 @@ This method is for opening a new block knowing its name.
         """
         ...
 
-    def close_block(self):
+    def close_block(self, name):
         """
 This method is for closing a block. No name is given there.
         """
@@ -330,6 +347,6 @@ prototype::
     arg = str: line
 
 
-This method is for adding content.
+This method is for adding verbatim content.
         """
         ...
