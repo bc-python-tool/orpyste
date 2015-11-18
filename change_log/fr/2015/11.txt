@@ -1,8 +1,8 @@
 ==========
-2015-11-18
+2015-11-16
 ==========
 
-**Amélioration des classes ``ast.AST`` et ``walk.WalkInAST`` :** le mode ``verbatim`` ne garde plus les lignes vides finales (l'ancien fonctionnement était trop ambigû et devenait inutilisable avec la ¨nelle version à venir de la classe ``clean.Clean``). On peut par contre utiliser le commentaire magique pyba::``////`` pour indiquer la fin d'un bloc ``verbatim`` après des lignes vides finales.
+**Amélioration des classes ``ast.AST`` et ``walk.WalkInAST`` :** le mode ``verbatim`` ne garde plus les lignes vides finales (l'ancien fonctionnement était trop ambigû et sera inutilisable avec la ¨nelle version à venir de la classe ``clean.Clean``). On peut par contre utiliser le commentaire magique pyba::``////`` pour indiquer la fin d'un bloc ``verbatim`` après des lignes vides finales.
 
 
 ==========

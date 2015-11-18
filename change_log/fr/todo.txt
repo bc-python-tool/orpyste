@@ -2,10 +2,7 @@
 orPySte - TODO
 ==============
 
-
-> ---------------------------- <
-
-**Amélioration de la classe ``clean.Clean`` :** il est maintenant possible de gérer le nombre d'espaces suivant un bloc ou un commentaire.
+**Amélioration de la classe ``clean.Clean`` :** il est maintenant possible de personnaliser le nombre d'espaces autour des blocs et des commentaires.
 
 
 > ---------------------------- <

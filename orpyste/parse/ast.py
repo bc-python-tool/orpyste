@@ -750,7 +750,7 @@ prototype::
 
                     else:
                         _openclose = self.AUTOCLOSE
-                        indented   = False
+                        indented    = False
 
                     if configs.get(self.CLOSED_AT_END, False):
                         self.CTXTS_KINDS_CLOSED_AT_END.add(kind)
@@ -1022,8 +1022,7 @@ prototype::
         """
 prototype::
     action = this method looks for contexts which can be either opening or
-             closing blocks or comments, or magic comments, or empty lines,
-             or lines of contents.
+             closing blocks or comments, or empty lines, or lines of contents.
         """
         nocontextfound = True
 
@@ -1058,6 +1057,8 @@ prototype::
 # A closing context.
                 elif ctxtinfos.openclose == self.CLOSE:
                     if not self._ctxts_stack:
+                        print(self._line)
+
                         raise ASTError(
                             "wrong closing context: see line #{0}".format(
                                 self._nbline

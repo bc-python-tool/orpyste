@@ -119,6 +119,15 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
+                # print(">> >> >>", self.metadata) ; continue
+
+# on repère magic comment
+#     hors verbatil, on lève erreur !
+#     si utilise deux fois de suite au moins, on lève erreur
+#     si autre chose que ligne vide entre magic comment et balise fremante du bloc verbatim, on l!-ève erreur
+#     magic comment disparait par contre (clean devra gérer son ajout par contre)
+
+
                 kind = self.metadata['kind']
 
 # -- COMMENT -- #
@@ -147,8 +156,6 @@ warning::
 
 # -- BLOCK -- #
                 elif kind == "block":
-                    self.nb_empty_verbline = 0
-
 # An opening block
                     if self.metadata['openclose'] == "open":
                         self.indentlevel += 1
@@ -172,6 +179,9 @@ warning::
 
 # A closing block
                     else:
+                        if self.last_mode == VERBATIM:
+                            self.nb_empty_verbline = 0
+
                         name = self.names_stack.pop(-1)
 
 # Do we have a key-value couple ?
@@ -206,13 +216,13 @@ warning::
                 elif kind == "magic-comment":
                     if self.last_mode != VERBATIM:
                         raise PeufError(
-                            "magic comment can only be used for verbatim contents, "
-                            "see line #{0}".format(self.metadata['line'])
+                            "magic comment not used for a verbatim content"
                         )
 
                     if self.metadata['openclose'] == "open":
                         self._add_empty_verbline()
                         self.add_magic_comment()
+
 
 # -- VERBATIM CONTENT -- #
                 elif self.last_mode == VERBATIM:
@@ -377,7 +387,7 @@ this informations are in the dictionary ``keyval``.
 
     def add_magic_comment(self):
         """
-????
+    ???
         """
         ...
 

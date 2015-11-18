@@ -399,7 +399,6 @@ prototype::
         self._datasfound     = False
         self._isblockempty   = True
         self._comment        = []
-        self._nb_empty_lines = 0
 
 
     def end(self):
@@ -409,8 +408,6 @@ prototype::
         with self.view:
 # We have to follow the user's layout !
             for (self._mode, extra_text) in self.walk_view:
-                # print(self._mode, extra_text) ; continue
-
                 if self._mode == "keyval":
                     key   = extra_text["key"]
                     sep   = extra_text["sep"]
@@ -437,9 +434,6 @@ prototype::
                         lastkeysep = self._lastkeysep_indented,
                         value      = value
                     )
-
-                elif self._mode == "magic-comment":
-                    text = "////"
 
                 else:
                     text = extra_text
@@ -512,11 +506,6 @@ prototype::
         )
 
 
-    @closecomments
-    def close_block(self, name):
-        self._nb_empty_lines += 1
-
-
 # ------------------- #
 # -- (MULTI)KEYVAL -- #
 # ------------------- #
@@ -541,6 +530,7 @@ prototype::
 # -- VERBATIM -- #
 # -------------- #
 
+    @closecomments
     def add_magic_comment(self):
         self.walk_view.write(("magic-comment", "////"))
 
