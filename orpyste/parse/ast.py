@@ -2,11 +2,12 @@
 
 """
 prototype::
-    date = 2015-07-03
+    date = 2015-11-09
 
 
 This module contains classes so as to build an abstract syntax tree view of
-¨orpyste content which is stored in a file or in a string.
+¨orpyste content, the tree view being stored in a file or in a string using
+the class ``orpyste.tools.ioview.IOView``.
 """
 
 
@@ -16,6 +17,7 @@ from pathlib import Path
 import re
 
 from orpyste.tools.ioview import IOView
+
 
 # ------------------------- #
 # -- FOR ERRORS TO RAISE -- #
@@ -102,9 +104,9 @@ A mode defined within a single string must follow the rules below.
     analyzed.
 
     2) ``"keyval::="`` is made of two parts separated by ``::``. Before we
-    have a kind ``keyval`` which is for key-value associations separated here
-    by a sign ``=``, the one given after ``::``. Some important things to
-    know.
+    have the kind ``keyval`` which is for key-value associations separated here
+    by a sign ``=``, the one given after ``::``. Here are some important things
+    to know.
 
         a) With this kind of mode, a key can be used only one time in the same
         block.
@@ -144,7 +146,7 @@ Let's suppose that we want to use the following kinds of blocks.
     surprise !
 
     * The blocks ``player`` and ``config`` are key-value blocks with only the
-    separator ``:=``.
+    separator ``:=`` (be carefull of the points).
 
 
 The code below shows how to do that. This is very simple has you can see (we
@@ -250,7 +252,7 @@ prototype::
           this a mode defined using a single string
 
     return = dict ;
-             either ``{"mode": mode}`` if mode is equal to ``"verbatim"`` or
+             either ``{"mode": mode}`` if ``mode`` is equal to ``"verbatim"`` or
              ``"container"``, or ``{"mode": mode, "seps": list_of_seps}`` where
              ``list_of_seps`` is a list of strings where each string is a legal
              separator (this list is sorted from the longest to the shortest
@@ -295,8 +297,8 @@ prototype::
     action = from a mode given in one string, this method builds a list
              ``self.allmodes`` of all single modes and a dictionary
              ``self.dicoview`` with key corresponding to names of blocks, with
-             also the spacial key ``":default:"``, and with values equal to the
-             index in  ``self.allmodes`` of the associate single mode.
+             also the special key ``":default:"``, and with values equal to the
+             index in ``self.allmodes`` of the associate single mode.
         """
         self.allmodes = [self._single_mode(self.mode)]
         self.dicoview = {":default:": 0}
@@ -314,8 +316,9 @@ prototype::
     action = from a mode given in one dictionary, this method builds a list
              ``self.allmodes`` of all single modes and a dictionary
              ``self.dicoview`` with key corresponding to names of blocks,
-             with also the spacial key ``":default:"``, and with values equal
-             to the index in  ``self.allmodes`` of the associate single mode.
+             with eventually the special key ``":default:"``, and with values
+             equal to the index in  ``self.allmodes`` of the associate single
+             mode.
         """
         self.dicoview = {}
         self.allmodes = []
@@ -456,6 +459,12 @@ prototype::
         self.id_matcher = id_matcher
 
 
+COMMENT_SINGLELINE            = "comment-singleline"
+COMMENT_MULTILINES_SINGLELINE = "comment-multilines-singleline"
+COMMENT_MULTILINES            = "comment-multilines"
+
+MAGIC_COMMENT = "magic-comment"
+
 class AST():
     """
 prototype::
@@ -468,13 +477,13 @@ prototype::
                ``view``)
     arg-attr = str, dict: mode ;
                an ¨orpyste mode that can use different kinds of syntax (see the
-               documentation of the class ``Mode`` for examples)
+               documentation of the class ``Mode``)
 
     attr = file, io.StringIO: view ;
-           this attribut contains an easy to read version of the abstract syntax
-           tree in either a pickle file if the argument attribut ``content`` is
-           a ``pathlib.Path``, or a ``io.StringIO`` if the argument attribut
-           ``content`` is a string respectively
+           this attribut contains an verbose and easy to read version of the
+           abstract syntax tree in either a pickle file if the argument attribut
+           ``content`` is a ``pathlib.Path``, or a ``io.StringIO`` if the
+           argument attribut ``content`` is a string respectively
 
     method = build ;
              you have to call this method each time you must build or rebuild
@@ -482,8 +491,10 @@ prototype::
 
 
 This class can build an Abstract Syntax Tree (AST) view of a merely ¨orpyste
-file: here we allow some semantic illegal ¨peuf syntaxes. This will the job of
-``parse.Walk`` to check if there are this kind of errors among other ones.
+file because here we allow some semantic illegal ¨peuf syntaxes. This will the
+job of ``parse.Walk`` to manage this kind of errors among other ones.
+
+
 Here is a very simple example showing how to build the AST view and how to walk
 in this view.
 
@@ -501,7 +512,7 @@ pyterm:
     ... }
     >>> ast = AST(content = content, mode = mode)
     >>> ast.build()
-    >>> from pprint import pprint # For a pretty prints of the dictionaries.
+    >>> from pprint import pprint # For pretty printings of dictionaries.
     >>> for metadata in ast:
     ...     pprint(metadata)
     {'groups_found': {'name': 'test'},
@@ -521,7 +532,8 @@ pyterm:
 warning::
     This class does not do any semantic analysis as we can see in the example
     where the content of the block orpyste::``test`` starts with an inline value
-    instead of a key-value one.
+    instead of a key-value one. This will the job of ``parse.Walk`` to manage
+    semantic problems.
     """
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
@@ -542,19 +554,25 @@ warning::
 #
 # << Warning ! >> The group name ``content`` indicates to put matching in a
 # content line like context.
-    CTXTS_CONFIGS["comment-singleline"] = {
-        OPEN          : "^//(?P<content>.*)$",
+    CTXTS_CONFIGS[MAGIC_COMMENT] = {
+        OPEN          : "^////$",
         INFINITY_LEVEL: True,       # This allows to force the level.
         SUBCTXTS      : VERBATIM    # This indicates no subcontext.
     }
 
-    CTXTS_CONFIGS["comment-multilines-singleline"] = {
+    CTXTS_CONFIGS[COMMENT_SINGLELINE] = {
+        OPEN          : "^//(?P<content>.*)$",
+        INFINITY_LEVEL: True,
+        SUBCTXTS      : VERBATIM
+    }
+
+    CTXTS_CONFIGS[COMMENT_MULTILINES_SINGLELINE] = {
         OPEN          : "^/\*(?P<content>.*)\*/$",
         INFINITY_LEVEL: True,
         SUBCTXTS      : VERBATIM
     }
 
-    CTXTS_CONFIGS["comment-multilines"] =  {
+    CTXTS_CONFIGS[COMMENT_MULTILINES] =  {
         OPEN          : "^/\*(?P<content>.*)$",
         CLOSE         : "^(?P<content>.*)\*/$",
         SUBCTXTS      : VERBATIM,
@@ -612,12 +630,12 @@ warning::
 
             self._partial_view = IOView(
                 mode = "pickle",
-                path = value / ".partial.ast"
+                path = value / ".orpyste.partial.ast"
             )
 
             self.view = IOView(
                 mode = "pickle",
-                path = value / ".ast"
+                path = value / ".orpyste.ast"
             )
 
         else:
@@ -643,7 +661,7 @@ prototype::
     action = this method builds ¨python none human lists and dictionaries used
              to build an intermediate abstract syntax tree of the contexts which
              are either opening or closing blocks or comments, or empty lines,
-             or lines of contents.
+             or lines of contents (you can breath now).
              This will be the job of ``self.build_contents_rules`` to take care
              of lines of contents.
         """
@@ -666,7 +684,8 @@ prototype::
 
         self.CTXTINFOS_CONTENT = CtxtInfos(kind = ":content:")
 
-        self.MATCHERS       = [{True: [re.compile("^$")]}]
+        self.MATCHERS = [{True: [re.compile("^$")]}]
+
         self.CTXTS_MATCHERS = [self.CTXTINFOS_EMPTYLINE]
 
         self.CTXTS_KINDS_SUBCTXTS = {}
@@ -676,7 +695,7 @@ prototype::
 
         self.CTXTS_KINDS_CLOSED_AT_END = set()
 
-        id_matcher = 0
+        id_matcher = len(self.MATCHERS) - 1
         name2id    = {}
 
         for openclose in [self.OPEN, self.CLOSE]:
@@ -731,7 +750,7 @@ prototype::
 
                     else:
                         _openclose = self.AUTOCLOSE
-                        indented    = False
+                        indented   = False
 
                     if configs.get(self.CLOSED_AT_END, False):
                         self.CTXTS_KINDS_CLOSED_AT_END.add(kind)
@@ -1003,7 +1022,8 @@ prototype::
         """
 prototype::
     action = this method looks for contexts which can be either opening or
-             closing blocks or comments, or empty lines, or lines of contents.
+             closing blocks or comments, or magic comments, or empty lines,
+             or lines of contents.
         """
         nocontextfound = True
 
@@ -1167,8 +1187,10 @@ prototype::
         """
         self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
         self._matcherstack   = []
+        self._nb_emptylines  = 0
 
         for onemeta in self.next_partial_meta():
+# The big messe of empty lines in verbatim content.
 # One new block.
             if onemeta['kind'] == "block":
                 if onemeta['openclose'] == "open":

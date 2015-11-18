@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-???
+    date = 2015-11-06
 
 
 This module ????
@@ -22,14 +22,14 @@ from orpyste.parse.ast import LEGAL_BLOCK_NAME, \
                               CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM
 
 
-# --------------------------------- #
-# -- DECORATORS FOR THE LAZY MAN -- #
-# --------------------------------- #
+# ----------------------------------- #
+# -- DECORATOR(S) FOR THE LAZY MAN -- #
+# ----------------------------------- #
 
 def canbeused(meth):
     """
 property::
-    see = Clean
+    see = Read
 
     type = decorator
 
@@ -51,7 +51,7 @@ property::
 def adddata(meth):
     """
 property::
-    see = Clean
+    see = Read
 
     type = decorator
 
@@ -62,15 +62,84 @@ property::
 ????
     """
     def newmeth(self, *args, **kwargs):
-        self.walk_view.write({
-            "mode": self.last_mode,
-            "data": args[0]
-        })
+        self.walk_view.write(
+            Infos(
+                data = args[0],
+                mode = self.last_mode
+            )
+        )
 
         return meth(self, *args, **kwargs)
 
     return newmeth
 
+
+# ----------- #
+# -- INFOS -- #
+# ----------- #
+
+class Infos():
+    """
+?????
+
+infos est re,voyé par itérateur de Read
+
+
+{'mode': keyval, 'querypath': main/test}
+{'mode': keyval, 'data': {'sep': '=', 'key': 'aaa', 'value': '1 + 9 = 10'}}
+{'mode': keyval, 'data': {'sep': '<>', 'key': 'bbbbbbbbb', 'value': '2'}}
+{'mode': keyval, 'data': {'sep': '=', 'key': 'c', 'value': '3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and...'}}
+{'mode': verbatim, 'querypath': main/sub_main/sub_sub_main/verb}
+{'mode': verbatim, 'data': }
+{'mode': verbatim, 'data': }
+{'mode': verbatim, 'data': }
+{'mode': verbatim, 'data': line 1}
+    """
+
+    _KEYSEPVAL = ["key", "sep", "value"]
+
+    def __init__(
+        self,
+        querypath = None,
+        mode      = None,
+        data      = None
+    ):
+        self.querypath = querypath
+        self.mode      = mode
+        self.data      = data
+
+
+    @property
+    def isnewblock(self):
+        return self.querypath != None
+
+
+    @property
+    def rtu_data(self):
+        """
+rtu = ready to use
+juste pour facilitéer le parcours pour clé séparateur valeur
+        """
+        if self.data == None:
+            raise ValueError('no data available')
+
+        if self.mode == VERBATIM:
+            return self.data
+
+        else:
+            return [self.data[x] for x in self._KEYSEPVAL]
+
+
+    def __str__(self):
+        text = ["'mode': {0}".format(self.mode)]
+
+        if self.data != None:
+            text.append("'data': {0}".format(self.data))
+
+        if self.querypath != None:
+            text.append("'querypath': {0}".format(self.querypath))
+
+        return "{" + ", ".join(text) + "}"
 
 
 # ------------- #
@@ -80,6 +149,7 @@ property::
 OPEN, CLOSE = "open", "close"
 DATAS_MODES = [KEYVAL, MULTIKEYVAL, VERBATIM]
 NEWBLOCK    = "newblock"
+
 
 class Read(WalkInAST):
     """
@@ -134,10 +204,12 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
 
         if self.last_mode in DATAS_MODES:
 # Be aware of reference and list !
-            self.walk_view.write({
-                "qpath": "/".join(self._qpath),
-                "mode" : self.last_mode
-            })
+            self.walk_view.write(
+                Infos(
+                    querypath = "/".join(self._qpath),
+                    mode      = self.last_mode
+                )
+            )
 
     def close_block(self, name):
         self._qpath.pop(-1)
@@ -164,23 +236,7 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
         """
 This a basic iterator that yiels the fllowing kind of dictuionaries ! see geitem car plus sympa !
 
-{'qpath': ['main', 'test']}
-{'data': {'key': 'aaa', 'sep': '=', 'value': '1 + 9 = 10'}, 'mode': 'keyval'}
-{'data': {'key': 'bbbbbbbbb', 'sep': '<>', 'value': '2'}, 'mode': 'keyval'}
-{'data': {'key': 'c', 'sep': '=', 'value': '3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and...'}, 'mode': 'keyval'}
-{'qpath': ['main', 'sub_main', 'sub_sub_main', 'verb']}
-{'data': '', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': 'line 1', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '                line 2', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '                                line 3', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
-{'data': '', 'mode': 'verbatim'}
+voir Infos
         """
         for infos in self.walk_view:
             yield infos
@@ -204,24 +260,11 @@ posibilité de regex comme */block3  (ajout automatique de ^ et $)
         newblock   = True
 
         for infos in self.walk_view:
-            if "qpath" in infos:
-                datasfound = query_pattern.search(infos["qpath"])
+            if infos.isnewblock:
+                datasfound = query_pattern.search(infos.querypath)
 
                 if datasfound:
                     yield infos
 
             elif datasfound:
-                yield _rtu_data(infos)
-
-
-def _rtu_data(infos):
-    """
-rtu = ready to use
-juste pour facilitéer le parcours pour clé séparateur valeur
-    """
-    if infos['mode'] == VERBATIM:
-        return infos['data']
-
-    else:
-        data = infos['data']
-        return data["key"], data["sep"], data["value"]
+                yield infos

@@ -3,6 +3,6 @@
 """
 prototype::
     author  = Christophe, BAL (projetmbc@gmail.com)
-    licence = gpl ???
+    licence = gpl 2.0
     version = 1.0.0-beta
 """

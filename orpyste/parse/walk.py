@@ -2,16 +2,17 @@
 
 """
 prototype::
-    date = 2015-11-06     DOCSTRING ---> À finir !!!!
+    date = 2015-11-???
 
 
-This module gives methods to walk in the intermediate AST view made by the class
-``parse.ast.AST``.
+This module contains a class ``WalkInAST`` to be subclassed so as to walk in the
+intermediate AST view made by the class ``parse.ast.AST``, and alsa so as to
+act regarding the context or the data met during the walk.
 
 
 info::
-    Here we do some semantic analysis that have not been done by the class
-    ``parse.ast.AST``.
+    The class ``WalkInAST`` do some semantic analysis that have not been done by
+    the class ``parse.ast.AST``.
 """
 
 from orpyste.parse.ast import AST, \
@@ -32,6 +33,10 @@ prototype::
     pass
 
 
+# ------------- #
+# -- WALKING -- #
+# ------------- #
+
 class WalkInAST():
     """
 prototype::
@@ -45,30 +50,31 @@ prototype::
     attr = orpyste.tools.ioview.IOView: self.walk_view ;
            this is the attribut to use if you want to store information during
            the walk.
-    attr = dict: metadata ;
-           this is a dictionary sent when using ``for metadata in oneast: ...``
-           where ``oneast`` is an instance of ``parse.ast.AST``. This gives you
-           all informations about the current piece of the AST.
     attr = str: last_mode ;
            this string is the mode of the very last block opened 
     attr = list: modes_stack ;
            this stack list contains the modes of the last blocks opened 
+    attr = dict: metadata ;
+           this is a dictionary sent when using ``for metadata in oneast: ...``
+           where ``oneast`` is an instance of ``parse.ast.AST``. This gives you
+           all informations about the current piece of the AST.
 
 
 warning::
-    This class only implements the walking but she doesn't do any action. To do
-    that, you have to subclass ``WalkInAST`` and to implement what you need in
-    the following methods.
+    This class only implements the walking but she doesn't acheive any action.
+    To do something, you have to subclass ``WalkInAST`` and to implement what
+    you need in the following methods (see their docstrings for more
+    informations and also the class ``orpyste.data.Read`` for one example).
 
-        * ``start``
-        * ``end``
-        * ``open_comment``
-        * ``close_comment``
-        * ``content_in_comment``
-        * ``open_block``
-        * ``close_block``
-        * ``add_keyval``
-        * ``add_line``
+        * ``start`` and ``end`` are methods called just before and after the
+        walk.
+        * ``open_comment`` and ``close_comment`` are called when a comment has
+        to be opened or closed, whereas ``content_in_comment`` allows to add a
+        content met inside a comment.
+        * ``open_block`` and ``close_block`` are methods called just before and
+        after a block is opened or closed respectively.
+        * ``add_keyval`` can add a key-separator-value data.
+        * ``add_line`` allows to add a single verbatim line.
     """
     AST = AST
 
@@ -107,12 +113,13 @@ warning::
             self.modes_stack = []
             self.names_stack = []
 
+            self.nb_empty_verbline = 0
+
             self.kv_nbline = -1
             lastkeyval     = {}
 
             for self.metadata in self.ast:
                 kind = self.metadata['kind']
-
 
 # -- COMMENT -- #
                 if kind.startswith("comment-"):
@@ -136,10 +143,12 @@ warning::
                         self.content_in_comment("")
 
                     elif self.last_mode == VERBATIM:
-                        self.add_line("")
+                        self.nb_empty_verbline += 1
 
 # -- BLOCK -- #
                 elif kind == "block":
+                    self.nb_empty_verbline = 0
+
 # An opening block
                     if self.metadata['openclose'] == "open":
                         self.indentlevel += 1
@@ -193,8 +202,21 @@ warning::
                             self.last_mode = ""
 
 
+# -- MAGIC COMMENT -- #
+                elif kind == "magic-comment":
+                    if self.last_mode != VERBATIM:
+                        raise PeufError(
+                            "magic comment can only be used for verbatim contents, "
+                            "see line #{0}".format(self.metadata['line'])
+                        )
+
+                    if self.metadata['openclose'] == "open":
+                        self._add_empty_verbline()
+                        self.add_magic_comment()
+
 # -- VERBATIM CONTENT -- #
                 elif self.last_mode == VERBATIM:
+                    self._add_empty_verbline()
                     self.add_line(self.metadata['content']["value_in_line"])
 
 
@@ -266,10 +288,11 @@ prototype::
           ``kind = "multilines"`` is for orpyste::``/* ... */`` where the
           content contains at least one back return, and
           ``kind = "multilines-singleline"`` is for orpyste::``/* ... */``
-          which is all in one line
+          which is all in a single line
 
 
-This method is for opening a comment. No content is given there.
+This method is for opening a comment. No content is given there (see the method
+``content_in_comment``).
         """
         ...
 
@@ -281,10 +304,11 @@ prototype::
           ``kind = "multilines"`` is for orpyste::``/* ... */`` where the
           content contains at least one back return, and
           ``kind = "multilines-singleline"`` is for orpyste::``/* ... */``
-          which is all in one line
+          which is all in a single line
 
 
-This method is for closing a comment. No content is given there.
+This method is for closing a comment. No content is given there (see the method
+``content_in_comment``).
         """
         ...
 
@@ -294,7 +318,8 @@ prototype::
     arg = str: line
 
 
-This method is for adding content in a comment.
+This method is for adding content inside a comment (see the methods
+``open_comment`` and ``close_comment``).
         """
         ...
 
@@ -315,7 +340,7 @@ This method is for opening a new block knowing its name.
 
     def close_block(self, name):
         """
-This method is for closing a block. No name is given there.
+This method is for closing a block knowing its name.
         """
         ...
 
@@ -327,12 +352,11 @@ This method is for closing a block. No name is given there.
     def add_keyval(self, keyval):
         """
 prototype::
-    arg = {str: str}: keyval ;
-          this dictionary looks like ``{"key": ..., "sep": ..., "value": ...}``.
+    arg = {"key": str, "sep": str, "value": str}: keyval
 
 
-This method is for adding a new key with its associated value and the separator
-used. All this informations are in the dictionary ``keyval``.
+This method is for adding a new key with its associated value and separator. All
+this informations are in the dictionary ``keyval``.
         """
         ...
 
@@ -340,6 +364,23 @@ used. All this informations are in the dictionary ``keyval``.
 # -------------- #
 # -- VERBATIM -- #
 # -------------- #
+
+    def _add_empty_verbline(self):
+        """
+    ???
+        """
+        for _ in range(self.nb_empty_verbline):
+            self.add_line("")
+
+        self.nb_empty_verbline = 0
+
+
+    def add_magic_comment(self):
+        """
+????
+        """
+        ...
+
 
     def add_line(self, line):
         """

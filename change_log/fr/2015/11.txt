@@ -1,5 +1,27 @@
 ==========
-2015-11-???
+2015-11-18
+==========
+
+**Amélioration des classes ``ast.AST`` et ``walk.WalkInAST`` :** le mode ``verbatim`` ne garde plus les lignes vides finales (l'ancien fonctionnement était trop ambigû et devenait inutilisable avec la ¨nelle version à venir de la classe ``clean.Clean``). On peut par contre utiliser le commentaire magique pyba::``////`` pour indiquer la fin d'un bloc ``verbatim`` après des lignes vides finales.
+
+
+==========
+2015-11-08
+==========
+
+**Amélioration de la classe ``data.Read`` :** les ¨infos stockées sont de type ``data.Infos``. Ceci permet de faciliter l'utilisation de ``for infos in datas`` et ``for infos in datas[querypath]``.
+
+
+**Ajout d'une licence :** le projet est maintenant sous licence GNU GENERAL PUBLIC LICENSE Version 3, 29 Juin 2007.
+
+
+**Noms des versions :** les numéros de version deviennent standards en suivant la convention ``majeur.mineur.patch-extrainfo``. Cette norme étant suivie par tout le monde, soyons grégaire pour devenir clair... De plus, ceci est compatible avec la ¨pep_440 tout en étant nécessaire pour un utilisateur souhaitant installer ¨orpyste via ¨pip.
+
+Cette version de ¨orpyste a pour numéro ``1.0.0-beta`` car le projet propose une nouvelle interface tout en restant à l'état `¨beta` (il reste à l'utiliser un peu pour voir si le `¨beta` est de trop).
+
+
+==========
+2015-11-06
 ==========
 
 **NON RÉTRO-COMPATIBILITÉ du nouveau code du module ``orpyste``:** cette nouvelle version n'est plus du tout compatible avec la précédente. Bien que la philosophie reste inchangée, les spécifications ¨peufs se sont améliorées et l'interface a été énormément simplifiée
@@ -9,23 +31,4 @@
 Voir les ¨chgts directement dans les "docstrings" en attendant la mise en ligne d'une documentation (désolé c'est en anglais).
 
 
-**Une nouvelle fonctionnalité pour "nettoyer" les fichiers ¨orpyste:** le nouveau module ``clean`` contient une classe ``Clean`` qui produit une version standardisée "propre et compacte" d'un fichier ¨peuf valide.
-
-
-**Amélioration des docstrings de ``orpyste``:** la syntaxe utilisée se base sur de nouvelles spécifications de ¨pybadoc, un outil maison en cours de construction. On utilise des exemples "en console" pour rendre le propos plus clair, et on peut indiquer les signatures des fonctions, des classes, ¨etc via le bloc pybadoc::``prototype::...`` à placer en début de docstring. Très lisible et très efficace !
-
-
-**Amélioration côté développement interne :** voici ce qui a évolué.
-
-    1) Dans un souci de développement serein, on utilise dorénavant ¨git via une branche ``dev``.
-
-    2) L'utilisation de ¨pyvenv permet aussi d'éviter des dégâts colatéraux non négligeables avec les versions en cours de développement (l'environnement virtuel se nomme ``pyenv/orpyste``). Fini l'amateurisme !
-
-
-**Amélioration et mise à jour des tests :** voici ce qui a été fait.
-
-    1) On utilise maintenant ¨pytest ce qui simplifie énormément les choses. On va enfin à l'essentiel !
-
-    2) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais ils ne le sont pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
-
-    3) L'affreux package maison ``pdt`` n'est plus du tout utilisé (ceci a pu être fait car la nouvelle version de ¨orpyste n'est plus du tout dépendante de ¨mistool). Et oui, on se professionnalise... ;-)
+**Une nouvelle fonctionnalité pour "nettoyer" les fichiers ¨orpyste:** le nouveau module ``clean`` contient une classe ``Clean`` qui produit une version standardisée "propre et hyper compacte" d'un fichier ¨peuf valide.

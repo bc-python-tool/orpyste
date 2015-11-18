@@ -2,9 +2,13 @@
 
 """
 prototype::
-    date = 2015-09-15     DOCSTRING ---> À finir !!!!
+    date = 2015-11-???
 
-This module contains a class for the formating of ¨peuf files.
+
+ALIORERE AVEC UN PEU ESPACE !!!!!!!
+
+This module contains a class `Clean` so as to format a ¨peuf file following some
+rules that be customized by the user.
 """
 
 import re
@@ -12,9 +16,9 @@ import re
 from orpyste.parse.walk import IOView, WalkInAST
 
 
-# --------------------------------- #
-# -- DECORATORS FOR THE LAZY MAN -- #
-# --------------------------------- #
+# ----------------------------------- #
+# -- DECORATOR(S) FOR THE LAZY MAN -- #
+# ----------------------------------- #
 
 def closecomments(meth):
     """
@@ -27,7 +31,7 @@ property::
           one method of the class ``Clean``
 
 
-This decorator helps to easily close comments in different contexts.
+This decorator helps to close easily comments in different contexts.
     """
     def newmeth(self, *args, **kwargs):
         self.close_comments()
@@ -58,8 +62,14 @@ prototype::
 One example
 ===========
 
-Here is an example using the class ``Clean``. We use the argument ``mode`` for
-indicating that blocks named orpyste::``test`` are for key-value contents,
+?????
+
+
+
+
+
+Here is an example using the class ``Clean``. We use the argument ``mode`` to
+indicate that blocks named orpyste::``test`` are for key-value contents,
 whereas other blocks are just containers. We also use ``layout = "aline wrap"``
 so as to align the keys and their values regarding their separators, and also to
 wrap long values like the last one with ``3 and 3 and...``. As you can see
@@ -399,6 +409,8 @@ prototype::
         with self.view:
 # We have to follow the user's layout !
             for (self._mode, extra_text) in self.walk_view:
+                # print(self._mode, extra_text) ; continue
+
                 if self._mode == "keyval":
                     key   = extra_text["key"]
                     sep   = extra_text["sep"]
@@ -425,6 +437,9 @@ prototype::
                         lastkeysep = self._lastkeysep_indented,
                         value      = value
                     )
+
+                elif self._mode == "magic-comment":
+                    text = "////"
 
                 else:
                     text = extra_text
@@ -526,17 +541,10 @@ prototype::
 # -- VERBATIM -- #
 # -------------- #
 
+    def add_magic_comment(self):
+        self.walk_view.write(("magic-comment", "////"))
+
+
     @closecomments
     def add_line(self, line):
-        if line:
-            if self._isblockempty:
-                self._isblockempty = False
-
-            self.walk_view.write(("verbatim", line))
-
-        elif not (
-            self._isblockempty
-            or
-            self.modes_stack[-1].endswith('keyval')
-        ):
-            self._nb_empty_lines += 1
+        self.walk_view.write(("verbatim", line))
