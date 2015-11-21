@@ -105,12 +105,23 @@ used simply if they are separated by at least one space.
     1) "columns" or "c"
         ---> gérer problème clé très longue
 
+    1) "spaces" or "s"
+        ---> espace après
+    "spaces-comment" or "sc"
+        --->
+    "spaces-block" or "sb"
+        --->
+
     1) "wrap" or "w"    Z!! on doit garder les espaces multiples !!!!
         ---> retour à la ligne pour tout !
     "wrap-verbatim" or "wv"
         ---> retour à la ligne mais pas de collage
     "wrap-keyval" or "wk"
         --->  retour à la ligne avec collage et on tient compte du spératur si align
+
+
+    nbre espaces avant-après
+        ---> ????
     """
 
     COMMENT_DECO = {
@@ -124,10 +135,9 @@ used simply if they are separated by at least one space.
         },
     }
 
-    ALIGN, WRAP, WRAP_VERBATIM, WRAP_KEYVAL \
+    BOOL_LAYOUTS \
+    = ALIGN, WRAP, WRAP_VERBATIM, WRAP_KEYVAL \
     = "align", "wrap", "wrap-verbatim", "wrap-keyval"
-
-    BOOL_LAYOUTS = [ALIGN, WRAP, WRAP_VERBATIM, WRAP_KEYVAL]
 
     LONG_BOOL_LAYOUTS = {
         "".join(
@@ -150,9 +160,9 @@ used simply if they are separated by at least one space.
 
 # << WARNING ! >> Keep the following lines in case of future more advanced
 # features !
-    COLUMNS = "columns"
-
-    VAL_LAYOUTS = [COLUMNS]
+    VAL_LAYOUTS \
+    = COLUMNS, SPACES, SPACES_BLOCK, SPACES_COMMENT \
+    = "columns", "spaces", "spaces-block", "spaces-comment"
 
     LONG_VAL_LAYOUTS = {
         "".join(y[0] for y in x.split('-')): x
@@ -173,14 +183,16 @@ used simply if they are separated by at least one space.
     }
 
     DEFAULT_LAYOUTS = {
-        COLUMNS: 80,
-        ALIGN  : False,
+        SPACES        : 2,
+        SPACES_COMMENT: 1,
+        COLUMNS       : 80,
+        ALIGN         : False,
 # ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
 # than ``WRAP``.
         WRAP: False
     }
 
-    ALL_LAYOUTS = set(BOOL_LAYOUTS + VAL_LAYOUTS)
+    ALL_LAYOUTS = set(BOOL_LAYOUTS) | set(VAL_LAYOUTS)
 
     PARENT_LAYOUTS = {}
 
@@ -194,6 +206,7 @@ used simply if they are separated by at least one space.
                 DEFAULT_LAYOUTS[x] = DEFAULT_LAYOUTS[parent]
 
     ONETAB = " "*4
+
 
     def __init__(
         self,
@@ -388,6 +401,13 @@ prototype::
                 )
             ))
 
+            self.add_spaces(self.SPACES_COMMENT)
+
+
+    def add_spaces(self, kind):
+        for _ in range(self._layout[kind]):
+            self.walk_view.write(("verbatim", ""))
+
 
 # --------------------------- #
 # -- START AND END OF FILE -- #
@@ -395,10 +415,11 @@ prototype::
 
     def start(self):
 # We have to take care of some extra stuffs !
-        self._infos          = {}
-        self._datasfound     = False
-        self._isblockempty   = True
-        self._comment        = []
+        self._infos              = {}
+        self._datasfound         = False
+        self._isblockempty       = True
+        self._block_closed_alone = True
+        self._comment            = []
 
 
     def end(self):
@@ -413,7 +434,7 @@ prototype::
                     sep   = extra_text["sep"]
                     value = extra_text["value"]
 
-                    if self._layout["align"]:
+                    if self._layout[self.ALIGN]:
                         keyformat = "{" + ":<{0}".format(lenkey) + "}"
                         key       = keyformat.format(key)
 
@@ -442,7 +463,7 @@ prototype::
                         text = self.add_indentation(text, self.indentlevel)
 
                     elif self._mode in self._infos:
-                        if self._layout["align"] \
+                        if self._layout[self.ALIGN] \
                         and self._infos[self._mode]["mode"] == "keyval":
                             lenkey, lensep = self._infos[self._mode]["lenmax"]
 
@@ -478,6 +499,8 @@ prototype::
         self._datasfound   = True
         self._isblockempty = True
 
+        self._block_closed_alone = True
+
         if self.modes_stack[-1] != "container":
             self._last_tag = "{0}@{1}".format(
                 self.metadata["line"],
@@ -493,7 +516,7 @@ prototype::
             self._last_tag = self.metadata["kind"]
 
         if self.modes_stack[-1].startswith("keyval"):
-            if self._layout["align"]:
+            if self._layout[self.ALIGN]:
                 self._infos[self._last_tag]["lenmax"] = (0, 0)
 
         self.walk_view.write(
@@ -504,6 +527,11 @@ prototype::
                 )
             )
         )
+
+    def close_block(self, name):
+        if self._block_closed_alone:
+            self.add_spaces(self.SPACES_BLOCK)
+            self._block_closed_alone = False
 
 
 # ------------------- #
@@ -517,7 +545,7 @@ prototype::
 
         self.walk_view.write(("keyval", keyval))
 
-        if self._layout["align"]:
+        if self._layout[self.ALIGN]:
             keylen, seplen = self._infos[self._last_tag]["lenmax"]
 
             keylen = max(len(keyval["key"]), keylen)

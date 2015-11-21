@@ -1,4 +1,11 @@
 ==========
+2015-11-21
+==========
+
+**Amélioration de la classe ``clean.Clean`` :** il est maintenant possible de personnaliser le nombre d'espaces autour des blocs et des commentaires.
+
+
+==========
 2015-11-16
 ==========
 
