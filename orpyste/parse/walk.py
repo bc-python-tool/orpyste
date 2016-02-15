@@ -15,8 +15,13 @@ info::
     the class ``parse.ast.AST``.
 """
 
-from orpyste.parse.ast import AST, \
-                              CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM
+from orpyste.parse.ast import(
+    AST,
+    CONTAINER,
+    KEYVAL,
+    MULTIKEYVAL,
+    VERBATIM
+)
 from orpyste.tools.ioview import IOView
 
 

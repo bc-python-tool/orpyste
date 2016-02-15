@@ -94,26 +94,43 @@ orpyste::
 
 
 In this file, there are a lot of empty lines and the key-value are strangely
-formatted. Lets's consider the following ¨python script where the variable
-``content`` is the string value of the preceding ¨peuf file.
+formatted. let's consider the following ¨python script where the variable
+``content`` is the string value of the preceding ¨peuf file (as noted later in
+this section, you can work directly with a ¨peuf file).
 
 python::
     infos = Clean(
         content = content,
-        mode    = {"c": ":default:", "k::= <>": "test", "v": "verb"},
-        layout  = "aline wrap columns=50"
+        layout  = "aline wrap columns=50",
+        mode    = {
+            "container"    : "main",
+            "keyval:: = <>": "test"
+        }
     )
+
     infos.build()
 
     content_cleaned = "\n".join(line for line in infos.view):
 
 
-In ths preceding code, we use ``mode``, this variable is explained in the
-documentation of ``parse.ast.AST``, and we use ``layout = "aline wrap"`` so as
-to align the keys and their values regarding their separators, and also to wrap
-long values like the last one with ``3 and 3 and...``. As you can see several
-options can be used if they are separated by at least one space. The string
-value of ``content_cleaned`` is finally the following one which looks better.
+How the preceding code works ?
+
+    1) First we use ``mode``, this variable is fully presented in the
+    documentation of ``parse.ast.AST`` (see also the documentation of
+    ``orpyste.data.Read``).
+    Here we defined blocks named orpyste:``test`` to have key-value like content
+    with either orpyste:``=``, or orpyste:``<>`` as a separator. The blocks
+    named orpyste:``main`` are containers.
+
+    2) Secondly, and **the most important here**, we use ``layout = "aline
+    wrap"`` so as to align the keys and their values regarding their separators,
+    and also to wrap long values like the last one with ``3 and 3 and...``.
+    As you can see several options can be used if they are separated by at least
+    one space.
+
+
+The string value of ``content_cleaned`` is finally the following one which looks
+a little prettier.
 
 orpyste::
     /*
@@ -140,12 +157,12 @@ orpyste::
 
 
 info::
-    Here we have worked with a string, but you can work with files using the
+    Here we have worked with a string, but you can work with a file using the
     class ``pathlib.Path``. The syntax remains the same.
 
 
 info::
-    For verbatim contents, you can ask to keep final empty lines by adding
+    For verbatim block contents, you can ask to keep final empty lines by adding
     orpyste::``////`` at the end of the content.
 
 
@@ -158,16 +175,16 @@ Here are all the options of the argument ``layout``.
     1) ``"align"`` or ``"a"`` asks to align the separators in a block made of
     keys and values. By default, this option is not actived.
 
-    1) ``"columns"`` or ``"c"`` gives the number of columns of the file if the
+    2) ``"columns"`` or ``"c"`` gives the number of columns of the file if the
     wrap mode is used (see below). By default, the class uses "columns=80".
 
-    1) ``"spaces"`` or ``"s"`` allows to define the number of empty lines after
+    3) ``"spaces"`` or ``"s"`` allows to define the number of empty lines after
     blocks and comments. You can use more precisely ``"spaces-comment"`` or
     ``"sc"`` only for spacing after comments, and ``"spaces-block"`` or ``"sb"``
     only for spacing after blocks. By default, ``"spaces-comment = 1"`` and
     ``"spaces-block = 2"``.
 
-    1) ``"wrap"`` or ``"w"`` makes the cleaned content hard wrapped. There are
+    4) ``"wrap"`` or ``"w"`` makes the cleaned content hard wrapped. There are
     also ``"wrap-verbatim"`` or ``"wv"``, and ``"wrap-keyval"`` or ``"wk"`` only
     to wrap verbatim and key-value contents respectivly. By default, the content
     is not wrapped.
@@ -179,7 +196,8 @@ info::
 
 
 info::
-    All the default setting are stored in the class attribut ``DEFAULT_LAYOUTS`` whose default definition is the following one.
+    All the default setting are stored in the class attribut ``DEFAULT_LAYOUTS``
+    whose default definition is the following one.
 
     python::
         DEFAULT_LAYOUTS = {
@@ -190,8 +208,8 @@ info::
             WRAP: False
         }
 
-    You can use this attribut so as to alwways use the same setting instead of
-    using the argument ``layout``.
+    You can use this class attribut so as to alwways use the same setting
+    instead of using the argument ``layout``.
     """
 
     COMMENT_DECO = {

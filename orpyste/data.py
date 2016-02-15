@@ -2,51 +2,28 @@
 
 """
 prototype::
-    date = 2015-11-06     DOCSTRING ---> À finir !!!!
+    date = 2015-11-06
 
 
-This module ????
-
-
-allows to read efficient to type and simple structured string datas
-contained in files using the ``peuf`` specifications.
-
-
+This module is for reading and extractings easily ¨infos in ¨peuf files.
 """
 
 import re
 
-from orpyste.tools.ioview import IOView
+from orpyste.parse.ast import (
+    CONTAINER,
+    KEYVAL,
+    LEGAL_BLOCK_NAME,
+    MULTIKEYVAL,
+    VERBATIM
+)
 from orpyste.parse.walk import WalkInAST
-from orpyste.parse.ast import LEGAL_BLOCK_NAME, \
-                              CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM
+from orpyste.tools.ioview import IOView
 
 
 # ----------------------------------- #
 # -- DECORATOR(S) FOR THE LAZY MAN -- #
 # ----------------------------------- #
-
-def canbeused(meth):
-    """
-property::
-    see = Read
-
-    type = decorator
-
-    arg = func: meth ;
-          one method of the class ``Read``
-
-
-????
-    """
-    def newmeth(self, *args, **kwargs):
-        if not self.builddone:
-            raise BufferError("the ``build`` method has not been called")
-
-        return meth(self, *args, **kwargs)
-
-    return newmeth
-
 
 def adddata(meth):
     """
@@ -59,7 +36,7 @@ property::
           one method of the class ``Read``
 
 
-????
+This decorator is used each time that a new data has to be stored.
     """
     def newmeth(self, *args, **kwargs):
         self.walk_view.write(
@@ -80,20 +57,26 @@ property::
 
 class Infos():
     """
-?????
+prototype::
+    see = Read
 
-infos est re,voyé par itérateur de Read
+    arg-attr = None , str: querypath = None ;
+               a file like path used to walk in datas using ¨python regexes
+               without opening ``^`` and closing ``$``
+    arg-attr = None , str: mode = None ;
+               the mode of a block or a data
+    arg-attr = None , str , {'sep': str, 'key': str, 'value': str}: data = None ;
+               the datas found if the mode is for one data
 
 
-{'mode': keyval, 'querypath': main/test}
-{'mode': keyval, 'data': {'sep': '=', 'key': 'aaa', 'value': '1 + 9 = 10'}}
-{'mode': keyval, 'data': {'sep': '<>', 'key': 'bbbbbbbbb', 'value': '2'}}
-{'mode': keyval, 'data': {'sep': '=', 'key': 'c', 'value': '3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and...'}}
-{'mode': verbatim, 'querypath': main/sub_main/sub_sub_main/verb}
-{'mode': verbatim, 'data': }
-{'mode': verbatim, 'data': }
-{'mode': verbatim, 'data': }
-{'mode': verbatim, 'data': line 1}
+Here are some examples.
+
+    * ``mode = "keyval"`` and ``querypath = "main/test"``.
+    * ``mode = "keyval"`` and ``data = {'sep = '=', 'key = 'a', 'value = '1'}``.
+    * ``mode = "verbatim"`` and ''querypath = "main/sub_main/verb"''.
+    * ``mode = "verbatim"`` and ``data = ""``.
+    * ``mode = "verbatim"`` and ``data = "One line..."``.
+    * ... ¨etc.
     """
 
     _KEYSEPVAL = ["key", "sep", "value"]
@@ -117,8 +100,15 @@ infos est re,voyé par itérateur de Read
     @property
     def rtu_data(self):
         """
-rtu = ready to use
-juste pour facilitéer le parcours pour clé séparateur valeur
+prototype::
+    return = str , [str, str, str] ;
+             if we have one data, for a verbatim content the actual line is
+             returned, and for a key-value content that is a list looking like
+             ``[key, sep, value]``. For all other cases, a ``ValueError``
+             exception is raised.
+
+info::
+    "rtu" is the acronym of "Ready To Use".
         """
         if self.data == None:
             raise ValueError('no data available')
@@ -131,15 +121,19 @@ juste pour facilitéer le parcours pour clé séparateur valeur
 
 
     def __str__(self):
-        text = ["'mode': {0}".format(self.mode)]
+        text = ['mode = "{0}"'.format(self.mode)]
 
         if self.data != None:
-            text.append("'data': {0}".format(self.data))
+            if isinstance(self.data, str):
+                text.append('data = "{0}"'.format(self.data))
+
+            else:
+                text.append("data = {0}".format(self.data))
 
         if self.querypath != None:
-            text.append("'querypath': {0}".format(self.querypath))
+            text.append('querypath = "{0}"'.format(self.querypath))
 
-        return "{" + ", ".join(text) + "}"
+        return "data.Infos[{0}]".format(", ".join(text))
 
 
 # ------------- #
@@ -150,39 +144,292 @@ OPEN, CLOSE = "open", "close"
 DATAS_MODES = [KEYVAL, MULTIKEYVAL, VERBATIM]
 NEWBLOCK    = "newblock"
 
-
 class Read(WalkInAST):
     """
 prototype::
     see = parse.ast.AST , parse.walk.WalkInAST
 
-    arg-attr = pathlib.Path, str: content ;
-               see the documentation of ``parse.ast.AST``
-    arg-attr = str, dict: mode ;
-               see the documentation of ``parse.ast.AST``
-    arg-attr = str: ??? = "" ;
-               ???
+
+====================================
+The ¨peuf file used for our examples
+====================================
+
+Here is the ¨peuf file that will be used for our ¨python examples.
+
+orpyste::
+    /*
+     * One example...
+     */
+
+    main::
+    // Single line comment in the 1st container.
+
+        test::
+    /* Comment in a key-val block. */
+
+            a = 1 + 9
+            b <>  2
+
+    /* Comment in the value of a key. */
+
+            c = 3 and 4
+
+    main::
+        sub_main::
+            sub_sub_main::
+                verb::
+                    line 1
+                        line 2
+                            line 3
 
 
-===========
-???
-===========
+We want blocks of this file to be defined as follows.
 
-???
+    1) The blocks named orpyste:``test`` are for key-value datas with either
+    orpyste:``=``, or orpyste:``<>`` as a separator.
 
-prototype::
+    2) The blocks named orpyste:``verb`` are for verbatim contents.
 
-
-phase 1 on utilise IOView pour cérer une version utilisant qpath pour q(uery) path
-
-on ne garde que les données, donc les blicqs vides sont ignorés sans lever d'erreur ! en etre contient car lectrure = ecritue va effacer des choses (passer par clean de préréfence )
-
-on obtient une version compact du fichier peuf stockable à long terme !
+    3) All the remaining blocks are containers. This means that they are blocks
+    just containing others blocks.
 
 
-besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul nom de bloc pour un contexte donné, concrètement meêm nom possible si sous bloc dans deux blocs parents différents
+=========
+Basic use
+=========
 
-???
+The most important thing to do is to tell to ¨orpyste the semantic of our ¨peuf
+file. This is done using the argument ``mode`` in the following ¨python script
+where the variable ``content`` is the string value of our ¨peuf file (as noted
+later in this section, you can work directly with a ¨peuf file).
+
+python::
+    from orpyste.data import Read
+
+    infos = Read(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    infos.build()
+
+
+Let's see how we have used the argument ``mode`` (this variable is fully
+presented in the documentation of ``parse.ast.AST``).
+
+    1) ``mode`` is a dictionary having keys corresponding to kinds of blocks,
+    and string values for names of blocks.
+    You can use the special name ``":default:"`` so as to indicate a default
+    behavior.
+
+    2) ``"keyval:: = <>": "test"`` indicates that the blocks named
+    orpyste:``test`` are for key-value datas with either orpyste:``=``, or
+    orpyste:``<>`` as a separator as expected. You can indicate several names
+    by using a list of strings.
+
+    3) ``"verbatim" : "verb"`` is now easy to understand.
+
+    4) ``"container": ":default:"`` indicates taht blocks are by default
+    containers.
+
+
+info::
+    Instead of ``"keyval"``, you can use ``"multikeyval"`` if you want to allow
+    the use of the same key several times in the same block.
+
+
+info::
+    All kinds of blocks have shortnames which are ``"c"``, ``"k"``, ``"mk"``
+    and ``"v"`` for ``"container"``, ``"keyval"``, ``"multikeyval"`` and
+    ``"verbatim"`` respectively.
+
+
+It remains to see now how to access to all the datas parsed by the class
+``Read`` (in the following section, we'll see how to use some queries for finding
+special datas). Let's add the following lines to our previous code **(we give
+later in this section an efficient and friendly way to deal with datas found)**.
+
+...python::
+    for oneinfo in infos:
+        print(
+            '---',
+            "mode      = <<{0}>>".format(oneinfo.mode),
+            "data      = <<{0}>>".format(oneinfo.data),
+            "querypath = <<{0}>>".format(oneinfo.querypath),
+            sep = "\n"
+        )
+
+
+Launching in a terminal, we see the following output.
+
+term::
+    ---
+    mode      = <<keyval>>
+    data      = <<None>>
+    querypath = <<main/test>>
+    ---
+    mode      = <<keyval>>
+    data      = <<{'value': '1 + 9', 'sep': '=', 'key': 'a'}>>
+    querypath = <<None>>
+    ---
+    mode      = <<keyval>>
+    data      = <<{'value': '2', 'sep': '<>', 'key': 'b'}>>
+    querypath = <<None>>
+    ---
+    mode      = <<keyval>>
+    data      = <<{'value': '3 and 4', 'sep': '=', 'key': 'c'}>>
+    querypath = <<None>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<None>>
+    querypath = <<main/sub_main/sub_sub_main/verb>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<line 1>>
+    querypath = <<None>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<    line 2>>
+    querypath = <<None>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<        line 3>>
+    querypath = <<None>>
+
+
+The iteration gives instances of the class ``Infos`` which have three attributs.
+
+    1) The attribut ``'mode'`` gives the actual mode of the actual block or data.
+
+    2) The attribut ``'data'`` is equal to ``None`` if the actual ¨info is a new
+    block. Either this gives a string for one line in a verbatim content, or a
+    "natural" dictionary for a key-value data.
+
+    3) The attribut ``'querypath'`` is equal to ``None`` if the actual ¨info is
+    a data. Either this gives a path like string associated to the new block
+    just found.
+
+
+The next ¨python snippet shows an efficient way to deal easily with blocks and datas thanks to the two methods for datas.
+
+...python::
+    for oneinfo in infos:
+        if oneinfo.isnewblock:
+            print('--- {0} ---'.format(oneinfo.querypath))
+
+        else:
+            print(oneinfo.rtu_data)
+
+
+Launched in a terminal, we obtains the following output where for key-value
+datas we obtains a list of the kind : ``[key, separator, value]``.
+This is very useful because ¨python allows to use for example
+``key, sep, value = ['a', '=', '1 + 9']`` such as to have directly
+``key = "a"``, ``sep = "="`` and `` value = "1 + 9"``.
+
+term::
+    --- main/test ---
+    ['a', '=', '1 + 9']
+    ['b', '<>', '2']
+    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+    --- main/sub_main/sub_sub_main/verb ---
+    line 1
+        line 2
+            line 3
+
+
+info::
+    Here we have worked with a string, but you can work with a file using the
+    class ``pathlib.Path``. The syntax remains the same.
+
+
+info::
+    For verbatim block contents, you can ask to keep final empty lines by adding
+    orpyste::``////`` at the end of the content.
+
+
+=============================
+Looking for particular blocks
+=============================
+
+The iterator of the class ``Read`` can be used with a searching query on the
+path like strings of the blocks. Here is an example of use where you can see
+that queries use the ¨python regex syntax without leading ``^`` and the closing
+``$`` (the variable ``content`` is still the string value of our ¨peuf file).
+
+python::
+    from orpyste.data import Read
+
+    infos = Read(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    infos.build()
+
+    for query in [
+        ".*",                # Anything
+        "main/test",         # Only one path
+        "main/sub_main/.*",  # Anything "contained" inside "main/sub_main"
+    ]:
+        hrule = "="*len(query)
+
+        print("", hrule, query, hrule, sep = "\n")
+
+        for oneinfo in datas[query]:
+            if oneinfo.isnewblock:
+                print(
+                    "",
+                    "--- {0} [{1}] ---".format(oneinfo.querypath, oneinfo.mode),
+                    sep = "\n"
+                )
+
+            else:
+                print(oneinfo.rtu_data)
+
+
+This gives the following ouputs as expected.
+
+term::
+    ==
+    .*
+    ==
+
+    --- main/test [keyval] ---
+    ['aaa', '=', '1 + 9']
+    ['bbbbbbbbb', '<>', '2']
+    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+
+    --- main/sub_main/sub_sub_main/verb [verbatim] ---
+    line 1
+        line 2
+            line 3
+
+    =========
+    main/test
+    =========
+
+    --- main/test [keyval] ---
+    ['aaa', '=', '1 + 9']
+    ['bbbbbbbbb', '<>', '2']
+    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+
+    ================
+    main/sub_main/.*
+    ================
+
+    --- main/sub_main/sub_sub_main/verb [verbatim] ---
+    line 1
+        line 2
+            line 3
     """
 
 # ------------------------------- #
@@ -234,9 +481,8 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
 
     def __iter__(self):
         """
-This a basic iterator that yields the fllowing kind of dictuionaries ! see geitem car plus sympa !
-
-voir Infos
+This iterator is very basic: it yields the instances of ``Infos`` found during
+the analyze of the ¨peuf file.
         """
         for infos in self.walk_view:
             yield infos
@@ -244,13 +490,15 @@ voir Infos
 
     def __getitem__(self, querypath):
         """
-ceci est un iteratur en fait pour récupérer facilement des données  conjointement à KSVDict
+prototype::
+    arg = str: querypath ;
+          this a query using the ¨python regex syntax without the leading ``^``
+          and the closing ``$``
 
 
-block1/block2/block3 pour avoir la liste des lignes, ou bien celle des clés-valeurs ! Voir ia passage KSVDict
-
-
-posibilité de regex comme */block3  (ajout automatique de ^ et $)
+We hack the get item ¨python syntax via hooks so as to have an iterator
+accepting queries (see the last section of the documentation of the class
+for an example).
         """
 # What has to be extracted ?
         query_pattern = re.compile("^{0}$".format(querypath))
