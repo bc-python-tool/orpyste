@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-09
+    date = 2015-11-16
 
 
 This module contains classes so as to build an abstract syntax tree view of
@@ -161,7 +161,7 @@ pyterm::
     ...     "verbatim"   : "summary"
     ... })
     >>> for kind, infos in mode.items():
-    ...     print(kind, infos, sep = "\n    ")
+    ...     print(kind, infos, sep = "\\n    ")
     ...
     config
         {'seps': [':='], 'mode': 'keyval'}
@@ -172,9 +172,9 @@ pyterm::
 
 
 warning::
-    Here we have not used ":default:", but we can do it (just see the following
-    section). This implies that only the blocks named "config", "player" or
-    "summary" can be used.
+    Here we have not used ":default:" but we can do that (just see the following
+    section). Not using ":default:" implies that only the blocks named "config",
+    "player" and "summary" can be used.
 
 
 ================================

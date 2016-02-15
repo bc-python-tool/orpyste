@@ -2,12 +2,10 @@
 
 """
 prototype::
-    date = 2015-11-???
+    date = 2015-11-21
 
 
-ALIORERE AVEC UN PEU ESPACE !!!!!!!
-
-This module contains a class `Clean` so as to format a ¨peuf file following some
+This module contains a class `Clean` for formating a ¨peuf file following some
 rules that be customized by the user.
 """
 
@@ -27,7 +25,7 @@ property::
 
     type = decorator
 
-    arg = func: meth ;
+    arg = method: meth ;
           one method of the class ``Clean``
 
 
@@ -62,66 +60,138 @@ prototype::
 One example
 ===========
 
-?????
+The aim of this class is to produce standarized versions of ¨peuf files. Let's
+consider the following ¨peuf file.
+
+orpyste::
+
+    /*
+     * One example...
+     */
 
 
 
 
+    main::
 
-Here is an example using the class ``Clean``. We use the argument ``mode`` to
-indicate that blocks named orpyste::``test`` are for key-value contents,
-whereas other blocks are just containers. We also use ``layout = "aline wrap"``
-so as to align the keys and their values regarding their separators, and also to
-wrap long values like the last one with ``3 and 3 and...``. As you can see
-several options can be used if they are separated by at least one
+    // Single line comment in the 1st container.
 
 
+        test::
 
-.
-
-pyterm::
-????
+    /* Comment in a key-val block. */
 
 
-Here we have worked with in-memory objects. The content being stored in a
-strong, the class used internaly list of strings and returns a string. Indeed
-you can work woth files using the class ``pathlib.Path``. Here is an example
-of use.
+                aaa = 1
 
-pyterm::
-????
+                + 9
 
 
-======================
-Settings of the layout
-======================
-
-We give above all the layout options. You must know that several options can be
-used simply if they are separated by at least one space.
-
-    1) "align" or "a"
-        ---> gérer problème clé très longue
-
-    1) "columns" or "c"
-        ---> gérer problème clé très longue
-
-    1) "spaces" or "s"
-        ---> espace après
-    "spaces-comment" or "sc"
-        --->
-    "spaces-block" or "sb"
-        --->
-
-    1) "wrap" or "w"    Z!! on doit garder les espaces multiples !!!!
-        ---> retour à la ligne pour tout !
-    "wrap-verbatim" or "wv"
-        ---> retour à la ligne mais pas de collage
-    "wrap-keyval" or "wk"
-        --->  retour à la ligne avec collage et on tient compte du spératur si align
+                bbbbbbbbb <>
+    /* Comment in the value of a key. */
+                2
+                c                 =       3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and 3 and...
 
 
-    nbre espaces avant-après
-        ---> ????
+In this file, there are a lot of empty lines and the key-value are strangely
+formatted. Lets's consider the following ¨python script where the variable
+``content`` is the string value of the preceding ¨peuf file.
+
+python::
+    infos = Clean(
+        content = content,
+        mode    = {"c": ":default:", "k::= <>": "test", "v": "verb"},
+        layout  = "aline wrap columns=50"
+    )
+    infos.build()
+
+    content_cleaned = "\n".join(line for line in infos.view):
+
+
+In ths preceding code, we use ``mode``, this variable is explained in the
+documentation of ``parse.ast.AST``, and we use ``layout = "aline wrap"`` so as
+to align the keys and their values regarding their separators, and also to wrap
+long values like the last one with ``3 and 3 and...``. As you can see several
+options can be used if they are separated by at least one space. The string
+value of ``content_cleaned`` is finally the following one which looks better.
+
+orpyste::
+    /*
+     * One example...
+     */
+
+    main::
+    // Single line comment in the 1st container.
+
+        test::
+    /* Comment in a key-val block. */
+
+            aaa        = 1 + 9
+            bbbbbbbbb <>  2
+
+    /* Comment in the value of a key. */
+
+            c          = 3 and 3 and 3 and 3 and 3 and
+                         3 and 3 and 3 and 3 and 3 and
+                         3 and 3 and 3 and 3 and 3 and
+                         3 and 3 and 3 and 3 and 3 and
+                         3 and 3 and 3 and 3 and 3 and
+                         3 and 3 and 3 and...
+
+
+info::
+    Here we have worked with a string, but you can work with files using the
+    class ``pathlib.Path``. The syntax remains the same.
+
+
+info::
+    For verbatim contents, you can ask to keep final empty lines by adding
+    orpyste::``////`` at the end of the content.
+
+
+==================
+Setting the layout
+==================
+
+Here are all the options of the argument ``layout``.
+
+    1) ``"align"`` or ``"a"`` asks to align the separators in a block made of
+    keys and values. By default, this option is not actived.
+
+    1) ``"columns"`` or ``"c"`` gives the number of columns of the file if the
+    wrap mode is used (see below). By default, the class uses "columns=80".
+
+    1) ``"spaces"`` or ``"s"`` allows to define the number of empty lines after
+    blocks and comments. You can use more precisely ``"spaces-comment"`` or
+    ``"sc"`` only for spacing after comments, and ``"spaces-block"`` or ``"sb"``
+    only for spacing after blocks. By default, ``"spaces-comment = 1"`` and
+    ``"spaces-block = 2"``.
+
+    1) ``"wrap"`` or ``"w"`` makes the cleaned content hard wrapped. There are
+    also ``"wrap-verbatim"`` or ``"wv"``, and ``"wrap-keyval"`` or ``"wk"`` only
+    to wrap verbatim and key-value contents respectivly. By default, the content
+    is not wrapped.
+
+
+info::
+    Several options can be used simply if they are separated by at least one
+    space.
+
+
+info::
+    All the default setting are stored in the class attribut ``DEFAULT_LAYOUTS`` whose default definition is the following one.
+
+    python::
+        DEFAULT_LAYOUTS = {
+            SPACES        : 2,
+            SPACES_COMMENT: 1,
+            COLUMNS       : 80,
+            ALIGN         : False,
+            WRAP: False
+        }
+
+    You can use this attribut so as to alwways use the same setting instead of
+    using the argument ``layout``.
     """
 
     COMMENT_DECO = {
@@ -217,7 +287,6 @@ used simply if they are separated by at least one space.
         super().__init__(content = content, mode = mode)
 
         self.layout = layout
-        self.onetab = self.ONETAB
 
 
 # ----------------------------------- #
@@ -303,16 +372,20 @@ used simply if they are separated by at least one space.
 
     def add_indentation(self, text, indentlevel):
         """
-prototype::
-    ???
+property::
+    arg = str: text
+    arg = int: indentlevel
+
+    return = str ;
+             the text with leading ``indentlevel`` tabulations ``self.ONETAB``
+             added
         """
-        return "{0}{1}".format(self.onetab*indentlevel, text)
+        return "{0}{1}".format(self.ONETAB*indentlevel, text)
 
 
     def add_empty(self):
         """
-prototype::
-    ???
+Sometimes, we need to add an empty meaningless content. This method does this.
         """
         if self._datasfound:
             self.walk_view.write((None, "??"))
@@ -321,7 +394,10 @@ prototype::
     def wrap(self, text):
         """
 prototype::
-    ???
+    arg = str: text
+
+    return = str ;
+             the text wrapped regarding the value of ``self._columns``
         """
         if len(text) > self._columns and (
             (
@@ -371,10 +447,6 @@ prototype::
 
 
     def close_comments(self):
-        """
-prototype::
-    ???
-        """
         while(self._comment):
             if (
                 self.modes_stack
@@ -496,10 +568,9 @@ prototype::
 
     @closecomments
     def open_block(self, name):
-        self._datasfound   = True
-        self._isblockempty = True
-
         self._block_closed_alone = True
+        self._isblockempty       = True
+        self._datasfound         = True
 
         if self.modes_stack[-1] != "container":
             self._last_tag = "{0}@{1}".format(

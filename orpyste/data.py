@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-06
+    date = 2015-11-06     DOCSTRING ---> À finir !!!!
 
 
 This module ????
@@ -234,7 +234,7 @@ besoin d'autoriser plusieurs fois le même nom de bloc, avec par défaut un seul
 
     def __iter__(self):
         """
-This a basic iterator that yiels the fllowing kind of dictuionaries ! see geitem car plus sympa !
+This a basic iterator that yields the fllowing kind of dictuionaries ! see geitem car plus sympa !
 
 voir Infos
         """

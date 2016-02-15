@@ -1,0 +1,5 @@
+==========
+2016-02-???
+==========
+
+**Amélioration des docstrings de ``orpyste``:** la syntaxe utilisée se base sur de nouvelles spécifications de ¨pybadoc, un outil maison en cours de construction. On utilise des exemples "en console" pour rendre le propos plus clair et on indique les signatures des fonctions, des classes, ¨etc via le bloc pybadoc::``prototype::...`` à placer en début de docstring. Très lisible et très efficace !

@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-07-03     DOCSTRING ---> À finir !!!!
+    date = 2015-07-03
 
 
 This module gives an easy way to work either with a pickle file or with a list

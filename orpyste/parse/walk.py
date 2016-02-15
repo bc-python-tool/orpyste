@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-???
+    date = 2015-11-16
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in the
@@ -63,8 +63,9 @@ prototype::
 warning::
     This class only implements the walking but she doesn't acheive any action.
     To do something, you have to subclass ``WalkInAST`` and to implement what
-    you need in the following methods (see their docstrings for more
-    informations and also the class ``orpyste.data.Read`` for one example).
+    you need in the following methods (see their documentations for more
+    informations and also the class ``orpyste.data.Read`` for one example of
+    use).
 
         * ``start`` and ``end`` are methods called just before and after the
         walk.
@@ -119,15 +120,6 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
-                # print(">> >> >>", self.metadata) ; continue
-
-# on repère magic comment
-#     hors verbatil, on lève erreur !
-#     si utilise deux fois de suite au moins, on lève erreur
-#     si autre chose que ligne vide entre magic comment et balise fremante du bloc verbatim, on l!-ève erreur
-#     magic comment disparait par contre (clean devra gérer son ajout par contre)
-
-
                 kind = self.metadata['kind']
 
 # -- COMMENT -- #
@@ -344,13 +336,13 @@ prototype::
     arg = str: name
 
 
-This method is for opening a new block knowing its name.
+This method is for opening a new block knowning its name.
         """
         ...
 
     def close_block(self, name):
         """
-This method is for closing a block knowing its name.
+This method is for closing a block knowning its name.
         """
         ...
 
@@ -376,9 +368,6 @@ this informations are in the dictionary ``keyval``.
 # -------------- #
 
     def _add_empty_verbline(self):
-        """
-    ???
-        """
         for _ in range(self.nb_empty_verbline):
             self.add_line("")
 
@@ -387,7 +376,8 @@ this informations are in the dictionary ``keyval``.
 
     def add_magic_comment(self):
         """
-    ???
+This method is for adding the magic comment used for empty lines at the end of
+verbatim contents.
         """
         ...
 
