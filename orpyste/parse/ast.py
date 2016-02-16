@@ -472,7 +472,7 @@ prototype::
 
     arg-attr = pathlib.Path, str: content ;
                ``content`` can be an instance of the class ``pathlib.Path``,
-               that is a file given using its path, or `  `content`` can be a
+               that is a file given using its path, or ``content`` can be a
                string with all the content to be analyzed (see the attribut
                ``view``)
     arg-attr = str, dict: mode ;
@@ -630,12 +630,20 @@ warning::
 
             self._partial_view = IOView(
                 mode = "pickle",
-                path = value.with_suffix(".orpyste.partial.ast")
+                path = value.with_suffix(
+                    "{0}.orpyste.partial.ast".format(
+                        value.suffix
+                    )
+                )
             )
 
             self.view = IOView(
                 mode = "pickle",
-                path = value.with_suffix(".orpyste.ast")
+                path = value.with_suffix(
+                    "{0}.orpyste.ast".format(
+                        value.suffix
+                    )
+                )
             )
 
         else:
@@ -1064,8 +1072,6 @@ prototype::
 # A closing context.
                 elif ctxtinfos.openclose == self.CLOSE:
                     if not self._ctxts_stack:
-                        print(self._line)
-
                         raise ASTError(
                             "wrong closing context: see line #{0}".format(
                                 self._nbline

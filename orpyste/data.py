@@ -117,7 +117,7 @@ info::
             return self.data
 
         else:
-            return [self.data[x] for x in self._KEYSEPVAL]
+            return tuple(self.data[x] for x in self._KEYSEPVAL)
 
 
     def __str__(self):
@@ -330,14 +330,14 @@ instances of the class ``data.Infos``.
 Launched in a terminal, we obtains the following output where for key-value
 datas we obtains a list of the kind : ``[key, separator, value]``.
 This is very useful because ¨python allows to use for example
-``key, sep, value = ['a', '=', '1 + 9']`` such as to have directly
+``key, sep, value = ('a', '=', '1 + 9')`` such as to have directly
 ``key = "a"``, ``sep = "="`` and `` value = "1 + 9"``.
 
 term::
     --- main/test ---
-    ['a', '=', '1 + 9']
-    ['b', '<>', '2']
-    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+    ('a', '=', '1 + 9')
+    ('b', '<>', '2')
+    ('c', '=', '3 and 4')
     --- main/sub_main/sub_sub_main/verb ---
     line 1
         line 2
@@ -406,9 +406,9 @@ term::
     ==
 
     --- main/test [keyval] ---
-    ['aaa', '=', '1 + 9']
-    ['bbbbbbbbb', '<>', '2']
-    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+    ('aaa', '=', '1 + 9')
+    ('bbbbbbbbb', '<>', '2')
+    ('c', '=', '3 and 4')
 
     --- main/sub_main/sub_sub_main/verb [verbatim] ---
     line 1
@@ -422,7 +422,7 @@ term::
     --- main/test [keyval] ---
     ['aaa', '=', '1 + 9']
     ['bbbbbbbbb', '<>', '2']
-    ['c', '=', '3 and 3 and 3 and 3 and 3 and 3 and 3...']
+    ('c', '=', '3 and 4')
 
     ================
     main/sub_main/.*

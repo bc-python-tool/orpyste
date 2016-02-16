@@ -75,6 +75,7 @@ as to store datas. Here is how to use this class.
 
 
     def _writeinfile(self, value):
+        # print(">>>>", self.datas.name, value)
         pickle.dump(value, self.datas.open(mode = "ab"))
 
     def _iterinfile(self):

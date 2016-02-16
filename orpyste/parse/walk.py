@@ -15,7 +15,7 @@ info::
     the class ``parse.ast.AST``.
 """
 
-from orpyste.parse.ast import(
+from orpyste.parse.ast import (
     AST,
     CONTAINER,
     KEYVAL,
@@ -110,9 +110,8 @@ warning::
         else:
             self.walk_view = IOView(
                 mode = self.ast.view.mode,
-                path = self.content
+                path = self.ast.view.datas.with_suffix(".walk")
             )
-
 
         with self.walk_view:
 # -- START OF THE WALK -- #
@@ -133,6 +132,8 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
+                # print(self.metadata)
+                #
                 kind = self.metadata['kind']
 
 # -- COMMENT -- #
@@ -273,6 +274,7 @@ warning::
             self.end()
 
         self.builddone = True
+
 
 # ------------------------------- #
 # -- START AND END OF THE WALK -- #
