@@ -98,13 +98,21 @@ warning::
     def build(self):
 # We build the AST view.
         self.ast = self.AST(
-            content = self.content,
-            mode    = self.mode
+            mode    = self.mode,
+            content = self.content
         )
 
         self.ast.build()
 
-        self.walk_view = IOView(self.ast.view.mode)
+        if self.ast.view.mode == self.ast.view.LIST:
+            self.walk_view = IOView(self.ast.view.mode)
+
+        else:
+            self.walk_view = IOView(
+                mode = self.ast.view.mode,
+                path = self.content
+            )
+
 
         with self.walk_view:
 # -- START OF THE WALK -- #

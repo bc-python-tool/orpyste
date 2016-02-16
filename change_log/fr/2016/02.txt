@@ -1,4 +1,11 @@
 ==========
+2016-02-16
+==========
+
+**Prise en compte des fichiers:** la classe ``ioview.IOView`` gère maintenant les fichiers via ``pickle``.
+
+
+==========
 2016-02-15
 ==========
 

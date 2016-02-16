@@ -472,7 +472,7 @@ prototype::
 
     arg-attr = pathlib.Path, str: content ;
                ``content`` can be an instance of the class ``pathlib.Path``,
-               that is a file given using its path, or ``content`` can be a
+               that is a file given using its path, or `  `content`` can be a
                string with all the content to be analyzed (see the attribut
                ``view``)
     arg-attr = str, dict: mode ;
@@ -621,7 +621,7 @@ warning::
     @content.setter
     def content(self, value):
         if isinstance(value, str):
-            self._content      = StringIO(value)
+            self._content      = value
             self._partial_view = IOView("list")
             self.view          = IOView("list")
 
@@ -630,12 +630,12 @@ warning::
 
             self._partial_view = IOView(
                 mode = "pickle",
-                path = value / ".orpyste.partial.ast"
+                path = value.with_suffix(".orpyste.partial.ast")
             )
 
             self.view = IOView(
                 mode = "pickle",
-                path = value / ".orpyste.ast"
+                path = value.with_suffix(".orpyste.ast")
             )
 
         else:
@@ -890,9 +890,16 @@ property::
     yield = str ;
             each line of ``self.content``.
         """
-        for line in self.content:
-            self._nbline += 1
-            yield line.rstrip()
+        if isinstance(self._content, str):
+            for line in StringIO(self._content):
+                self._nbline += 1
+                yield line.rstrip()
+
+        else:
+            with self._content.open(mode ="r") as peuffile:
+                for line in peuffile:
+                    self._nbline += 1
+                    yield line.rstrip()
 
 
 # ----------------- #
@@ -1197,7 +1204,10 @@ prototype::
                 if onemeta['openclose'] == "open":
 # Preceding block must be a container !
                     if not self.last_block_is_container():
-                        raise ASTError("lastblock not a container, see line nb.{0}".format(onemeta['line']))
+                        raise ASTError(
+                            "last block not a container, see line nb.{0}" \
+                                .format(onemeta['line'])
+                        )
 
                     matcher = self.CONTENTS_MATCHERS.get(
                         onemeta['groups_found']['name'],

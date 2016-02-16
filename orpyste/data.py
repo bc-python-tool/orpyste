@@ -314,7 +314,9 @@ The iteration gives instances of the class ``Infos`` which have three attributs.
     just found.
 
 
-The next ¨python snippet shows an efficient way to deal easily with blocks and datas thanks to the two methods for datas.
+The next ¨python snippet shows an efficient way to deal easily with blocks and
+datas thanks to the two property methods ``isnewblock`` and ``rtu_data`` of the
+instances of the class ``data.Infos``.
 
 ...python::
     for oneinfo in infos:
@@ -492,13 +494,13 @@ the analyze of the ¨peuf file.
         """
 prototype::
     arg = str: querypath ;
-          this a query using the ¨python regex syntax without the leading ``^``
-          and the closing ``$``
+          this a query using the ¨python regex syntax without the leading
+          ``^`` and the closing ``$``
 
 
 We hack the get item ¨python syntax via hooks so as to have an iterator
 accepting queries (see the last section of the documentation of the class
-for an example).
+for an example of use of queries).
         """
 # What has to be extracted ?
         query_pattern = re.compile("^{0}$".format(querypath))

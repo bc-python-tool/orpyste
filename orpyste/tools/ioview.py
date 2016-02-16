@@ -51,7 +51,10 @@ as to store datas. Here is how to use this class.
             self.iter  = self._iterinlist
 
         elif self.mode == self.PICKLE:
-            self.datas = self.path.open(mode = "w")
+            if self.path.is_file():
+                remove(str(self.path))
+
+            self.datas = self.path
             self.write = self._writeinfile
             self.iter  = self._iterinfile
 
@@ -60,8 +63,7 @@ as to store datas. Here is how to use this class.
 
 
     def __exit__(self, type, value, traceback):
-        if self.mode == self.PICKLE:
-            self.datas.close()
+        ...
 
 
     def _writeinlist(self, value):
@@ -73,15 +75,16 @@ as to store datas. Here is how to use this class.
 
 
     def _writeinfile(self, value):
-        pickle.dump(value, self.datas)
+        pickle.dump(value, self.datas.open(mode = "ab"))
 
     def _iterinfile(self):
-        try:
-            while True:
-                yield pickle.load(self.datas)
+        with self.datas.open(mode = "rb") as datas:
+            try:
+                while True:
+                    yield pickle.load(datas)
 
-        except EOFError:
-            pass
+            except EOFError:
+                ...
 
 
     def __iter__(self):
