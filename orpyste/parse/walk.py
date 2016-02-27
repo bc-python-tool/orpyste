@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-16
+    date = 2016-02-16
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in the
@@ -51,6 +51,8 @@ prototype::
                see the documentation of ``parse.ast.AST``
     arg-attr = str, dict: mode ;
                see the documentation of ``parse.ast.AST``
+    arg-attr = str: encoding = "utf-8" ;
+               see the documentation of ``parse.ast.AST``
 
     attr = orpyste.tools.ioview.IOView: self.walk_view ;
            this is the attribut to use if you want to store information during
@@ -87,10 +89,12 @@ warning::
     def __init__(
         self,
         content,
-        mode
+        mode,
+        encoding = "utf-8"
     ):
-        self.content = content
-        self.mode    = mode
+        self.content  = content
+        self.mode     = mode
+        self.encoding = encoding
 
         self.builddone = False
 
@@ -132,9 +136,8 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
-                # print(self.metadata)
-                #
                 kind = self.metadata['kind']
+                self.nbline = self.metadata['nbline']
 
 # -- COMMENT -- #
                 if kind.startswith("comment-"):
@@ -244,7 +247,7 @@ warning::
                         if not lastkeyval:
                             raise PeufError(
                                 "missing first key, see line #{0}".format(
-                                    self.metadata['line']
+                                    self.metadata['nbline']
                                 )
                             )
 
@@ -255,13 +258,13 @@ warning::
                         if lastkeyval:
                             self.add_keyval(lastkeyval)
 
-                        self.kv_nbline = self.metadata["line"]
+                        self.kv_nbline = self.metadata['nbline']
                         key            = content['key']
 
                         if self.last_mode == KEYVAL and key in keysused:
                             raise PeufError(
                                 "key already used, see line #{0}".format(
-                                    self.metadata['line']
+                                    self.metadata['nbline']
                                 )
                             )
 
@@ -291,6 +294,10 @@ This method is called just before the walk starts.
 This method is called just after the end of the walk.
         """
         ...
+
+    def remove(self):
+        self.ast.view.remove()
+        self.walk_view.remove()
 
 
 # -------------- #

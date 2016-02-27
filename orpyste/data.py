@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-06
+    date = 2016-02-27
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -39,10 +39,17 @@ property::
 This decorator is used each time that a new data has to be stored.
     """
     def newmeth(self, *args, **kwargs):
+        if meth.__name__ == "add_keyval":
+            nbline = self.kv_nbline
+
+        else:
+            nbline = self.nbline
+
         self.walk_view.write(
             Infos(
-                data = args[0],
-                mode = self.last_mode
+                data   = args[0],
+                mode   = self.last_mode,
+                nbline = nbline
             )
         )
 
@@ -54,6 +61,9 @@ This decorator is used each time that a new data has to be stored.
 # ----------- #
 # -- INFOS -- #
 # ----------- #
+
+START_TAG = ":start:"
+END_TAG   = ":end:"
 
 class Infos():
     """
@@ -67,6 +77,8 @@ prototype::
                the mode of a block or a data
     arg-attr = None , str , {'sep': str, 'key': str, 'value': str}: data = None ;
                the datas found if the mode is for one data
+    arg-attr = int: nbline = -1 ;
+               the number of the line of the infos
 
 
 Here are some examples.
@@ -85,16 +97,26 @@ Here are some examples.
         self,
         querypath = None,
         mode      = None,
-        data      = None
+        data      = None,
+        nbline    = -1
     ):
         self.querypath = querypath
         self.mode      = mode
         self.data      = data
+        self.nbline    = nbline
 
 
-    @property
-    def isnewblock(self):
-        return self.querypath != None
+    def isblock(self):
+        return self.querypath not in [None, START_TAG, END_TAG]
+
+    def isdata(self):
+        return self.data != None
+
+    def isstart(self):
+        return self.querypath == START_TAG
+
+    def isend(self):
+        return self.querypath == END_TAG
 
 
     @property
@@ -142,12 +164,22 @@ info::
 
 OPEN, CLOSE = "open", "close"
 DATAS_MODES = [KEYVAL, MULTIKEYVAL, VERBATIM]
-NEWBLOCK    = "newblock"
+
+START_BLOCK = Infos(START_TAG)
+END_BLOCK   = Infos(END_TAG)
+
 
 class Read(WalkInAST):
     """
 prototype::
     see = parse.ast.AST , parse.walk.WalkInAST
+
+    arg-attr = pathlib.Path, str: content ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str, dict: mode ;
+               see the documentation of ``parse.ast.AST``
+    arg-attr = str: encoding = "utf-8" ;
+               see the documentation of ``parse.ast.AST``
 
 
 ====================================
@@ -260,76 +292,90 @@ later in this section an efficient and friendly way to deal with datas found)**.
             "mode      = <<{0}>>".format(oneinfo.mode),
             "data      = <<{0}>>".format(oneinfo.data),
             "querypath = <<{0}>>".format(oneinfo.querypath),
+            "nbline    = <<{0}>>".format(oneinfo.nbline),
             sep = "\n"
         )
 
 
-Launching in a terminal, we see the following output.
+Launching in a terminal, we see the following output where you can note that
+special blocks indicate the begin and the end of the iteration.
 
 term::
+    ---
+    mode      = <<None>>
+    data      = <<None>>
+    querypath = <<:start:>>
+    nbline    = <<-1>>
     ---
     mode      = <<keyval>>
     data      = <<None>>
     querypath = <<main/test>>
+    nbline    = <<8>>
     ---
     mode      = <<keyval>>
-    data      = <<{'value': '1 + 9', 'sep': '=', 'key': 'a'}>>
+    data      = <<{'sep': '=', 'key': 'a', 'value': '1 + 9'}>>
     querypath = <<None>>
+    nbline    = <<11>>
     ---
     mode      = <<keyval>>
-    data      = <<{'value': '2', 'sep': '<>', 'key': 'b'}>>
+    data      = <<{'sep': '<>', 'key': 'b', 'value': '2'}>>
     querypath = <<None>>
+    nbline    = <<12>>
     ---
     mode      = <<keyval>>
-    data      = <<{'value': '3 and 4', 'sep': '=', 'key': 'c'}>>
+    data      = <<{'sep': '=', 'key': 'c', 'value': '3 and 4'}>>
     querypath = <<None>>
+    nbline    = <<16>>
     ---
     mode      = <<verbatim>>
     data      = <<None>>
     querypath = <<main/sub_main/sub_sub_main/verb>>
+    nbline    = <<21>>
     ---
-    mode      = <<verbatim>>
-    data      = <<line 1>>
-    querypath = <<None>>
+    [...]
     ---
-    mode      = <<verbatim>>
-    data      = <<    line 2>>
-    querypath = <<None>>
+    mode      = <<None>>
+    data      = <<None>>
+    querypath = <<:end:>>
+    nbline    = <<-1>>
     ---
-    mode      = <<verbatim>>
-    data      = <<        line 3>>
-    querypath = <<None>>
 
 
 The iteration gives instances of the class ``Infos`` which have three attributs.
 
-    1) The attribut ``'mode'`` gives the actual mode of the actual block or data.
+    1) The attribut ``'mode'`` gives the actual mode of the actual block or data
+    (the special blocks for start and end have no mode).
 
     2) The attribut ``'data'`` is equal to ``None`` if the actual ¨info is a new
     block. Either this gives a string for one line in a verbatim content, or a
     "natural" dictionary for a key-value data.
 
     3) The attribut ``'querypath'`` is equal to ``None`` if the actual ¨info is
-    a data. Either this gives a path like string associated to the new block
-    just found.
+    a data, or one of the special blocks for start and end.
+    Otherwise the attribut ``'querypath'`` gives a path like string associated
+    to the new block just found.
 
 
 The next ¨python snippet shows an efficient way to deal easily with blocks and
-datas thanks to the two property methods ``isnewblock`` and ``rtu_data`` of the
-instances of the class ``data.Infos``.
+datas thanks to the methods ``isblock`` and ``isdata``
+((
+    There are also methods ``isstart`` and ``isend``. The later can be really
+    usefull.
+)),
+together with the property method ``rtu_data`` of the class ``data.Infos``.
 
 ...python::
     for oneinfo in infos:
-        if oneinfo.isnewblock:
+        if oneinfo.isblock():
             print('--- {0} ---'.format(oneinfo.querypath))
 
-        else:
+        elif oneinfo.isdata():
             print(oneinfo.rtu_data)
 
 
 Launched in a terminal, we obtains the following output where for key-value
-datas we obtains a list of the kind : ``[key, separator, value]``.
-This is very useful because ¨python allows to use for example
+datas we obtains a list of the kind : ``(key, separator, value)``. This is
+very useful because ¨python allows to use for example
 ``key, sep, value = ('a', '=', '1 + 9')`` such as to have directly
 ``key = "a"``, ``sep = "="`` and `` value = "1 + 9"``.
 
@@ -345,13 +391,13 @@ term::
 
 
 info::
-    Here we have worked with a string, but you can work with a file using the
-    class ``pathlib.Path``. The syntax remains the same.
+    For verbatim block contents, you can ask to keep final empty lines by adding
+    orpyste::``////`` at the end of the content.
 
 
 info::
-    For verbatim block contents, you can ask to keep final empty lines by adding
-    orpyste::``////`` at the end of the content.
+    Here we have worked with a string, but you can work with a file using the
+    class ``pathlib.Path``. The syntax remains the same.
 
 
 =============================
@@ -382,15 +428,19 @@ python::
         "main/test",         # Only one path
         "main/sub_main/.*",  # Anything "contained" inside "main/sub_main"
     ]:
-        hrule = "="*len(query)
+        title = "Query: {0}".format(query)
+        hrule = "="*len(title)
 
-        print("", hrule, query, hrule, sep = "\n")
+        print("", hrule, title, hrule, sep = "\n")
 
         for oneinfo in datas[query]:
-            if oneinfo.isnewblock:
+            if oneinfo.isblock():
                 print(
                     "",
-                    "--- {0} [{1}] ---".format(oneinfo.querypath, oneinfo.mode),
+                    "--- {0} [{1}] ---".format(
+                        oneinfo.querypath,
+                        oneinfo.mode
+                    ),
                     sep = "\n"
                 )
 
@@ -401,9 +451,9 @@ python::
 This gives the following ouputs as expected.
 
 term::
-    ==
-    .*
-    ==
+    =========
+    Query: .*
+    =========
 
     --- main/test [keyval] ---
     ('aaa', '=', '1 + 9')
@@ -415,18 +465,18 @@ term::
         line 2
             line 3
 
-    =========
-    main/test
-    =========
+    ================
+    Query: main/test
+    ================
 
     --- main/test [keyval] ---
     ['aaa', '=', '1 + 9']
     ['bbbbbbbbb', '<>', '2']
     ('c', '=', '3 and 4')
 
-    ================
-    main/sub_main/.*
-    ================
+    =======================
+    Query: main/sub_main/.*
+    =======================
 
     --- main/sub_main/sub_sub_main/verb [verbatim] ---
     line 1
@@ -456,7 +506,8 @@ term::
             self.walk_view.write(
                 Infos(
                     querypath = "/".join(self._qpath),
-                    mode      = self.last_mode
+                    mode      = self.last_mode,
+                    nbline    = self.nbline
                 )
             )
 
@@ -483,11 +534,23 @@ term::
 
     def __iter__(self):
         """
-This iterator is very basic: it yields the instances of ``Infos`` found during
-the analyze of the ¨peuf file.
+This iterator is very basic.
+
+    1) First a special instance of ``Infos`` indicating the starting of the
+    iteration is yielded.
+
+    2) Then the instances of ``Infos`` found during the analyze of the ¨peuf
+    file are yielded.
+
+    3) A special instance of ``Infos`` is finally yielded so as to indicate
+    that the iteration is finished.
         """
+        yield START_BLOCK
+
         for infos in self.walk_view:
             yield infos
+
+        yield END_BLOCK
 
 
     def __getitem__(self, querypath):
@@ -507,10 +570,9 @@ for an example of use of queries).
 
 # We can now extract the matching infos.
         datasfound = False
-        newblock   = True
 
         for infos in self.walk_view:
-            if infos.isnewblock:
+            if infos.isblock():
                 datasfound = query_pattern.search(infos.querypath)
 
                 if datasfound:
@@ -518,3 +580,14 @@ for an example of use of queries).
 
             elif datasfound:
                 yield infos
+
+
+# -------------------------------- #
+# -- CONVERTING TO A DICTIONARY -- #
+# -------------------------------- #
+
+    def dict(self):
+        """
+????
+        """
+        ...

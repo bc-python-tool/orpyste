@@ -1,4 +1,27 @@
 ==========
+2016-02-27
+==========
+
+**Amélioration importante du module ``data``:** voici ce qui a dû être fait suite à une tentative de ¨maj de tests unitaires de ¨mistool qui s'appuie sur ¨orpyste.
+
+    1) Dans ``data.Read``, pour un parcours aisé des données, l'itération envoie deux blocs fictifs nommés ``:start:`` et ``:end:`` indiquant le début et la fin du parcours.
+
+    2) Ce qui précède implique l'ajout de trois méthodes ``isstart``, ``isend`` et ``isdata`` à la classe ``data.Infos``.
+
+    3) Enfin la méthode ``isnewblock`` de la classe ``data.Infos`` a été renommée plus simplement ``isblock``.
+
+
+==========
+2016-02-17
+==========
+
+**Correction d'un bug dans la classe ``ast.AST``:** l'absence de définition d'un type par défaut n'était pas prise en compte.
+
+
+**Amélioration de la classe ``data.Read``:** les instances de la classe ``data.Infos`` renvoyées par les itérateurs ont un nouvel attribut donnant le numéro de la ligne dans le fichier physique d'une donnée ou d'un bloc repéré.
+
+
+==========
 2016-02-16
 ==========
 

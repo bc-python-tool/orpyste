@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-11-16
+    date = 2016-02-17
 
 
 This module contains classes so as to build an abstract syntax tree view of
@@ -196,6 +196,13 @@ pyterm::
     True
     >>> print(mode["unknown"])
     {'mode': 'container'}
+
+
+================================
+The special mode ``"illegal"``
+================================
+
+This is for illegal blocks. If you don't use this
     """
 
     def __init__(self, mode):
@@ -478,6 +485,9 @@ prototype::
     arg-attr = str, dict: mode ;
                an ¨orpyste mode that can use different kinds of syntax (see the
                documentation of the class ``Mode``)
+    arg-attr = str: encoding = "utf-8" ;
+               a well named argument...
+
 
     attr = file, io.StringIO: view ;
            this attribut contains an verbose and easy to read version of the
@@ -517,16 +527,16 @@ pyterm:
     ...     pprint(metadata)
     {'groups_found': {'name': 'test'},
      'kind': 'block',
-     'line': 1,
+     'nbline': 1,
      'mode': 'keyval',
      'openclose': 'open'}
     {'content': {'value_in_line': 'Missing a key-val first !'},
      'kind': ':content:',
-     'line': 2}
+     'nbline': 2}
     {'content': {'key': 'a', 'sep': '=', 'value': '3'},
      'kind': ':content:',
-     'line': 3}
-    {'kind': 'block', 'line': 3, 'openclose': 'close'}
+     'nbline': 3}
+    {'kind': 'block', 'nbline': 3, 'openclose': 'close'}
 
 
 warning::
@@ -599,11 +609,13 @@ warning::
     def __init__(
         self,
         content,
-        mode
+        mode,
+        encoding = "utf-8"
     ):
 # User's arguments.
-        self.content = content
-        self.mode    = mode
+        self.content  = content
+        self.mode     = mode
+        self.encoding = encoding
 
 # Let's build our contexts' rules.
         self.build_ctxts_rules()
@@ -631,18 +643,14 @@ warning::
             self._partial_view = IOView(
                 mode = "pickle",
                 path = value.with_suffix(
-                    "{0}.orpyste.partial.ast".format(
-                        value.suffix
-                    )
+                    "{0}.orpyste.partial.ast".format(value.suffix)
                 )
             )
 
             self.view = IOView(
                 mode = "pickle",
                 path = value.with_suffix(
-                    "{0}.orpyste.ast".format(
-                        value.suffix
-                    )
+                    "{0}.orpyste.ast".format(value.suffix)
                 )
             )
 
@@ -673,7 +681,7 @@ prototype::
              This will be the job of ``self.build_contents_rules`` to take care
              of lines of contents.
         """
-# MATCHERS FOR THE CONTEXTS [E.T. form]
+# MATCHERS FOR THE CONTEXTS [the E.T. experience]
 #
 # We build ¨python none human list for research with the following constraints.
 #
@@ -683,16 +691,19 @@ prototype::
 #     4) We store the regex objects in a list (think about the subcontexts).
 #
 # << Warning ! >> We add a matcher for empty line at the very beginning because
-# we want to keep them but we have also to skip them when searching for
+# we want to keep them but we have also have to skip them when searching for
 # contexts.
+        self.MATCHERS = [{
+            True:                   # Boolean wanted.
+            [re.compile("^$")]      # Liste or regexes to test.
+        }]
+
         self.CTXTINFOS_EMPTYLINE = CtxtInfos(
             kind       = ":emptyline:",
-            id_matcher = 0
+            id_matcher = 0    # See ``self.MATCHERS``.
         )
 
         self.CTXTINFOS_CONTENT = CtxtInfos(kind = ":content:")
-
-        self.MATCHERS = [{True: [re.compile("^$")]}]
 
         self.CTXTS_MATCHERS = [self.CTXTINFOS_EMPTYLINE]
 
@@ -873,7 +884,7 @@ prototype::
                     regex_grps = regex_grps,
                 )
 
-# "verbatim" en "container" modes.
+# "verbatim" and "container" modes.
             elif configs["mode"] in ["verbatim", "container"]:
                 self.CONTENTS_MATCHERS[ctxt] = ContentInfos(
                     mode       = configs["mode"],
@@ -904,7 +915,10 @@ property::
                 yield line.rstrip()
 
         else:
-            with self._content.open(mode ="r") as peuffile:
+            with self._content.open(
+                mode     = "r",
+                encoding = self.encoding
+            ) as peuffile:
                 for line in peuffile:
                     self._nbline += 1
                     yield line.rstrip()
@@ -1199,7 +1213,7 @@ prototype::
     action = this method looks for datas in contents regarding the mode of the
              blocks.
         """
-        self._defaultmatcher = self.CONTENTS_MATCHERS[":default:"]
+        _defaultmatcher = self.CONTENTS_MATCHERS.get(":default:", None)
         self._matcherstack   = []
         self._nb_emptylines  = 0
 
@@ -1212,13 +1226,22 @@ prototype::
                     if not self.last_block_is_container():
                         raise ASTError(
                             "last block not a container, see line nb.{0}" \
-                                .format(onemeta['line'])
+                                .format(onemeta['nbline'])
                         )
 
                     matcher = self.CONTENTS_MATCHERS.get(
                         onemeta['groups_found']['name'],
-                        self._defaultmatcher
+                        _defaultmatcher
                     )
+
+                    if not matcher:
+                        raise ASTError(
+                            "last block << {0} >> is illegal, see line nb.{1}" \
+                                .format(
+                                    onemeta['groups_found']['name'],
+                                    onemeta['nbline']
+                                )
+                        )
 
 # We must know the mode used by this block.
                     onemeta['mode'] = matcher.mode
@@ -1233,7 +1256,7 @@ prototype::
                 if not self._matcherstack:
                     raise ASTError(
                         "no block before, see line nb.{0}".format(
-                            onemeta['line']
+                            onemeta['nbline']
                         )
                     )
 
@@ -1277,8 +1300,8 @@ prototype::
 
     def store_one_ctxt(self, ctxtinfos, not_add_groups_alone = True):
         metadatas = {
-            "kind": ctxtinfos.kind,
-            "line": self._nbline,
+            "kind"  : ctxtinfos.kind,
+            "nbline": self._nbline,
         }
 
         if ctxtinfos.openclose:
@@ -1303,7 +1326,7 @@ prototype::
         if verbatim != None:
             verbatim = {
                 "kind"   : ":verbatim:",
-                "line"   : self._nbline,
+                "nbline" : self._nbline,
                 "content": verbatim,
             }
 

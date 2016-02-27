@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2015-07-03
+    date = 2016-02-16
 
 
 This module gives an easy way to work either with a pickle file or with a list
@@ -93,5 +93,6 @@ as to store datas. Here is how to use this class.
 
 
     def remove(self):
-        if self.mode != self.LIST:
+        if self.mode != self.LIST \
+        and self.datas.is_file():
             remove(str(self.datas))

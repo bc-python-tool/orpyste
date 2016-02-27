@@ -276,7 +276,7 @@ info::
         COLUMNS       : 80,
         ALIGN         : False,
 # ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
-# than ``WRAP``.
+# as ``WRAP``.
         WRAP: False
     }
 
@@ -300,9 +300,14 @@ info::
         self,
         content,
         mode,
-        layout = ""
+        encoding = "utf-8",
+        layout   = ""
     ):
-        super().__init__(content = content, mode = mode)
+        super().__init__(
+            content  = content,
+            mode     = mode,
+            encoding = encoding
+        )
 
         self.layout = layout
 
@@ -470,7 +475,7 @@ prototype::
                 self.modes_stack
                 and self.modes_stack[-1].endswith("keyval")
                 and not self._isblockempty
-                and self.kv_nbline < self._comment[0]['line']
+                and self.kv_nbline < self._comment[0]['nbline']
             ):
                 break
 
@@ -570,7 +575,7 @@ prototype::
 
     def open_comment(self, kind):
         self._comment.append({
-            "line"   : self.metadata["line"],
+            'nbline'   : self.metadata['nbline'],
             "kind"   : kind,
             "content": []
         })
@@ -592,7 +597,7 @@ prototype::
 
         if self.modes_stack[-1] != "container":
             self._last_tag = "{0}@{1}".format(
-                self.metadata["line"],
+                self.metadata['nbline'],
                 self.metadata["kind"]
             )
 
