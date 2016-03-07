@@ -1,0 +1,8 @@
+==========
+2016-03-07
+==========
+
+**Ajout d'une nouvelle classe ``data.ReadBlock`` :** cette classe renvoie les données d'un bloc en une seule fois et non au coup par coup (``data.ReadBlock`` est juste une sous-classe de la classe ``data.Read`` qui redéfinit la méthode magique ``__getitem__``).
+
+
+**Ajout d'une nouvelle méthode ``short_rtu_data`` à la classe ``data.Infos`` :** cette méthode permet d'obtenir des données renvoyées bloc par bloc sans leur numéro de la ligne dans le fichier ¨peuf d'origine.

@@ -202,7 +202,8 @@ pyterm::
 The special mode ``"illegal"``
 ================================
 
-This is for illegal blocks. If you don't use this
+This is for illegal blocks. If you don't use this, any name not defined in the
+mode will be ligeal.
     """
 
     def __init__(self, mode):

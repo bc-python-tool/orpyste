@@ -2,12 +2,13 @@
 
 """
 prototype::
-    date = 2016-02-27
+    date = 2016-03-07
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
 """
 
+from collections import OrderedDict
 import re
 
 from orpyste.parse.ast import (
@@ -68,7 +69,7 @@ END_TAG   = ":end:"
 class Infos():
     """
 prototype::
-    see = Read
+    see = Read, ReadBlock
 
     arg-attr = None , str: querypath = None ;
                a file like path used to walk in datas using ¨python regexes
@@ -79,6 +80,9 @@ prototype::
                the datas found if the mode is for one data
     arg-attr = int: nbline = -1 ;
                the number of the line of the infos
+
+    arg-attr = bool: islinebyline = True;
+               datas can be returned line by line or block by block
 
 
 Here are some examples.
@@ -95,15 +99,17 @@ Here are some examples.
 
     def __init__(
         self,
-        querypath = None,
-        mode      = None,
-        data      = None,
-        nbline    = -1
+        querypath    = None,
+        mode         = None,
+        data         = None,
+        nbline       = -1,
+        islinebyline = True
     ):
-        self.querypath = querypath
-        self.mode      = mode
-        self.data      = data
-        self.nbline    = nbline
+        self.querypath    = querypath
+        self.mode         = mode
+        self.data         = data
+        self.nbline       = nbline
+        self.islinebyline = islinebyline
 
 
     def isblock(self):
@@ -123,11 +129,37 @@ Here are some examples.
     def rtu_data(self):
         """
 prototype::
-    return = str , [str, str, str] ;
-             if we have one data, for a verbatim content the actual line is
-             returned, and for a key-value content that is a list looking like
-             ``[key, sep, value]``. For all other cases, a ``ValueError``
-             exception is raised.
+    return = if self.islinebyline == True then str ,
+                                               [str, str, str]
+             else [(int, str),...] ,
+                  OrderedDict((int, str): {"key": str, "val": val});
+             if we have no data, a ``ValueError`` exception is raised,
+             otherwise friendly version of datas is returned
+
+
+If ``self.islinebyline`` is ``True``, the datas looks as it follows.
+
+    1) For a verbatim content the actual line is returned.
+
+    2) For a key-value content that is a list looking like ``[key, sep, value]``.
+
+
+If ``self.islinebyline`` is ``False``, the datas are of the following kinds
+where ``nbline`` refers to the number line in the ¨peuf file (this can be useful
+for raising errors to the user or for the ``"multikeyval"`` mode).
+
+    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
+    is returned.
+
+    2) For a key-value content, the method returns an ordered dictionary with
+    ``(nbline, key)`` like tuples for keys, and ``{"sep": ..., "val": ...}``
+    like dictionary for values.
+
+
+info::
+    If ``self.islinebyline`` is ``True``, the user can access the number line
+    in the ¨peuf file simply by using ``self.nbline``
+
 
 info::
     "rtu" is the acronym of "Ready To Use".
@@ -135,15 +167,61 @@ info::
         if self.data == None:
             raise ValueError('no data available')
 
-        if self.mode == VERBATIM:
+# Line by line delivery
+        if self.islinebyline:
+            if self.mode == VERBATIM:
+                return self.data
+
+            else:
+                return tuple(self.data[x] for x in self._KEYSEPVAL)
+
+# Block by block delivery
+        else:
             return self.data
 
-        else:
-            return tuple(self.data[x] for x in self._KEYSEPVAL)
+    @property
+    def short_rtu_data(self):
+        """
+prototype::
+    see = self.rtu_data
 
+
+If ``self.islinebyline == False``, an ``ValueError`` error is raised, otherwise
+this method gives the same kind of values than ``self.rtu_data`` but without any
+number line.
+
+
+warning::
+    For the ``"multikeyval"`` mode, if the keys is met two times, an error will
+    be raised (the number line is also used to diiferentiate the same key used
+    at different places in a ``"multikeyval"`` block).
+        """
+        if self.data == None:
+            raise ValueError('no data available')
+
+        if self.islinebyline:
+            raise ValueError('no short data for a line by line delivery')
+
+        if self.mode == "verbatim":
+            return [line for (nb, line) in self.data]
+
+        else:
+            data = OrderedDict()
+
+            for (nb, key), val in self.data.items():
+                if key in data:
+                    raise ValueError(
+                        "output impossible because the key "
+                        + "<< {0} >> ".format(key) +
+                        "has been already used"
+                    )
+
+                data[key] = val
+
+            return data
 
     def __str__(self):
-        text = ['mode = "{0}"'.format(self.mode)]
+        text = ['mode = {0}'.format(repr(self.mode))]
 
         if self.data != None:
             if isinstance(self.data, str):
@@ -158,9 +236,9 @@ info::
         return "data.Infos[{0}]".format(", ".join(text))
 
 
-# ------------- #
-# -- READING -- #
-# ------------- #
+# -------------------------- #
+# -- READING LINE BY LINE -- #
+# -------------------------- #
 
 OPEN, CLOSE = "open", "close"
 DATAS_MODES = [KEYVAL, MULTIKEYVAL, VERBATIM]
@@ -534,6 +612,10 @@ term::
 
     def __iter__(self):
         """
+prorotype::
+    see = self.__getitem__
+
+
 This iterator is very basic.
 
     1) First a special instance of ``Infos`` indicating the starting of the
@@ -546,10 +628,7 @@ This iterator is very basic.
     that the iteration is finished.
         """
         yield START_BLOCK
-
-        for infos in self.walk_view:
-            yield infos
-
+        yield from self[".*"]
         yield END_BLOCK
 
 
@@ -571,23 +650,247 @@ for an example of use of queries).
 # We can now extract the matching infos.
         datasfound = False
 
-        for infos in self.walk_view:
-            if infos.isblock():
-                datasfound = query_pattern.search(infos.querypath)
+        for oneinfo in self.walk_view:
+            if oneinfo.isblock():
+                datasfound = query_pattern.search(oneinfo.querypath)
 
                 if datasfound:
-                    yield infos
+                    yield oneinfo
 
             elif datasfound:
-                yield infos
+                yield oneinfo
 
 
-# -------------------------------- #
-# -- CONVERTING TO A DICTIONARY -- #
-# -------------------------------- #
+# ---------------------------- #
+# -- READING BLOCK BY BLOCK -- #
+# ---------------------------- #
 
-    def dict(self):
+class ReadBlock(Read):
+    """
+prototype::
+    see = Read
+
+
+=====================================================
+``ReadBlock`` is near to ``Read`` but still different
+=====================================================
+
+The only real difference between the classes ``ReadBlock`` and ``Read`` is that
+the former returns the datas block by block, whereas the second one gives line
+by line informations (with huge files, the line by line readers is a better one).
+
+
+warning::
+    Take a look first at the documentation of the class ``Read`` because we are
+    going to give only new informations regarding to this class.
+
+
+====================================
+The ¨peuf file used for our examples
+====================================
+
+Here is the uncommented ¨peuf file that will be used for our ¨python examples where the block orpyste:``test`` has key-value datas, and orpyste:``verb`` uses
+a verbatim content.
+
+orpyste::
+    main::
+        test::
+            a = 1 + 9
+            b <>  2
+            c = 3 and 4
+
+    main::
+        sub_main::
+            sub_sub_main::
+                verb::
+                    line 1
+                        line 2
+                            line 3
+
+
+=====================
+Reading, the hard way
+=====================
+
+Let's see how the datas are roughly sent by the basic iterator of the class
+``ReadBlock``.
+
+python::
+    from orpyste.data import ReadBlock
+
+    infos = ReadBlock(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    infos.build()
+
+    for oneinfo in infos:
+        print(
+            '---',
+            "mode      = <<{0}>>".format(oneinfo.mode),
+            "data      = <<{0}>>".format(oneinfo.data),
+            "querypath = <<{0}>>".format(oneinfo.querypath),
+            sep = "\n"
+        )
+
+
+Launching in a terminal, we see the following output.
+
+term::
+    ---
+    mode      = <<None>>
+    data      = <<None>>
+    querypath = <<:start:>>
+    ---
+    mode      = <<keyval>>
+    data      = <<None>>
+    querypath = <<main/test>>
+    ---
+    mode      = <<keyval>>
+    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}), ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and 3 and 3 and 3 and 3 and 3 and 3...', 'sep': '='})])>>
+    querypath = <<None>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<None>>
+    querypath = <<main/sub_main/sub_sub_main/verb>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<[(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]>>
+    querypath = <<None>>
+    ---
+    mode      = <<None>>
+    data      = <<None>>
+    querypath = <<:end:>>
+
+
+The iteration still gives instances of the class ``Infos`` but with different
+kinds of datas reagrding to the ones obtained with the class ``Read``.
+
+
+
+
+
+
+    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
+    is returned.
+
+    2) For a key-value content, the method returns an ordered dictionary with
+    ``(nbline, key)`` like tuples for keys, and ``{"sep": ..., "val": ...}``
+    like dictionary for values.
+
+
+We can still asks to have easier to use datas thanks to the property method
+``rtu_data`` of the class ``data.Infos``.
+
+...python::
+    for oneinfo in infos:
+        if oneinfo.isblock():
+            print('--- {0} ---'.format(oneinfo.querypath))
+
+        elif oneinfo.isdata():
+            pprint(oneinfo.rtu_data)
+
+
+Launched in a terminal, we obtains the following output (where the dictionary is
+indeed an ordered one).
+
+term::
+    --- main/test ---
+    {(11, 'aaa'): {'sep': '=', 'val': '1 + 9'},
+     (12, 'bbbbbbbbb'): {'sep': '<>', 'val': '2'},
+     (16, 'c'): {'sep': '=', 'val': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}}
+    --- main/sub_main/sub_sub_main/verb ---
+    [(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]
+
+
+If you really do not want to have the number of lines, you can use the additional property method ``short_rtu_data`` like ine the following code.
+
+...python::
+    for oneinfo in infos:
+        if oneinfo.isblock():
+            print('--- {0} ---'.format(oneinfo.querypath))
+
+        elif oneinfo.isdata():
+            pprint(oneinfo.short_rtu_data)
+
+In a terminal we have the following printings.
+
+term::
+
+
+
+=============================
+Looking for particular blocks
+=============================
+
+See the documentation of the class ``Read``. Regarding to the class ``Read``,
+just the ouputs of the class ``ReadBlock`` are different but the way to use
+queries remains the same.
+    """
+
+    def _addblockdata(self, oneinfo):
+        if self._lastmode == "verbatim":
+            self._datas.append((oneinfo.nbline, oneinfo.data))
+
+        else:
+            key, sep, val = oneinfo.rtu_data
+
+            self._datas[(oneinfo.nbline, key)] = {
+                "sep" : sep,
+                "val" : val
+            }
+
+
+    def __getitem__(self, querypath):
         """
-????
+prototype::
+    see = Read.__getitem__
         """
-        ...
+# What has to be extracted ?
+        query_pattern = re.compile("^{0}$".format(querypath))
+
+# We can now extract the matching infos.
+        datasfound  = False
+        self._datas = None
+
+        for oneinfo in self.walk_view:
+            if oneinfo.isblock():
+                datasfound = query_pattern.search(oneinfo.querypath)
+
+                if datasfound:
+                    if self._datas != None:
+                        yield Infos(
+                            mode         = self._lastmode,
+                            data         = self._datas,
+                            islinebyline = False
+                        )
+
+                    self._lastmode = oneinfo.mode
+
+                    if self._lastmode == "verbatim":
+                        self._datas = []
+
+                    else:
+                        self._datas = OrderedDict()
+
+                    yield oneinfo
+
+
+            elif datasfound:
+                self._addblockdata(oneinfo)
+
+
+        if self._datas != None:
+            yield Infos(
+                mode         = oneinfo.mode,
+                data         = self._datas,
+                islinebyline = False
+            )
+
+        self._datas    = None
+        self._lastmode = None
