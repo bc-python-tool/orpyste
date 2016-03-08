@@ -13,11 +13,24 @@ from os import remove
 import pickle
 
 
+# -------------------- #
+# -- SAFE CONSTANTS -- #
+# -------------------- #
+
+IO_TYPES = LIST, PICKLE = "list", "pickle"
+
+LONG_IO_TYPES = {x[0]: x for x in IO_TYPES}
+
+
+# --------------- #
+# -- THE CLASS -- #
+# --------------- #
+
 class IOView():
     """
 prototype::
-    arg-attr = str: mode in self.MODES
-                         or in self.LONG_MODES ;
+    arg-attr = str: mode in IO_TYPES
+                      or in LONG_IO_TYPES ;
                if ``mode = "list"`` then you will work with a list, and if
                ``mode = "pickle"`` then you will work with a pickle file
     arg-attr = pathlib.Path, None: path = None ;
@@ -34,23 +47,19 @@ as to store datas. Here is how to use this class.
 
     3) To read the datas, just use the iterator syntax ``for data in ...:``.
     """
-    MODES = LIST, PICKLE = "list", "pickle"
-
-    LONG_MODES = {x[0]: x for x in MODES}
-
 
     def __init__(self, mode, path = None):
-        self.mode = self.LONG_MODES.get(mode, mode)
+        self.mode = LONG_IO_TYPES.get(mode, mode)
         self.path = path
 
 
     def __enter__(self):
-        if self.mode == self.LIST:
+        if self.mode == LIST:
             self.datas = []
             self.write = self._writeinlist
             self.iter  = self._iterinlist
 
-        elif self.mode == self.PICKLE:
+        elif self.mode == PICKLE:
             if self.path.is_file():
                 remove(str(self.path))
 
@@ -75,7 +84,6 @@ as to store datas. Here is how to use this class.
 
 
     def _writeinfile(self, value):
-        # print(">>>>", self.datas.name, value)
         pickle.dump(value, self.datas.open(mode = "ab"))
 
     def _iterinfile(self):
@@ -93,6 +101,6 @@ as to store datas. Here is how to use this class.
 
 
     def remove(self):
-        if self.mode != self.LIST \
+        if self.mode != LIST \
         and self.datas.is_file():
             remove(str(self.datas))

@@ -11,7 +11,103 @@ rules that be customized by the user.
 
 import re
 
-from orpyste.parse.walk import IOView, WalkInAST
+from orpyste.parse.walk import *
+
+
+# -------------------- #
+# -- SAFE CONSTANTS -- #
+# -------------------- #
+
+SIZE_TAG = "size"
+
+INDENTLEVEL_TAG  = "indentlevel"
+LENMAX_TAG = "lenmax"
+
+SINGLELINE = "singleline"
+MULTILINES = "multilines"
+
+COMMENT_DECO = {
+    OPEN: {
+        SINGLELINE: "//",
+        "multilines": "/*"
+    },
+    CLOSE: {
+        SINGLELINE: "",
+        MULTILINES: "*/"
+    },
+}
+
+BOOL_LAYOUTS \
+= ALIGN, WRAP, WRAP_VERBATIM, WRAP_KEYVAL \
+= "align", "wrap", "wrap-verbatim", "wrap-keyval"
+
+LONG_BOOL_LAYOUTS = {
+    "".join(
+        y[0] for y in x.split('-')
+    ): x
+    for x in BOOL_LAYOUTS
+}
+
+PATTERNS_BOOL_LAYOUTS = {
+    re.compile(
+        "(^|{spaces}+)(?P<kind>{name}|{abrev})({spaces}+|$)" \
+            .format(
+                spaces = "[ \\t]",
+                name   = name,
+                abrev  = abrev,
+            )
+    )
+    for abrev, name in LONG_BOOL_LAYOUTS.items()
+}
+
+# << WARNING ! >> Keep the following lines in case of future more advanced
+# features !
+VAL_LAYOUTS \
+= COLUMNS, SPACES, SPACES_BLOCK, SPACES_COMMENT \
+= "columns", "spaces", "spaces-block", "spaces-comment"
+
+LONG_VAL_LAYOUTS = {
+    "".join(y[0] for y in x.split('-')): x
+    for x in VAL_LAYOUTS
+}
+
+PATTERNS_VAL_LAYOUTS = {
+    re.compile(
+        "^((?P<kind>{name}|{abrev})"
+        "{spaces}*={spaces}*(?P<size>\d+))({spaces}+|$)" \
+            .format(
+                spaces = "[ \\t]",
+                name   = name,
+                abrev  = abrev,
+            )
+    )
+    for abrev, name in LONG_VAL_LAYOUTS.items()
+}
+
+DEFAULT_LAYOUTS = {
+    SPACES        : 2,
+    SPACES_COMMENT: 1,
+    COLUMNS       : 80,
+    ALIGN         : False,
+# ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
+# as ``WRAP``.
+    WRAP: False
+}
+
+ALL_LAYOUTS = set(BOOL_LAYOUTS) | set(VAL_LAYOUTS)
+
+PARENT_LAYOUTS = {}
+
+for x in ALL_LAYOUTS:
+    if "-" in x:
+        parent, _ = x.split('-')
+
+        PARENT_LAYOUTS[x] = parent
+
+        if x not in DEFAULT_LAYOUTS:
+            DEFAULT_LAYOUTS[x] = DEFAULT_LAYOUTS[parent]
+
+ONETAB = " "*4
 
 
 # ----------------------------------- #
@@ -103,7 +199,7 @@ python::
         content = content,
         layout  = "aline wrap columns=50",
         mode    = {
-            "container"    : "main",
+            CONTAINER    : "main",
             "keyval:: = <>": "test"
         }
     )
@@ -212,90 +308,6 @@ info::
     instead of using the argument ``layout``.
     """
 
-    COMMENT_DECO = {
-        "open": {
-            "singleline": "//",
-            "multilines": "/*"
-        },
-        "close": {
-            "singleline": "",
-            "multilines": "*/"
-        },
-    }
-
-    BOOL_LAYOUTS \
-    = ALIGN, WRAP, WRAP_VERBATIM, WRAP_KEYVAL \
-    = "align", "wrap", "wrap-verbatim", "wrap-keyval"
-
-    LONG_BOOL_LAYOUTS = {
-        "".join(
-            y[0] for y in x.split('-')
-        ): x
-        for x in BOOL_LAYOUTS
-    }
-
-    PATTERNS_BOOL_LAYOUTS = {
-        re.compile(
-            "(^|{spaces}+)(?P<kind>{name}|{abrev})({spaces}+|$)" \
-                .format(
-                    spaces = "[ \\t]",
-                    name   = name,
-                    abrev  = abrev,
-                )
-        )
-        for abrev, name in LONG_BOOL_LAYOUTS.items()
-    }
-
-# << WARNING ! >> Keep the following lines in case of future more advanced
-# features !
-    VAL_LAYOUTS \
-    = COLUMNS, SPACES, SPACES_BLOCK, SPACES_COMMENT \
-    = "columns", "spaces", "spaces-block", "spaces-comment"
-
-    LONG_VAL_LAYOUTS = {
-        "".join(y[0] for y in x.split('-')): x
-        for x in VAL_LAYOUTS
-    }
-
-    PATTERNS_VAL_LAYOUTS = {
-        re.compile(
-            "^((?P<kind>{name}|{abrev})"
-            "{spaces}*={spaces}*(?P<size>\d+))({spaces}+|$)" \
-                .format(
-                    spaces = "[ \\t]",
-                    name   = name,
-                    abrev  = abrev,
-                )
-        )
-        for abrev, name in LONG_VAL_LAYOUTS.items()
-    }
-
-    DEFAULT_LAYOUTS = {
-        SPACES        : 2,
-        SPACES_COMMENT: 1,
-        COLUMNS       : 80,
-        ALIGN         : False,
-# ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
-# as ``WRAP``.
-        WRAP: False
-    }
-
-    ALL_LAYOUTS = set(BOOL_LAYOUTS) | set(VAL_LAYOUTS)
-
-    PARENT_LAYOUTS = {}
-
-    for x in ALL_LAYOUTS:
-        if "-" in x:
-            parent, _ = x.split('-')
-
-            PARENT_LAYOUTS[x] = parent
-
-            if x not in DEFAULT_LAYOUTS:
-                DEFAULT_LAYOUTS[x] = DEFAULT_LAYOUTS[parent]
-
-    ONETAB = " "*4
-
-
     def __init__(
         self,
         content,
@@ -322,17 +334,17 @@ info::
 
     @layout.setter
     def layout(self, value):
-        self._layout  = self.DEFAULT_LAYOUTS
+        self._layout  = DEFAULT_LAYOUTS
         settingsfound = set()
 
 # We must search first the single layout settings.
-        for regex in self.PATTERNS_BOOL_LAYOUTS:
+        for regex in PATTERNS_BOOL_LAYOUTS:
             search = regex.search(value)
 
             if search:
                 start, end = search.span()
-                kind       = search.groupdict()["kind"]
-                kind       = self.LONG_BOOL_LAYOUTS.get(kind, kind)
+                kind       = search.groupdict()[KIND_TAG]
+                kind       = LONG_BOOL_LAYOUTS.get(kind, kind)
 
                 self._layout[kind] = True
                 settingsfound.add(kind)
@@ -346,15 +358,15 @@ info::
         while value:
             nomatchfound = True
 
-            for regex in self.PATTERNS_VAL_LAYOUTS:
+            for regex in PATTERNS_VAL_LAYOUTS:
                 search = regex.search(value)
 
                 if search:
                     nomatchfound = False
                     start, end   = search.span()
-                    kind         = search.groupdict()["kind"]
-                    kind         = self.LONG_VAL_LAYOUTS.get(kind, kind)
-                    size         = search.groupdict()["size"]
+                    kind         = search.groupdict()[KIND_TAG]
+                    kind         = LONG_VAL_LAYOUTS.get(kind, kind)
+                    size         = search.groupdict()[SIZE_TAG]
 
                     self._layout[kind] = int(size)
                     settingsfound.add(kind)
@@ -373,9 +385,9 @@ info::
                 )
 
 # Parent settings
-        for onelayout in self.ALL_LAYOUTS - settingsfound:
-            if onelayout in self.PARENT_LAYOUTS:
-                parent = self.PARENT_LAYOUTS[onelayout]
+        for onelayout in ALL_LAYOUTS - settingsfound:
+            if onelayout in PARENT_LAYOUTS:
+                parent = PARENT_LAYOUTS[onelayout]
 
                 if parent in settingsfound:
                     self._layout[onelayout] = self._layout[parent]
@@ -400,10 +412,10 @@ property::
     arg = int: indentlevel
 
     return = str ;
-             the text with leading ``indentlevel`` tabulations ``self.ONETAB``
+             the text with leading ``indentlevel`` tabulations ``ONETAB``
              added
         """
-        return "{0}{1}".format(self.ONETAB*indentlevel, text)
+        return "{0}{1}".format(ONETAB*indentlevel, text)
 
 
     def add_empty(self):
@@ -411,7 +423,7 @@ property::
 Sometimes, we need to add an empty meaningless content. This method does this.
         """
         if self._datasfound:
-            self.walk_view.write((None, "??"))
+            self.walk_view.write((None, ""))
 
 
     def wrap(self, text):
@@ -424,13 +436,13 @@ prototype::
         """
         if len(text) > self._columns and (
             (
-                self._mode == "keyval" and self._wrap_keyval
+                self._mode == KEYVAL and self._wrap_keyval
             ) or (
-                self._mode == "verbatim" and self._wrap_verbatim
+                self._mode == VERBATIM and self._wrap_verbatim
             )
         ):
 # "key-value" mode
-            if self._mode == "keyval":
+            if self._mode == KEYVAL:
                 extraspaces = self.add_indentation(
                     self._kv_extra_spaces,
                     self.indentlevel
@@ -441,7 +453,7 @@ prototype::
 
                 newtext = [self._lastkeysep_indented]
 
-# "verbatim" mode
+# VERBATIM mode
             else:
                 extraspaces = self.add_indentation("", self.indentlevel)[:-1]
 
@@ -473,16 +485,16 @@ prototype::
         while(self._comment):
             if (
                 self.modes_stack
-                and self.modes_stack[-1].endswith("keyval")
+                and self.modes_stack[-1].endswith(KEYVAL)
                 and not self._isblockempty
-                and self.kv_nbline < self._comment[0]['nbline']
+                and self.kv_nbline < self._comment[0][NBLINE_TAG]
             ):
                 break
 
-            kind = self._comment[0]['kind']
+            kind = self._comment[0][KIND_TAG]
 
-            if kind.startswith('multilines'):
-                kind = 'multilines'
+            if kind.startswith(MULTILINES):
+                kind = MULTILINES
 
             if not self._isblockempty:
                 self.walk_view.write((None, ""))
@@ -490,18 +502,18 @@ prototype::
             self.walk_view.write((
                 None,
                 "{0}{1}{2}".format(
-                    self.COMMENT_DECO['open'][kind],
-                    "\n".join(self._comment.pop(0)['content']),
-                    self.COMMENT_DECO['close'][kind]
+                    COMMENT_DECO[OPEN][kind],
+                    "\n".join(self._comment.pop(0)[CONTENT_TAG]),
+                    COMMENT_DECO[CLOSE][kind]
                 )
             ))
 
-            self.add_spaces(self.SPACES_COMMENT)
+            self.add_spaces(SPACES_COMMENT)
 
 
     def add_spaces(self, kind):
         for _ in range(self._layout[kind]):
-            self.walk_view.write(("verbatim", ""))
+            self.walk_view.write((VERBATIM, ""))
 
 
 # --------------------------- #
@@ -524,12 +536,12 @@ prototype::
         with self.view:
 # We have to follow the user's layout !
             for (self._mode, extra_text) in self.walk_view:
-                if self._mode == "keyval":
-                    key   = extra_text["key"]
-                    sep   = extra_text["sep"]
-                    value = extra_text["value"]
+                if self._mode == KEYVAL:
+                    key   = extra_text[KEY_TAG]
+                    sep   = extra_text[SEP_TAG]
+                    value = extra_text[VAL_TAG]
 
-                    if self._layout[self.ALIGN]:
+                    if self._layout[ALIGN]:
                         keyformat = "{" + ":<{0}".format(lenkey) + "}"
                         key       = keyformat.format(key)
 
@@ -554,15 +566,15 @@ prototype::
                 else:
                     text = extra_text
 
-                    if self._mode == "verbatim":
+                    if self._mode == VERBATIM:
                         text = self.add_indentation(text, self.indentlevel)
 
                     elif self._mode in self._infos:
-                        if self._layout[self.ALIGN] \
-                        and self._infos[self._mode]["mode"] == "keyval":
-                            lenkey, lensep = self._infos[self._mode]["lenmax"]
+                        if self._layout[ALIGN] \
+                        and self._infos[self._mode][MODE_TAG] == KEYVAL:
+                            lenkey, lensep = self._infos[self._mode][LENMAX_TAG]
 
-                        self.indentlevel = self._infos[self._mode]["indentlevel"]
+                        self.indentlevel = self._infos[self._mode][INDENTLEVEL_TAG]
 
                 text = self.wrap(text)
 
@@ -575,14 +587,14 @@ prototype::
 
     def open_comment(self, kind):
         self._comment.append({
-            'nbline'   : self.metadata['nbline'],
-            "kind"   : kind,
-            "content": []
+            NBLINE_TAG : self.metadata[NBLINE_TAG],
+            KIND_TAG   : kind,
+            CONTENT_TAG: []
         })
 
 
     def content_in_comment(self, line):
-        self._comment[-1]["content"].append(line)
+        self._comment[-1][CONTENT_TAG].append(line)
 
 
 # ---------------- #
@@ -595,23 +607,23 @@ prototype::
         self._isblockempty       = True
         self._datasfound         = True
 
-        if self.modes_stack[-1] != "container":
+        if self.modes_stack[-1] != CONTAINER:
             self._last_tag = "{0}@{1}".format(
-                self.metadata['nbline'],
-                self.metadata["kind"]
+                self.metadata[NBLINE_TAG],
+                self.metadata[KIND_TAG]
             )
 
             self._infos[self._last_tag] = {
-                "indentlevel": self.indentlevel + 1,
-                "mode"       : self.modes_stack[-1]
+                INDENTLEVEL_TAG: self.indentlevel + 1,
+                MODE_TAG       : self.modes_stack[-1]
             }
 
         else:
-            self._last_tag = self.metadata["kind"]
+            self._last_tag = self.metadata[KIND_TAG]
 
-        if self.modes_stack[-1].startswith("keyval"):
-            if self._layout[self.ALIGN]:
-                self._infos[self._last_tag]["lenmax"] = (0, 0)
+        if self.modes_stack[-1].startswith(KEYVAL):
+            if self._layout[ALIGN]:
+                self._infos[self._last_tag][LENMAX_TAG] = (0, 0)
 
         self.walk_view.write(
             (
@@ -624,7 +636,7 @@ prototype::
 
     def close_block(self, name):
         if self._block_closed_alone:
-            self.add_spaces(self.SPACES_BLOCK)
+            self.add_spaces(SPACES_BLOCK)
             self._block_closed_alone = False
 
 
@@ -637,15 +649,15 @@ prototype::
         if self._isblockempty:
             self._isblockempty = False
 
-        self.walk_view.write(("keyval", keyval))
+        self.walk_view.write((KEYVAL, keyval))
 
-        if self._layout[self.ALIGN]:
-            keylen, seplen = self._infos[self._last_tag]["lenmax"]
+        if self._layout[ALIGN]:
+            keylen, seplen = self._infos[self._last_tag][LENMAX_TAG]
 
-            keylen = max(len(keyval["key"]), keylen)
-            seplen = max(len(keyval["sep"]), seplen)
+            keylen = max(len(keyval[KEY_TAG]), keylen)
+            seplen = max(len(keyval[SEP_TAG]), seplen)
 
-            self._infos[self._last_tag]["lenmax"] = (keylen, seplen)
+            self._infos[self._last_tag][LENMAX_TAG] = (keylen, seplen)
 
 
 # -------------- #
@@ -654,9 +666,9 @@ prototype::
 
     @closecomments
     def add_magic_comment(self):
-        self.walk_view.write(("magic-comment", "////"))
+        self.walk_view.write((MAGIC_COMMENT, "////"))
 
 
     @closecomments
     def add_line(self, line):
-        self.walk_view.write(("verbatim", line))
+        self.walk_view.write((VERBATIM, line))

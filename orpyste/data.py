@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-03-07
+    date = 2016-03-08
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -11,14 +11,7 @@ This module is for reading and extractings easily ¨infos in ¨peuf files.
 from collections import OrderedDict
 import re
 
-from orpyste.parse.ast import (
-    CONTAINER,
-    KEYVAL,
-    LEGAL_BLOCK_NAME,
-    MULTIKEYVAL,
-    VERBATIM
-)
-from orpyste.parse.walk import WalkInAST
+from orpyste.parse.walk import *
 from orpyste.tools.ioview import IOView
 
 
@@ -80,7 +73,6 @@ prototype::
                the datas found if the mode is for one data
     arg-attr = int: nbline = -1 ;
                the number of the line of the infos
-
     arg-attr = bool: islinebyline = True;
                datas can be returned line by line or block by block
 
@@ -89,13 +81,11 @@ Here are some examples.
 
     * ``mode = "keyval"`` and ``querypath = "main/test"``.
     * ``mode = "keyval"`` and ``data = {'sep = '=', 'key = 'a', 'value = '1'}``.
-    * ``mode = "verbatim"`` and ''querypath = "main/sub_main/verb"''.
+    * ``mode = VERBATIM`` and ''querypath = "main/sub_main/verb"''.
     * ``mode = "verbatim"`` and ``data = ""``.
     * ``mode = "verbatim"`` and ``data = "One line..."``.
     * ... ¨etc.
     """
-
-    _KEYSEPVAL = ["key", "sep", "value"]
 
     def __init__(
         self,
@@ -125,14 +115,16 @@ Here are some examples.
         return self.querypath == END_TAG
 
 
-    @property
-    def rtu_data(self):
+    def rtu_data(self, nosep = False):
         """
 prototype::
-    return = if self.islinebyline == True then str ,
-                                               [str, str, str]
-             else [(int, str),...] ,
-                  OrderedDict((int, str): {"key": str, "val": val});
+    arg = bool: nosep = False;
+          by default ``nosep = False`` asks to give all informations for
+          "key-val" datas that is to keep the key, its value and also the
+          separator used.
+          If you don't want the separator, just use ``nosep = True``.
+
+    return = ? ;
              if we have no data, a ``ValueError`` exception is raised,
              otherwise friendly version of datas is returned
 
@@ -141,7 +133,11 @@ If ``self.islinebyline`` is ``True``, the datas looks as it follows.
 
     1) For a verbatim content the actual line is returned.
 
-    2) For a key-value content that is a list looking like ``[key, sep, value]``.
+    2) For a key-value content that is a list which can be of two kinds.
+
+        a) If ``nosep == True`` then the list looks like ``[key, value]``.
+
+        b) If ``nosep == False`` then the list looks like ``[key, sep, value]``.
 
 
 If ``self.islinebyline`` is ``False``, the datas are of the following kinds
@@ -152,13 +148,20 @@ for raising errors to the user or for the ``"multikeyval"`` mode).
     is returned.
 
     2) For a key-value content, the method returns an ordered dictionary with
-    ``(nbline, key)`` like tuples for keys, and ``{"sep": ..., "val": ...}``
-    like dictionary for values.
+    ``(nbline, key)`` like tuples for keys, and values depending of the value
+    of ``nosep``.
+
+        a) If ``nosep == True`` then the value is simply a string corresponding
+        to the value.
+
+        b) If ``nosep == False`` then the list value will be a dictionary of the
+        kind  ``{"sep": ..., "val": ...}``.
 
 
 info::
-    If ``self.islinebyline`` is ``True``, the user can access the number line
-    in the ¨peuf file simply by using ``self.nbline``
+    If ``self.islinebyline`` is ``True``, the user can still access to the
+    number line in the original ¨peuf file simply by using the attribut
+    ``nbline``.
 
 
 info::
@@ -173,21 +176,35 @@ info::
                 return self.data
 
             else:
-                return tuple(self.data[x] for x in self._KEYSEPVAL)
+                if nosep:
+                    tokeep = [KEY_TAG, VAL_TAG]
+
+                else:
+                    tokeep = [KEY_TAG, SEP_TAG, VAL_TAG]
+
+                return tuple(self.data[x] for x in tokeep)
 
 # Block by block delivery
+        elif self.mode != VERBATIM and nosep:
+            data = OrderedDict()
+
+            for k, v in self.data.items():
+                data[k] = v["value"]
+
+            return data
+
         else:
             return self.data
 
-    @property
-    def short_rtu_data(self):
+
+    def short_rtu_data(self, nosep = False):
         """
 prototype::
-    see = self.rtu_data
+    see = self.rtu_data()
 
 
 If ``self.islinebyline == False``, an ``ValueError`` error is raised, otherwise
-this method gives the same kind of values than ``self.rtu_data`` but without any
+this method gives the same kind of values than ``self.rtu_data()`` but without any
 number line.
 
 
@@ -202,7 +219,7 @@ warning::
         if self.islinebyline:
             raise ValueError('no short data for a line by line delivery')
 
-        if self.mode == "verbatim":
+        if self.mode == VERBATIM:
             return [line for (nb, line) in self.data]
 
         else:
@@ -216,9 +233,13 @@ warning::
                         "has been already used"
                     )
 
+                if nosep:
+                    val = val[VAL_TAG]
+
                 data[key] = val
 
             return data
+
 
     def __str__(self):
         text = ['mode = {0}'.format(repr(self.mode))]
@@ -240,12 +261,8 @@ warning::
 # -- READING LINE BY LINE -- #
 # -------------------------- #
 
-OPEN, CLOSE = "open", "close"
-DATAS_MODES = [KEYVAL, MULTIKEYVAL, VERBATIM]
-
 START_BLOCK = Infos(START_TAG)
 END_BLOCK   = Infos(END_TAG)
-
 
 class Read(WalkInAST):
     """
@@ -308,10 +325,15 @@ We want blocks of this file to be defined as follows.
 Basic use
 =========
 
+info::
+    We will work with a string for the ¨peuf content to be analyzed, but you can
+    work with a file using the class ``pathlib.Path`` directly instead of the
+    string. The syntax remains the same !
+
+
 The most important thing to do is to tell to ¨orpyste the semantic of our ¨peuf
 file. This is done using the argument ``mode`` in the following ¨python script
-where the variable ``content`` is the string value of our ¨peuf file (as noted
-later in this section, you can work directly with a ¨peuf file).
+where the variable ``content`` is the string value of our ¨peuf file.
 
 python::
     from orpyste.data import Read
@@ -448,7 +470,7 @@ together with the property method ``rtu_data`` of the class ``data.Infos``.
             print('--- {0} ---'.format(oneinfo.querypath))
 
         elif oneinfo.isdata():
-            print(oneinfo.rtu_data)
+            print(oneinfo.rtu_data())
 
 
 Launched in a terminal, we obtains the following output where for key-value
@@ -473,9 +495,30 @@ info::
     orpyste::``////`` at the end of the content.
 
 
-info::
-    Here we have worked with a string, but you can work with a file using the
-    class ``pathlib.Path``. The syntax remains the same.
+To unkeep informations about the separators, just use the optional argument
+``nosep`` of the methods method ``rtu_data`` and ``short_rtu_data``. Here
+is an example of this feature.
+
+...python::
+    for oneinfo in infos:
+        if oneinfo.isblock():
+            print('--- {0} ---'.format(oneinfo.querypath))
+
+        elif oneinfo.isdata():
+            print(oneinfo.rtu_data(nosep = True))
+
+
+Using this piece of code, you have the following dictionaries in one terminal.
+
+term::
+    --- main/test ---
+    ('aaa', '1 + 9')
+    ('bbbbbbbbb', '2')
+    ('c', '3 and 3 and 3 and 3 and 3 and 3 and 3...')
+    --- main/sub_main/sub_sub_main/verb ---
+    line 1
+        line 2
+            line 3
 
 
 =============================
@@ -523,7 +566,7 @@ python::
                 )
 
             else:
-                print(oneinfo.rtu_data)
+                print(oneinfo.rtu_data())
 
 
 This gives the following ouputs as expected.
@@ -579,7 +622,7 @@ term::
     def open_block(self, name):
         self._qpath.append(name)
 
-        if self.last_mode in DATAS_MODES:
+        if self.last_mode in [KEYVAL, MULTIKEYVAL, VERBATIM]:
 # Be aware of reference and list !
             self.walk_view.write(
                 Infos(
@@ -641,8 +684,8 @@ prototype::
 
 
 We hack the get item ¨python syntax via hooks so as to have an iterator
-accepting queries (see the last section of the documentation of the class
-for an example of use of queries).
+accepting queries (see the last section of the main documentation of this
+class for an example of use).
         """
 # What has to be extracted ?
         query_pattern = re.compile("^{0}$".format(querypath))
@@ -671,25 +714,26 @@ prototype::
     see = Read
 
 
-=====================================================
-``ReadBlock`` is near to ``Read`` but still different
-=====================================================
+=============================================================
+``ReadBlock`` is similar to ``Read`` but not exactly the same
+=============================================================
 
 The only real difference between the classes ``ReadBlock`` and ``Read`` is that
 the former returns the datas block by block, whereas the second one gives line
-by line informations (with huge files, the line by line readers is a better one).
+by line informations (with huge files, a line by line reader is a better tool).
 
 
 warning::
     Take a look first at the documentation of the class ``Read`` because we are
-    going to give only new informations regarding to this class.
+    going to give only new informations regarding this class.
 
 
 ====================================
 The ¨peuf file used for our examples
 ====================================
 
-Here is the uncommented ¨peuf file that will be used for our ¨python examples where the block orpyste:``test`` has key-value datas, and orpyste:``verb`` uses
+Here is the uncommented ¨peuf file that will be used for our ¨python examples
+where the block orpyste:``test`` has key-value datas, and orpyste:``verb`` uses
 a verbatim content.
 
 orpyste::
@@ -708,9 +752,9 @@ orpyste::
                             line 3
 
 
-=====================
-Reading, the hard way
-=====================
+===========
+Reading all
+===========
 
 Let's see how the datas are roughly sent by the basic iterator of the class
 ``ReadBlock``.
@@ -771,11 +815,6 @@ term::
 The iteration still gives instances of the class ``Infos`` but with different
 kinds of datas reagrding to the ones obtained with the class ``Read``.
 
-
-
-
-
-
     1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
     is returned.
 
@@ -784,8 +823,8 @@ kinds of datas reagrding to the ones obtained with the class ``Read``.
     like dictionary for values.
 
 
-We can still asks to have easier to use datas thanks to the property method
-``rtu_data`` of the class ``data.Infos``.
+We can still asks to have easier to use datas thanks to the method ``rtu_data``
+of the class ``data.Infos``.
 
 ...python::
     for oneinfo in infos:
@@ -793,7 +832,7 @@ We can still asks to have easier to use datas thanks to the property method
             print('--- {0} ---'.format(oneinfo.querypath))
 
         elif oneinfo.isdata():
-            pprint(oneinfo.rtu_data)
+            pprint(oneinfo.rtu_data())
 
 
 Launched in a terminal, we obtains the following output (where the dictionary is
@@ -808,7 +847,9 @@ term::
     [(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]
 
 
-If you really do not want to have the number of lines, you can use the additional property method ``short_rtu_data`` like ine the following code.
+Having number of lines allow to give fine informations to the user if one of its
+data is bad, but if you really do not want to have the numbers of lines, you can
+use the additional method ``short_rtu_data`` like in the following code.
 
 ...python::
     for oneinfo in infos:
@@ -816,12 +857,54 @@ If you really do not want to have the number of lines, you can use the additiona
             print('--- {0} ---'.format(oneinfo.querypath))
 
         elif oneinfo.isdata():
-            pprint(oneinfo.short_rtu_data)
+            pprint(oneinfo.short_rtu_data())
 
-In a terminal we have the following printings.
+In a terminal we have the following printings (remember that the dictionary is
+an ordered one).
 
 term::
+    --- main/test ---
+    {'aaa': {'sep': '=', 'value': '1 + 9'},
+     'bbbbbbbbb': {'sep': '<>', 'value': '2'},
+     'c': {'sep': '=', 'value': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}}
+    --- main/sub_main/sub_sub_main/verb ---
+    ['line 1', '    line 2', '        line 3']
 
+
+Using the optional argument ``nosep`` with the methods method ``rtu_data`` and
+``short_rtu_data``, you will have no information about the seprators used. Here
+is an example of use.
+
+...python::
+    for oneinfo in infos:
+        if oneinfo.isblock():
+            print('--- {0} ---'.format(oneinfo.querypath))
+
+        elif oneinfo.isdata():
+            print("    * rtu_data with nosep = True (non-default value)")
+            pprint(oneinfo.rtu_data(nosep = True))
+
+            print("    * short_rtu_data with nosep = True (non-default value)")
+            pprint(oneinfo.short_rtu_data(nosep = True))
+
+
+Using this piece of code, you have the following dictionaries in one terminal.
+
+term::
+    --- main/test ---
+        * rtu_data with nosep = True (non-default value)
+    {(11, 'aaa'): '1 + 9',
+     (12, 'bbbbbbbbb'): '2',
+     (16, 'c'): '3 and 3 and 3 and 3 and 3 and 3 and 3...'}
+        * short_rtu_data with nosep = True (non-default value)
+    {'aaa': '1 + 9',
+     'bbbbbbbbb': '2',
+     'c': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}
+    --- main/sub_main/sub_sub_main/verb ---
+        * rtu_data with nosep = True (non-default value)
+    [(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]
+        * short_rtu_data with nosep = True (non-default value)
+    ['line 1', '    line 2', '        line 3']
 
 
 =============================
@@ -834,15 +917,15 @@ queries remains the same.
     """
 
     def _addblockdata(self, oneinfo):
-        if self._lastmode == "verbatim":
+        if self._lastmode == VERBATIM:
             self._datas.append((oneinfo.nbline, oneinfo.data))
 
         else:
-            key, sep, val = oneinfo.rtu_data
+            key, sep, val = oneinfo.rtu_data()
 
             self._datas[(oneinfo.nbline, key)] = {
-                "sep" : sep,
-                "val" : val
+                SEP_TAG: sep,
+                VAL_TAG: val
             }
 
 
@@ -872,7 +955,7 @@ prototype::
 
                     self._lastmode = oneinfo.mode
 
-                    if self._lastmode == "verbatim":
+                    if self._lastmode == VERBATIM:
                         self._datas = []
 
                     else:
@@ -894,3 +977,66 @@ prototype::
 
         self._datas    = None
         self._lastmode = None
+
+
+    def dico(self, nosep = False, nonbline = False):
+        """
+prortype::
+    see = Infos.short_rtu_data
+
+    arg = bool: nosep = False ;
+          ???
+    arg = bool: nonbline = False ;
+          ???
+
+
+====================================
+The ¨peuf file used for our examples
+====================================
+
+Let's consider the following ¨peuf file.
+
+orpyste::
+    main::
+        test::
+            a = 1 + 9
+            b <>  2
+            c = 3 and 4
+
+    main::
+        sub_main::
+            sub_sub_main::
+                verb::
+                    line 1
+                        line 2
+                            line 3
+
+
+====================================
+????
+====================================
+
+????
+        """
+        ordered_dico = OrderedDict()
+
+        for info in self:
+            if info.isblock():
+                if nonbline:
+                    lastkey = info.querypath
+
+                    if lastkey in ordered_dico:
+                        raise KeyError(
+                            "the key << {0} >> is already ".format(lastkey) + \
+                            "in the ordered dictionary"
+                        )
+
+                else:
+                    lastkey = (info.nbline, info.querypath)
+
+                ordered_dico[lastkey] = OrderedDict()
+
+            elif info.isdata():
+                ordered_dico[lastkey] = info.short_rtu_data(nosep)
+
+        return ordered_dico

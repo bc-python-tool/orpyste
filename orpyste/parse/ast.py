@@ -11,7 +11,7 @@ the class ``orpyste.tools.ioview.IOView``.
 """
 
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
 import re
@@ -31,12 +31,30 @@ prototype::
     """
     pass
 
+# -------------------- #
+# -- SAFE CONSTANTS -- #
+# -------------------- #
 
-# ---------- #
-# -- MODE -- #
-# ---------- #
+# TAGS
 
-# MODES
+BLOCK_TAG      = "block"
+MODE_TAG       = "mode"
+KIND_TAG       = "kind"
+SEPS_TAG       = "seps"
+GRPS_FOUND_TAG = "groups_found"
+
+NAME_TAG   = "name"
+NBLINE_TAG = "nbline"
+
+EMPTYLINE_TAG    = ":emptyline:"
+VERB_CONTENT_TAG = ":verbatim:"
+SPE_CONTENT_TAG  = ":content:"
+CONTENT_TAG      = "content"
+
+# Modes
+
+DEFAULT = ":default:"
+
 MODES = CONTAINER, KEYVAL, MULTIKEYVAL, VERBATIM \
       = "container", "keyval", "multikeyval", "verbatim"
 
@@ -51,6 +69,23 @@ for name in MODES:
 
 LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
 
+# For the AST
+
+COMMENT_SINGLELINE            = "comment-singleline"
+COMMENT_MULTILINES_SINGLELINE = "comment-multilines-singleline"
+COMMENT_MULTILINES            = "comment-multilines"
+
+MAGIC_COMMENT = "magic-comment"
+
+OPEN      = "open"
+CLOSE     = "close"
+AUTOCLOSE = "autoclose"
+OPENCLOSE = "openclose"
+
+
+# ---------- #
+# -- MODE -- #
+# ---------- #
 
 class Mode():
     """
@@ -203,7 +238,7 @@ The special mode ``"illegal"``
 ================================
 
 This is for illegal blocks. If you don't use this, any name not defined in the
-mode will be ligeal.
+argument ``mode`` will be interpreted as an illegal one.
     """
 
     def __init__(self, mode):
@@ -277,7 +312,7 @@ prototype::
             or mode in [KEYVAL, MULTIKEYVAL]:
                 raise ValueError("unknown single mode ``{0}``.".format(mode))
 
-            return {"mode": mode}
+            return {MODE_TAG: mode}
 
 # (multi)key = value
         else:
@@ -285,12 +320,14 @@ prototype::
             mode       = LONG_MODES.get(mode, mode)
 
             if mode not in [KEYVAL, MULTIKEYVAL]:
-                raise ValueError('unknown single mode used with "::".')
+                raise ValueError(
+                    'unknown single mode ``{0}`` used with "::".'.format(mode)
+                )
 
 # We must first give the longest separators.
             return {
-                "mode": mode,
-                "seps": sorted(
+                MODE_TAG: mode,
+                SEPS_TAG: sorted(
                     [s.strip() for s in seps.split(" ")],
                     key = lambda s: -len(s)
                 )
@@ -309,7 +346,7 @@ prototype::
              index in ``self.allmodes`` of the associate single mode.
         """
         self.allmodes = [self._single_mode(self.mode)]
-        self.dicoview = {":default:": 0}
+        self.dicoview = {DEFAULT: 0}
 
 
 # ------------------------------------- #
@@ -354,8 +391,8 @@ prototype::
         if item in self.dicoview:
             return self.allmodes[self.dicoview[item]]
 
-        elif ":default:" in self.dicoview:
-            return self.allmodes[self.dicoview[":default:"]]
+        elif DEFAULT in self.dicoview:
+            return self.allmodes[self.dicoview[DEFAULT]]
 
         raise ValueError('unknown item and no default mode.')
 
@@ -370,7 +407,7 @@ prototype::
         return (
             item in self.dicoview
             or
-            ":default:" in self.dicoview
+            DEFAULT in self.dicoview
         )
 
 
@@ -467,12 +504,6 @@ prototype::
         self.id_matcher = id_matcher
 
 
-COMMENT_SINGLELINE            = "comment-singleline"
-COMMENT_MULTILINES_SINGLELINE = "comment-multilines-singleline"
-COMMENT_MULTILINES            = "comment-multilines"
-
-MAGIC_COMMENT = "magic-comment"
-
 class AST():
     """
 prototype::
@@ -549,9 +580,9 @@ warning::
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
 # The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
-    OPEN, CLOSE, AUTOCLOSE = "open", "close", "autoclose"
 
-    CLOSED_BY_INDENT, CLOSED_AT_END, VERBATIM, RECURSIVE = range(4)
+
+    CLOSED_BY_INDENT_ID, CLOSED_AT_END_ID, VERBATIM_ID = range(3)
 
 # If the two following key are not used, this will means "use all possible
 # contexts inside me". The name of the context cannot look like ``:onename:``
@@ -567,43 +598,43 @@ warning::
 # content line like context.
     CTXTS_CONFIGS[MAGIC_COMMENT] = {
         OPEN          : "^////$",
-        INFINITY_LEVEL: True,       # This allows to force the level.
-        SUBCTXTS      : VERBATIM    # This indicates no subcontext.
+        INFINITY_LEVEL: True,          # This allows to force the level.
+        SUBCTXTS      : VERBATIM_ID    # This indicates no subcontext.
     }
 
     CTXTS_CONFIGS[COMMENT_SINGLELINE] = {
-        OPEN          : "^//(?P<content>.*)$",
+        OPEN          : "^[ \t]*//(?P<content>.*)$",
         INFINITY_LEVEL: True,
-        SUBCTXTS      : VERBATIM
+        SUBCTXTS      : VERBATIM_ID
     }
 
     CTXTS_CONFIGS[COMMENT_MULTILINES_SINGLELINE] = {
-        OPEN          : "^/\*(?P<content>.*)\*/$",
+        OPEN          : "^[ \t]*/\*(?P<content>.*)\*/[ \t]*$",
         INFINITY_LEVEL: True,
-        SUBCTXTS      : VERBATIM
+        SUBCTXTS      : VERBATIM_ID
     }
 
     CTXTS_CONFIGS[COMMENT_MULTILINES] =  {
-        OPEN          : "^/\*(?P<content>.*)$",
-        CLOSE         : "^(?P<content>.*)\*/$",
-        SUBCTXTS      : VERBATIM,
-        INFINITY_LEVEL: True,
-        CLOSED_AT_END : True
+        OPEN            : "^[ \t]*/\*(?P<content>.*)$",
+        CLOSE           : "^(?P<content>.*)\*/[ \t]*$",
+        SUBCTXTS        : VERBATIM_ID,
+        INFINITY_LEVEL  : True,
+        CLOSED_AT_END_ID: True
     }
 
-# ``CLOSE: CLOSED_BY_INDENT`` indicates a context using indentation for its
+# ``CLOSE: CLOSED_BY_INDENT_ID`` indicates a context using indentation for its
 # content.
 #
 # We can use tuple to indicate several patterns, and we can also use a special
 # keyword ``not::`` for negate a regex (doing this in pure regex can be very
 # messy).
-    CTXTS_CONFIGS["block"] = {
+    CTXTS_CONFIGS[BLOCK_TAG] = {
         OPEN: (
             "^(?P<name>[\d_a-zA-Z]+)::$",
             "not::^[\d_a-zA-Z]+\\\\::$"
         ),
-        CLOSE        : CLOSED_BY_INDENT,
-        CLOSED_AT_END: True
+        CLOSE           : CLOSED_BY_INDENT_ID,
+        CLOSED_AT_END_ID: True
     }
 
 
@@ -700,11 +731,11 @@ prototype::
         }]
 
         self.CTXTINFOS_EMPTYLINE = CtxtInfos(
-            kind       = ":emptyline:",
+            kind       = EMPTYLINE_TAG,
             id_matcher = 0    # See ``self.MATCHERS``.
         )
 
-        self.CTXTINFOS_CONTENT = CtxtInfos(kind = ":content:")
+        self.CTXTINFOS_CONTENT = CtxtInfos(kind = SPE_CONTENT_TAG)
 
         self.CTXTS_MATCHERS = [self.CTXTINFOS_EMPTYLINE]
 
@@ -718,14 +749,14 @@ prototype::
         id_matcher = len(self.MATCHERS) - 1
         name2id    = {}
 
-        for openclose in [self.OPEN, self.CLOSE]:
+        for openclose in [OPEN, CLOSE]:
             for kind, configs in self.CTXTS_CONFIGS.items():
                 if openclose in configs:
                     spec = configs[openclose]
 
-# We do not keep the special keyword CLOSED_BY_INDENT.
-                    if openclose == self.CLOSE \
-                    and spec == self.CLOSED_BY_INDENT:
+# We do not keep the special keyword CLOSED_BY_INDENT_ID.
+                    if openclose == CLOSE \
+                    and spec == self.CLOSED_BY_INDENT_ID:
                         continue
 
 # We manage other cases.
@@ -761,24 +792,24 @@ prototype::
 
                     _openclose = openclose
 
-                    if self.CLOSE in configs:
-                        if configs[self.CLOSE] == self.CLOSED_BY_INDENT:
+                    if CLOSE in configs:
+                        if configs[CLOSE] == self.CLOSED_BY_INDENT_ID:
                             indented = True
 
                         else:
                             indented = False
 
                     else:
-                        _openclose = self.AUTOCLOSE
+                        _openclose = AUTOCLOSE
                         indented    = False
 
-                    if configs.get(self.CLOSED_AT_END, False):
+                    if configs.get(self.CLOSED_AT_END_ID, False):
                         self.CTXTS_KINDS_CLOSED_AT_END.add(kind)
 
                     verbatim = (
                         self.SUBCTXTS in configs
                         and
-                        configs[self.SUBCTXTS] == self.VERBATIM
+                        configs[self.SUBCTXTS] == self.VERBATIM_ID
                     )
 
                     self.CTXTS_MATCHERS.append(
@@ -806,13 +837,13 @@ prototype::
                     self.CTXTINFOS_EMPTYLINE.kind
                 )]
 
-                if configs[self.SUBCTXTS] == self.VERBATIM:
-                    if (self.CLOSE, kind) in name2id:
-                        subctxts.append((self.CLOSE, kind))
+                if configs[self.SUBCTXTS] == self.VERBATIM_ID:
+                    if (CLOSE, kind) in name2id:
+                        subctxts.append((CLOSE, kind))
 
                 else:
                     for kind in configs[self.SUBCTXTS]:
-                        for openclose in [self.OPEN, self.CLOSE]:
+                        for openclose in [OPEN, CLOSE]:
                             if (openclose, kind) in name2id:
                                 subctxts.append((openclose, kind))
 
@@ -849,12 +880,12 @@ prototype::
 # Let's work !
         for ctxt, configs in self.mode.items():
 # "keyval" or "multikeyval" modes.
-            if configs["mode"] in ["keyval", "multikeyval"]:
+            if configs[MODE_TAG] in [KEYVAL, MULTIKEYVAL]:
 # We must take care of separators with several characters, and we also have to
 # escape special characters.
                 seps = []
 
-                for onesep in configs["seps"]:
+                for onesep in configs[SEPS_TAG]:
                     if len(onesep) != 1:
                         onesep = "({0})".format(re.escape(onesep))
 
@@ -880,15 +911,15 @@ prototype::
                 regex_grps = [x for x in pattern.groupindex]
 
                 self.CONTENTS_MATCHERS[ctxt] = ContentInfos(
-                    mode       = configs["mode"],
+                    mode       = configs[MODE_TAG],
                     id_matcher = [id_matcher, id_verbatim],
                     regex_grps = regex_grps,
                 )
 
 # "verbatim" and "container" modes.
-            elif configs["mode"] in ["verbatim", "container"]:
+            elif configs[MODE_TAG] in [VERBATIM, CONTAINER]:
                 self.CONTENTS_MATCHERS[ctxt] = ContentInfos(
-                    mode       = configs["mode"],
+                    mode       = configs[MODE_TAG],
                     id_matcher = id_verbatim
                 )
 
@@ -896,7 +927,7 @@ prototype::
             else:
                 raise ValueError(
                     "BUG to report : mode ``{0}`` not implemented".format(
-                        configs["mode"]
+                        configs[MODE_TAG]
                     )
                 )
 
@@ -933,29 +964,24 @@ property::
         """
 property::
     action = the level of indention is calculated and the leading indentation
-             of ``self._line`` is removed (one tabulation is equal to four
-             spaces).
+             of ``self._line`` is removed (one tabulation is exactly equal to
+             four spaces).
         """
-        if self._level == self.INFINITY:
-            return None
-
-        if self._line:
-            before      = ''
+        if self._line \
+        and self._level != self.INFINITY:
             self._level = 0
 
             for char in self._line:
                 if char == ' ':
                     self._level += 1
-                    before      += ' '
 
                 elif char == '\t':
                     self._level += 4
-                    before      += '    '
 
                 else:
                     break
 
-            self._line    = before[:- self._level % 4] + self._line.lstrip()
+            self._line = " "*(self._level % 4) + self._line.lstrip()
             self._level //= 4
 
 
@@ -1071,11 +1097,11 @@ prototype::
 
 # Level can be forced to infinity.
                 if ctxtinfos.kind in self.CTXTS_KINDS_WITH_INF_LEVELS \
-                and ctxtinfos.openclose != self.AUTOCLOSE:
+                and ctxtinfos.openclose != AUTOCLOSE:
                     self._level = self.INFINITY
 
 # A new opening context.
-                if ctxtinfos.openclose == self.OPEN:
+                if ctxtinfos.openclose == OPEN:
                     self._ctxts_stack.append(ctxtinfos)
 
 # Do we have to use subcontexts ?
@@ -1085,7 +1111,7 @@ prototype::
                         )
 
 # A closing context.
-                elif ctxtinfos.openclose == self.CLOSE:
+                elif ctxtinfos.openclose == CLOSE:
                     if not self._ctxts_stack:
                         raise ASTError(
                             "wrong closing context: see line #{0}".format(
@@ -1138,7 +1164,7 @@ prototype::
 # Empty lines, autoclosed context or context with infinite level are the only
 # contexts that can't close an indented context.
         if ctxtinfos != self.CTXTINFOS_EMPTYLINE \
-        and ctxtinfos.openclose != self.AUTOCLOSE \
+        and ctxtinfos.openclose != AUTOCLOSE \
         and self._level != self.INFINITY:
             if self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY:
@@ -1150,12 +1176,12 @@ prototype::
                     self.store_one_ctxt(
                         CtxtInfos(
                             kind                 = lastctxt.kind,
-                            openclose            = self.CLOSE),
+                            openclose            = CLOSE),
                             not_add_groups_alone = False
                     )
 
 # We update the stack of levels.
-        if ctxtinfos.openclose == self.OPEN:
+        if ctxtinfos.openclose == OPEN:
             if self._levels_stack \
             and self._level != self._levels_stack[-1]:
                 self._levels_stack.append(self._level)
@@ -1164,13 +1190,13 @@ prototype::
                 self._levels_stack = [self._level]
 
 # Autoclose context with infinite level do not change the levels !
-        elif ctxtinfos.openclose == self.AUTOCLOSE \
+        elif ctxtinfos.openclose == AUTOCLOSE \
         and self._levels_stack \
         and self._level == self.INFINITY:
             self._level = self._levels_stack[-1]
 
 # Close context with infinite level need to clean the stack of levels !
-        elif ctxtinfos.openclose == self.CLOSE \
+        elif ctxtinfos.openclose == CLOSE \
         and self._levels_stack \
         and self._level == self.INFINITY:
             self._levels_stack.pop(-1)
@@ -1200,7 +1226,7 @@ prototype::
                 )
 
             self.store_one_ctxt(
-                CtxtInfos(kind = lastctxt_kind, openclose = self.CLOSE)
+                CtxtInfos(kind = lastctxt_kind, openclose = CLOSE)
             )
 
 
@@ -1214,24 +1240,24 @@ prototype::
     action = this method looks for datas in contents regarding the mode of the
              blocks.
         """
-        _defaultmatcher = self.CONTENTS_MATCHERS.get(":default:", None)
-        self._matcherstack   = []
-        self._nb_emptylines  = 0
+        _defaultmatcher     = self.CONTENTS_MATCHERS.get(DEFAULT, None)
+        self._matcherstack  = []
+        self._nb_emptylines = 0
 
         for onemeta in self.next_partial_meta():
 # The big messe of empty lines in verbatim content.
 # One new block.
-            if onemeta['kind'] == "block":
-                if onemeta['openclose'] == "open":
+            if onemeta[KIND_TAG] == BLOCK_TAG:
+                if onemeta[OPENCLOSE] == OPEN:
 # Preceding block must be a container !
                     if not self.last_block_is_container():
                         raise ASTError(
                             "last block not a container, see line nb.{0}" \
-                                .format(onemeta['nbline'])
+                                .format(onemeta[NBLINE_TAG])
                         )
 
                     matcher = self.CONTENTS_MATCHERS.get(
-                        onemeta['groups_found']['name'],
+                        onemeta[GRPS_FOUND_TAG][NAME_TAG],
                         _defaultmatcher
                     )
 
@@ -1239,13 +1265,13 @@ prototype::
                         raise ASTError(
                             "last block << {0} >> is illegal, see line nb.{1}" \
                                 .format(
-                                    onemeta['groups_found']['name'],
-                                    onemeta['nbline']
+                                    onemeta[GRPS_FOUND_TAG][NAME_TAG],
+                                    onemeta[NBLINE_TAG]
                                 )
                         )
 
 # We must know the mode used by this block.
-                    onemeta['mode'] = matcher.mode
+                    onemeta[MODE_TAG] = matcher.mode
 
                     self._matcherstack.append(matcher)
 
@@ -1253,17 +1279,25 @@ prototype::
                     self._matcherstack.pop(-1)
 
 # Some content.
-            elif onemeta['kind'] == ":content:":
+            elif onemeta[KIND_TAG] == SPE_CONTENT_TAG:
                 if not self._matcherstack:
                     raise ASTError(
                         "no block before, see line nb.{0}".format(
-                            onemeta['nbline']
+                            onemeta[NBLINE_TAG]
                         )
                     )
 
 # A good content ?
-                if self.match(onemeta['content'], self._matcherstack[-1]):
-                    onemeta['content'] = self._groups_found
+                if self.match(onemeta[CONTENT_TAG], self._matcherstack[-1]):
+# We have to remove escaped character ``\::``.
+                    if 'value_in_line' in self._groups_found:
+                        value_in_line = self._groups_found['value_in_line']
+
+                        if value_in_line.endswith("\::"):
+                            value_in_line = value_in_line[:-3] + "::"
+                            self._groups_found['value_in_line'] = value_in_line
+
+                    onemeta[CONTENT_TAG] = self._groups_found
 
 # We can add the metadatas.
             self.add(onemeta)
@@ -1277,7 +1311,7 @@ prototype::
              container
         """
         if self._matcherstack:
-            return self._matcherstack[-1].mode == "container"
+            return self._matcherstack[-1].mode == CONTAINER
 
         return True
 
@@ -1301,38 +1335,38 @@ prototype::
 
     def store_one_ctxt(self, ctxtinfos, not_add_groups_alone = True):
         metadatas = {
-            "kind"  : ctxtinfos.kind,
-            "nbline": self._nbline,
+            KIND_TAG  : ctxtinfos.kind,
+            NBLINE_TAG: self._nbline,
         }
 
         if ctxtinfos.openclose:
-            if ctxtinfos.openclose == self.AUTOCLOSE:
-                metadatas["openclose"] = self.OPEN
+            if ctxtinfos.openclose == AUTOCLOSE:
+                metadatas[OPENCLOSE] = OPEN
 
             else:
-                metadatas["openclose"] = ctxtinfos.openclose
+                metadatas[OPENCLOSE] = ctxtinfos.openclose
 
         if ctxtinfos.verbatim:
-            verbatim = self._groups_found.get("content", None)
+            verbatim = self._groups_found.get(CONTENT_TAG, None)
 
             if verbatim != None:
-                del self._groups_found["content"]
+                del self._groups_found[CONTENT_TAG]
 
         else:
             verbatim = None
 
         if not_add_groups_alone and self._groups_found:
-            metadatas["groups_found"] = self._groups_found
+            metadatas[GRPS_FOUND_TAG] = self._groups_found
 
         if verbatim != None:
             verbatim = {
-                "kind"   : ":verbatim:",
-                "nbline" : self._nbline,
-                "content": verbatim,
+                KIND_TAG   : VERB_CONTENT_TAG,
+                NBLINE_TAG : self._nbline,
+                CONTENT_TAG: verbatim,
             }
 
 # We have to keep extra indentations !
-        if ctxtinfos.kind == ":content:":
+        if ctxtinfos.kind == SPE_CONTENT_TAG:
             if self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY \
             and self._level != self.INFINITY:
@@ -1346,17 +1380,17 @@ prototype::
             else:
                 extra = ""
 
-            metadatas["content"] = "{0}{1}".format(extra, self._line)
+            metadatas[CONTENT_TAG] = "{0}{1}".format(extra, self._line)
 
             if self._verbatim:
-                metadatas["kind"] = ":verbatim:"
+                metadatas[KIND_TAG] = VERB_CONTENT_TAG
 
 # We must change emtylines in comment to a verbatim empty content.
-        elif ctxtinfos.kind == ":emptyline:" and self._verbatim:
-            metadatas["kind"]    = ":verbatim:"
-            metadatas["content"] = ""
+        elif ctxtinfos.kind == EMPTYLINE_TAG and self._verbatim:
+            metadatas[KIND_TAG]    = VERB_CONTENT_TAG
+            metadatas[CONTENT_TAG] = ""
 
-        if ctxtinfos.openclose == self.CLOSE:
+        if ctxtinfos.openclose == CLOSE:
             metadatas, verbatim = verbatim, metadatas
 
         if metadatas:
@@ -1365,15 +1399,15 @@ prototype::
         if verbatim:
             self.add_partial(verbatim)
 
-            if ctxtinfos.openclose == self.OPEN:
+            if ctxtinfos.openclose == OPEN:
                 self._verbatim = True
 
-            elif ctxtinfos.openclose == self.CLOSE:
+            elif ctxtinfos.openclose == CLOSE:
                 self._verbatim = False
 
-        if ctxtinfos.openclose == self.AUTOCLOSE:
+        if ctxtinfos.openclose == AUTOCLOSE:
             new_metadatas = {k: v for k,v in metadatas.items()}
-            new_metadatas["openclose"] = self.CLOSE
+            new_metadatas[OPENCLOSE] = CLOSE
             self.add_partial(new_metadatas)
 
 

@@ -24,8 +24,18 @@ setup(
     packages = find_packages(),
 
 # Uggly classifiers
-    classifiers = [],
+    classifiers = [
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'Programming Language :: Python :: 3',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+        'Topic :: Utilities',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ],
 
 # What does your project relate to?
-    keywords = '',
+    keywords = 'python data',
 )

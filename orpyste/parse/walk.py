@@ -15,13 +15,7 @@ info::
     the class ``parse.ast.AST``.
 """
 
-from orpyste.parse.ast import (
-    AST,
-    CONTAINER,
-    KEYVAL,
-    MULTIKEYVAL,
-    VERBATIM
-)
+from orpyste.parse.ast import *
 from orpyste.tools.ioview import IOView
 
 
@@ -36,6 +30,16 @@ prototype::
            base class for errors specific to the ¨peuf specifications.
     """
     pass
+
+
+# -------------------- #
+# -- SAFE CONSTANTS -- #
+# -------------------- #
+
+KEY_TAG         = "key"
+SEP_TAG         = "sep"
+VAL_TAG         = "value"
+VAL_IN_LINE_TAG = "value_in_line"
 
 
 # ------------- #
@@ -108,7 +112,7 @@ warning::
 
         self.ast.build()
 
-        if self.ast.view.mode == self.ast.view.LIST:
+        if self.ast.view.mode == "list":
             self.walk_view = IOView(self.ast.view.mode)
 
         else:
@@ -136,12 +140,12 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
-                kind = self.metadata['kind']
-                self.nbline = self.metadata['nbline']
+                kind = self.metadata[KIND_TAG]
+                self.nbline = self.metadata[NBLINE_TAG]
 
 # -- COMMENT -- #
                 if kind.startswith("comment-"):
-                    if self.metadata['openclose'] == "open":
+                    if self.metadata[OPENCLOSE] == OPEN:
                         self.incomment = True
                         self.open_comment(kind[8:])
 
@@ -151,12 +155,12 @@ warning::
 
 
 # -- COMMENT LINE -- #
-                elif kind == ":verbatim:":
-                    self.content_in_comment(self.metadata['content'])
+                elif kind == VERB_CONTENT_TAG:
+                    self.content_in_comment(self.metadata[CONTENT_TAG])
 
 
 # -- EMPTY LINE -- #
-                elif kind == ":emptyline:":
+                elif kind == EMPTYLINE_TAG:
                     if self.incomment:
                         self.content_in_comment("")
 
@@ -164,15 +168,15 @@ warning::
                         self.nb_empty_verbline += 1
 
 # -- BLOCK -- #
-                elif kind == "block":
+                elif kind == BLOCK_TAG:
 # An opening block
-                    if self.metadata['openclose'] == "open":
+                    if self.metadata[OPENCLOSE] == OPEN:
                         self.indentlevel += 1
 
-                        self.last_mode = self.metadata['mode']
+                        self.last_mode = self.metadata[MODE_TAG]
                         self.modes_stack.append(self.last_mode)
 
-                        name = self.metadata["groups_found"]["name"]
+                        name = self.metadata[GRPS_FOUND_TAG][NAME_TAG]
                         self.names_stack.append(name)
                         self.open_block(name)
 
@@ -222,13 +226,13 @@ warning::
 
 
 # -- MAGIC COMMENT -- #
-                elif kind == "magic-comment":
+                elif kind == MAGIC_COMMENT:
                     if self.last_mode != VERBATIM:
                         raise PeufError(
                             "magic comment not used for a verbatim content"
                         )
 
-                    if self.metadata['openclose'] == "open":
+                    if self.metadata[OPENCLOSE] == OPEN:
                         self._add_empty_verbline()
                         self.add_magic_comment()
 
@@ -236,35 +240,35 @@ warning::
 # -- VERBATIM CONTENT -- #
                 elif self.last_mode == VERBATIM:
                     self._add_empty_verbline()
-                    self.add_line(self.metadata['content']["value_in_line"])
+                    self.add_line(self.metadata[CONTENT_TAG][VAL_IN_LINE_TAG])
 
 
 # -- KEY-VAL CONTENT -- #
                 else:
-                    content = self.metadata['content']
+                    content = self.metadata[CONTENT_TAG]
 
-                    if "value_in_line" in content:
+                    if VAL_IN_LINE_TAG in content:
                         if not lastkeyval:
                             raise PeufError(
                                 "missing first key, see line #{0}".format(
-                                    self.metadata['nbline']
+                                    self.metadata[NBLINE_TAG]
                                 )
                             )
 
-                        lastkeyval['value'] \
-                        += " " + content["value_in_line"].strip()
+                        lastkeyval[VAL_TAG] \
+                        += " " + content[VAL_IN_LINE_TAG].strip()
 
                     else:
                         if lastkeyval:
                             self.add_keyval(lastkeyval)
 
-                        self.kv_nbline = self.metadata['nbline']
-                        key            = content['key']
+                        self.kv_nbline = self.metadata[NBLINE_TAG]
+                        key            = content[KEY_TAG]
 
                         if self.last_mode == KEYVAL and key in keysused:
                             raise PeufError(
                                 "key already used, see line #{0}".format(
-                                    self.metadata['nbline']
+                                    self.metadata[NBLINE_TAG]
                                 )
                             )
 
