@@ -8,9 +8,9 @@
 **Amélioration des méthodes ``rtu_data`` et ``short_rtu_data`` de la classe ``data.Infos`` :** ces deux méthodes ne sont plus de type ``property`` car elles possèdent un argument booléen optionnel ``nosep`` valant ``False`` par défaut permettant d'obtenir uniquement des clés et leur valeur sans leur séparateur.
 
 
-**Deux gros bugs dans ``ast.AST`` :** la ¨maj des tests de ¨mistool a fait surgir des problèmes importants.
+**Deux gros bugs dans ``ast.AST`` :** la ¨maj des tests de ¨mistool a fait surgir des problèmes importants dans ¨orpyste.
 
-    1) Les contenus commençant par ``/*`` ne peut pas être gérés car ``*/`` peut fermer n'importe quelle ligne indentée ou pas ! Les commentaires pourront donc se faire n'importe où dorénavant !
+    1) Les contenus commençant par ``/*`` ne peuvent pas être gérés simplement car ``*/`` peut fermer n'importe quelle ligne indentée ou pas ! Les commentaires pourront donc se faire n'importe où dorénavant !
 
     2) La gestion des contenus commençant par un espace était totalement farfelue !
 
@@ -24,7 +24,7 @@
 2016-03-07
 ==========
 
-**Ajout d'une nouvelle classe ``data.ReadBlock`` :** cette classe renvoie les données d'un bloc en une seule fois et non au coup par coup (``data.ReadBlock`` est juste une sous-classe de la classe ``data.Read`` qui redéfinit la méthode magique ``__getitem__``).
+**Ajout d'une nouvelle classe ``data.ReadBlock`` :** cette sous-classe de la classe ``data.Read`` renvoie les données d'un bloc en une seule fois et non au coup par coup (en fait, seule la méthode magique ``__getitem__`` a été redéfinie).
 
 
 **Ajout d'une nouvelle méthode ``short_rtu_data`` à la classe ``data.Infos`` :** cette méthode permet d'obtenir des données renvoyées bloc par bloc sans leur numéro de la ligne dans le fichier ¨peuf d'origine.

@@ -1,0 +1,12 @@
+==========
+2016-04-03
+==========
+
+**Amélioration de la classe ``data.ReadBlock`` :** voici les nouveautés.
+
+    1) Renommage de la méthode ``dico`` en ``flatdict``.
+
+    2) Ajout d'une méthode ``recudict`` qui est un dictionnaire reflétant la structure récursive du fichier ¨peuf analysé.
+
+
+**Création de la classe ``data.OrderedRecuDict`` :** la méthode ``recudict`` utilise la nouvelle classe ``data.OrderedRecuDict`` afin de travailler facilement avec des dictionnaires utilisant au choix une clé "classique", ou une liste de clés "classiques".

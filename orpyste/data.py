@@ -2,13 +2,13 @@
 
 """
 prototype::
-    date = 2016-03-08
+    date = 2016-04-03
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
 """
 
-from collections import OrderedDict
+from collections import Hashable, OrderedDict
 import re
 
 from orpyste.parse.walk import *
@@ -203,9 +203,9 @@ prototype::
     see = self.rtu_data()
 
 
-If ``self.islinebyline == False``, an ``ValueError`` error is raised, otherwise
-this method gives the same kind of values than ``self.rtu_data()`` but without any
-number line.
+If ``self.islinebyline == True``, a ``ValueError`` error is raised, otherwise
+this method gives the same kind of values than ``self.rtu_data()`` but without
+any number line.
 
 
 warning::
@@ -708,15 +708,72 @@ class for an example of use).
 # -- READING BLOCK BY BLOCK -- #
 # ---------------------------- #
 
+class OrderedRecuDict(OrderedDict):
+    """
+This subclass of ``collections.OrderedDict`` allows to use a list of hashable
+keys, or just a single hashable key.
+    """
+    def __init__(self):
+        super(OrderedRecuDict, self).__init__()
+
+
+    def __getitem__(self, keys):
+        if isinstance(keys, Hashable):
+            return super(OrderedRecuDict, self).__getitem__(keys)
+
+        else:
+            first, *others = keys
+
+            if others:
+                return self[first][others]
+
+            else:
+                return self[first]
+
+
+    def __setitem__(self, keys, val):
+        if isinstance(keys, Hashable):
+            super(OrderedRecuDict, self).__setitem__(keys, val)
+
+        else:
+            first, *others = keys
+
+            if others:
+                subdict         = OrderedRecuDict()
+                subdict[others] = val
+                val             = subdict
+
+            self[first] = val
+
+
+    def __contains__(self, keys):
+        if isinstance(keys, Hashable):
+            return super(OrderedRecuDict, self).__contains__(keys)
+
+        else:
+            first, *others = keys
+
+            if first in self:
+                if not others:
+                    return True
+
+                subdict = self[first]
+
+                if isinstance(subdict, OrderedDict):
+                    return others in subdict
+
+            return False
+
+
 class ReadBlock(Read):
     """
 prototype::
     see = Read
 
 
-=============================================================
-``ReadBlock`` is similar to ``Read`` but not exactly the same
-=============================================================
+=====================================================
+``ReadBlock`` is similar to ``Read`` but not the same
+=====================================================
 
 The only real difference between the classes ``ReadBlock`` and ``Read`` is that
 the former returns the datas block by block, whereas the second one gives line
@@ -725,7 +782,7 @@ by line informations (with huge files, a line by line reader is a better tool).
 
 warning::
     Take a look first at the documentation of the class ``Read`` because we are
-    going to give only new informations regarding this class.
+    going to give only new informations regarding the class ``ReadBlock``.
 
 
 ====================================
@@ -748,8 +805,8 @@ orpyste::
             sub_sub_main::
                 verb::
                     line 1
-                        line 2
-                            line 3
+                    line 2
+                    line 3
 
 
 ===========
@@ -757,7 +814,7 @@ Reading all
 ===========
 
 Let's see how the datas are roughly sent by the basic iterator of the class
-``ReadBlock``.
+``ReadBlock`` where ``content`` is the string given in the preceding section.
 
 python::
     from orpyste.data import ReadBlock
@@ -796,7 +853,7 @@ term::
     querypath = <<main/test>>
     ---
     mode      = <<keyval>>
-    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}), ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and 3 and 3 and 3 and 3 and 3 and 3...', 'sep': '='})])>>
+    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}), ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and 4', 'sep': '='})])>>
     querypath = <<None>>
     ---
     mode      = <<verbatim>>
@@ -804,7 +861,7 @@ term::
     querypath = <<main/sub_main/sub_sub_main/verb>>
     ---
     mode      = <<verbatim>>
-    data      = <<[(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]>>
+    data      = <<[(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]>>
     querypath = <<None>>
     ---
     mode      = <<None>>
@@ -842,14 +899,14 @@ term::
     --- main/test ---
     {(11, 'aaa'): {'sep': '=', 'val': '1 + 9'},
      (12, 'bbbbbbbbb'): {'sep': '<>', 'val': '2'},
-     (16, 'c'): {'sep': '=', 'val': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}}
+     (16, 'c'): {'sep': '=', 'val': '3 and 4'}}
     --- main/sub_main/sub_sub_main/verb ---
-    [(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]
+    [(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]
 
 
-Having number of lines allow to give fine informations to the user if one of its
-data is bad, but if you really do not want to have the numbers of lines, you can
-use the additional method ``short_rtu_data`` like in the following code.
+Having number of lines allows to give fine informations to the user if one of
+its data is bad, but if you really do not want to have the numbers of lines,
+you can use the additional method ``short_rtu_data`` like in the following code.
 
 ...python::
     for oneinfo in infos:
@@ -866,9 +923,9 @@ term::
     --- main/test ---
     {'aaa': {'sep': '=', 'value': '1 + 9'},
      'bbbbbbbbb': {'sep': '<>', 'value': '2'},
-     'c': {'sep': '=', 'value': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}}
+     'c': {'sep': '=', 'value': '3 and 4'}}
     --- main/sub_main/sub_sub_main/verb ---
-    ['line 1', '    line 2', '        line 3']
+    ['line 1', 'line 2', 'line 3']
 
 
 Using the optional argument ``nosep`` with the methods method ``rtu_data`` and
@@ -895,16 +952,16 @@ term::
         * rtu_data with nosep = True (non-default value)
     {(11, 'aaa'): '1 + 9',
      (12, 'bbbbbbbbb'): '2',
-     (16, 'c'): '3 and 3 and 3 and 3 and 3 and 3 and 3...'}
+     (16, 'c'): '3 and 4'}
         * short_rtu_data with nosep = True (non-default value)
     {'aaa': '1 + 9',
      'bbbbbbbbb': '2',
-     'c': '3 and 3 and 3 and 3 and 3 and 3 and 3...'}
+     'c': '3 and 4'}
     --- main/sub_main/sub_sub_main/verb ---
         * rtu_data with nosep = True (non-default value)
-    [(22, 'line 1'), (23, '    line 2'), (24, '        line 3')]
+    [(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]
         * short_rtu_data with nosep = True (non-default value)
-    ['line 1', '    line 2', '        line 3']
+    ['line 1', 'line 2', 'line 3']
 
 
 =============================
@@ -979,15 +1036,21 @@ prototype::
         self._lastmode = None
 
 
-    def dico(self, nosep = False, nonbline = False):
+    def flatdict(self, nosep = False, nonbline = False):
         """
-prortype::
-    see = Infos.short_rtu_data
+prototype::
+    see = Infos.rtu_data , Infos.short_rtu_data
 
     arg = bool: nosep = False ;
-          ???
+          by default ``nosep = False`` associates the value and the separator to
+          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
     arg = bool: nonbline = False ;
-          ???
+          by default with ``nonbline = False`` the line numbers in the ¨peuf
+          file are given with blocks, keys and lines, and with ``nonbline =
+          False`` they are dismissed
+
+    return = dict ;
+             an easy-to-use dictionary with keys equal to flat query paths
 
 
 ====================================
@@ -1008,24 +1071,87 @@ orpyste::
             sub_sub_main::
                 verb::
                     line 1
-                        line 2
-                            line 3
+                    line 2
+                    line 3
 
 
-====================================
-????
-====================================
+=================================================
+All the datas in a single flat ordered dictionary
+=================================================
 
-????
+To acheive our goal indicated in the title above, we just have to use the
+following code.
+
+python::
+    from orpyste.data import ReadBlock
+
+    datas = Read(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    datas.build()
+
+    print('--- Default ---')
+    print(datas.flatdict())
+
+    print('--- All set to True ---')
+    print(datas.flatdict(nosep = True, nonbline = True))
+
+
+Here is what is obtained when launching the code in a terminal (the ordered
+dictionaries below have been a little reformatted).
+
+term::
+    --- Default ---
+    OrderedDict([
+        (
+            (2, 'main/test'),
+            OrderedDict([
+                ((3, 'a'), {'value': '1 + 9', 'sep': '='}),
+                ((4, 'b'), {'value': '2', 'sep': '<>'}),
+                ((5, 'c'), {'value': '3 and 4', 'sep': '='})
+            ])
+        ),
+        (
+            (10, 'main/sub_main/sub_sub_main/verb'),
+            [(11, 'line 1'), (12, 'line 2'), (13, 'line 3')]
+        )
+    ])
+    --- All set to True ---
+    OrderedDict([
+        (
+            'main/test',
+            OrderedDict([
+                ('a', '1 + 9'),
+                ('b', '2'),
+                ('c', '3 and 4')
+            ])
+        ),
+        (
+            'main/sub_main/sub_sub_main/verb',
+            ['line 1', 'line 2', 'line 3']
+        )
+    ])
+
+
+warning::
+    The use of ``nonbline = True`` will raise a ``KeyError`` error in case of
+    duplicated keys. This can't happen with ``nonbline = False`` because the
+    number lines are unique.
         """
-        ordered_dico = OrderedDict()
+        ordered_flatdict = OrderedDict()
 
         for info in self:
             if info.isblock():
                 if nonbline:
                     lastkey = info.querypath
 
-                    if lastkey in ordered_dico:
+                    if lastkey in ordered_flatdict:
                         raise KeyError(
                             "the key << {0} >> is already ".format(lastkey) + \
                             "in the ordered dictionary"
@@ -1034,9 +1160,140 @@ orpyste::
                 else:
                     lastkey = (info.nbline, info.querypath)
 
-                ordered_dico[lastkey] = OrderedDict()
+                ordered_flatdict[lastkey] = OrderedDict()
 
             elif info.isdata():
-                ordered_dico[lastkey] = info.short_rtu_data(nosep)
+                if nonbline:
+                    ordered_flatdict[lastkey] = info.short_rtu_data(
+                        nosep = nosep
+                    )
 
-        return ordered_dico
+                else:
+                    ordered_flatdict[lastkey] = info.rtu_data(nosep = nosep)
+
+        return ordered_flatdict
+
+
+    def recudict(self, nosep = False, nonbline = False):
+        """
+prototype::
+    see = self.flatdict
+
+    return = dict ;
+             an easy-to-use recursive dictionary which mimics the recursive
+             structure of the ¨peuf file analyzed
+
+
+====================================
+The ¨peuf file used for our examples
+====================================
+
+Let's consider the following ¨peuf file.
+
+orpyste::
+    main::
+        test::
+            a = 1 + 9
+
+    main::
+        sub_main::
+            sub_sub_main::
+                verb::
+                    line 1
+
+
+======================================================
+All the datas in a single recursive ordered dictionary
+======================================================
+
+``recudict`` can be called exactly in the same way as for ``flatdict``. In the
+following code, we use pprint so as to obtain easy to read outputs.
+
+python::
+    from pprint import pprint
+
+    from orpyste.data import ReadBlock
+
+    datas = Read(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    datas.build()
+
+    print('--- Default ---')
+    print(datas.recudict())
+
+    print('--- All set to True ---')
+    print(datas.recudict(nosep = True, nonbline = True))
+
+
+Here are the dictionaries sent by the method ``recudict`` (the output
+below has been a little reformatted).
+
+term::
+    --- Default ---
+    {
+        (2, 'main'): {
+            (2, 'test'): {
+                (3, 'a'): {'sep': '=', 'value': '1 + 9'}
+            }
+        },
+        (8, 'main'): {
+            (8, 'sub_main'): {
+                (8, 'sub_sub_main'): {
+                    (8, 'verb'): [(9, 'line 1')]
+                }
+            }
+        }
+    }
+    --- All set to True ---
+    {
+        'main': {
+            'sub_main': {
+                'sub_sub_main': {
+                    'verb': ['line 1']
+                }
+            }
+        }
+    }
+
+
+warning::
+    The use of ``nonbline = True`` will raise a ``KeyError`` error in case of
+    duplicated keys. This can't happen with ``nonbline = False`` because the
+    number lines are unique.
+        """
+        ordered_recudict = OrderedRecuDict()
+
+        for info in self:
+            if info.isblock():
+                lastkeys = info.querypath.split("/")
+
+                if nonbline:
+                    if lastkeys in ordered_recudict:
+                        raise KeyError(
+                            "the block << {0} >> has already ".format(
+                                "/".join(lastkey)
+                            ) + "been inserted in the ordered dictionary"
+                        )
+
+                else:
+                    nbline = info.nbline
+
+                    lastkeys = [(nbline, key) for key in lastkeys]
+
+            elif info.isdata():
+                if nonbline:
+                    ordered_recudict[lastkeys] = info.short_rtu_data(
+                        nosep = nosep
+                    )
+
+                else:
+                    ordered_recudict[lastkeys] = info.rtu_data(nosep = nosep)
+
+        return ordered_recudict
