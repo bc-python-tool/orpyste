@@ -1,4 +1,11 @@
 ==========
+2016-04-04
+==========
+
+**Amélioration des méthodes ``flatdict`` et ``recudict`` de la classe ``data.ReadBlock`` :** l'argument ``nonbline`` a été supprimé. À la place, l'utilisateur pourra récupérer les numéros de lignes à l'aide de la méthode ``nblineof`` prenant en argument soit une liste de noms de blocs, soit un chemin d'accès à un bloc.
+
+
+==========
 2016-04-03
 ==========
 

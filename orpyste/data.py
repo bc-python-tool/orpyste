@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-04-03
+    date = 2016-04-04
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -738,12 +738,16 @@ keys, or just a single hashable key.
         else:
             first, *others = keys
 
-            if others:
-                subdict         = OrderedRecuDict()
-                subdict[others] = val
-                val             = subdict
+            if first in self and others:
+                self[first][others] = val
 
-            self[first] = val
+            else:
+                if others:
+                    subdict         = OrderedRecuDict()
+                    subdict[others] = val
+                    val             = subdict
+
+                self[first] = val
 
 
     def __contains__(self, keys):
@@ -775,12 +779,16 @@ prototype::
 ``ReadBlock`` is similar to ``Read`` but not the same
 =====================================================
 
-The only real difference between the classes ``ReadBlock`` and ``Read`` is that
-the former returns the datas block by block, whereas the second one gives line
-by line informations (with huge files, a line by line reader is a better tool).
+The main difference between the classes ``ReadBlock`` and ``Read`` is that the
+former returns the datas block by block, whereas the second one gives line by
+line informations (with huge files, a line by line reader is a better tool).
 
 
 warning::
+    With ``ReadBlock``, all blocks must have different query paths.
+
+
+info::
     Take a look first at the documentation of the class ``Read`` because we are
     going to give only new informations regarding the class ``ReadBlock``.
 
@@ -914,7 +922,7 @@ you can use the additional method ``short_rtu_data`` like in the following code.
             print('--- {0} ---'.format(oneinfo.querypath))
 
         elif oneinfo.isdata():
-            pprint(oneinfo.short_rtu_data())
+            print(oneinfo.short_rtu_data())
 
 In a terminal we have the following printings (remember that the dictionary is
 an ordered one).
@@ -971,6 +979,13 @@ Looking for particular blocks
 See the documentation of the class ``Read``. Regarding to the class ``Read``,
 just the ouputs of the class ``ReadBlock`` are different but the way to use
 queries remains the same.
+
+
+=========================
+Working with dictionaries
+=========================
+
+See the documentations of the methods ``flatdict`` and ``recudict``.
     """
 
     def _addblockdata(self, oneinfo):
@@ -1036,7 +1051,70 @@ prototype::
         self._lastmode = None
 
 
-    def flatdict(self, nosep = False, nonbline = False):
+    def nblineof(self, query):
+        """
+prototype::
+    see = self.flatdict , self.recudict
+
+    arg = str, list(str) ;
+          a query path or a list of names of successive blocks
+
+
+This method returns the number line of a content block given by ``query``.
+
+
+warning::
+    This method needs that either ``self.flatdict``, or ``self.recudict`` has
+    been called before.
+        """
+        if isinstance(query, list):
+            query = "/".join(query)
+
+        if query not in self.nbline:
+            raise KeyError("unknown block << {0} >>".format(query))
+
+        return self.nbline[query]
+
+
+    def _builddict(self, classdict, keymap, nosep):
+        """
+prototype::
+    arg = cls: classdict ;
+          this class is used to define which kind of dictionary must be used
+          to store the informations
+    arg = func: keymap ;
+          this function allows to modify the query path found for a block
+    arg = bool: nosep = False ;
+          ``nosep = False`` associates the value and the separator to each
+          "key-val" datas, and ``nosep = True`` just keeps the value alone.
+
+
+This method is an abstraction used directly by the methods ``self.flatdict``
+and ``self.recudict``.
+        """
+        self.nbline = {}
+
+        newdict = classdict()
+
+        for info in self:
+            if info.isblock():
+                lastkey = keymap(info.querypath)
+
+                if lastkey in newdict:
+                    raise KeyError(
+                        "the block << {0} >> is already ".format(lastkey) + \
+                        "in the ordered dictionary"
+                    )
+
+                self.nbline[info.querypath] = info.nbline
+
+            elif info.isdata():
+                newdict[lastkey] = info.short_rtu_data(nosep = nosep)
+
+        return newdict
+
+
+    def flatdict(self, nosep = False):
         """
 prototype::
     see = Infos.rtu_data , Infos.short_rtu_data
@@ -1044,10 +1122,6 @@ prototype::
     arg = bool: nosep = False ;
           by default ``nosep = False`` associates the value and the separator to
           each "key-val" datas, and ``nosep = True`` just keeps the value alone.
-    arg = bool: nonbline = False ;
-          by default with ``nonbline = False`` the line numbers in the ¨peuf
-          file are given with blocks, keys and lines, and with ``nonbline =
-          False`` they are dismissed
 
     return = dict ;
              an easy-to-use dictionary with keys equal to flat query paths
@@ -1099,30 +1173,42 @@ python::
     print('--- Default ---')
     print(datas.flatdict())
 
-    print('--- All set to True ---')
-    print(datas.flatdict(nosep = True, nonbline = True))
+    print('--- Without the separators ---')
+    print(datas.flatdict(nosep = True))
+
+    print('--- Number line of a block ---')
+    print("main/test ?")
+    print(datas.nblineof("main/test"))
+
+    print(["main", "sub_main", "sub_sub_main", "verb"], "?")
+    print(datas.nblineof(["main", "sub_main", "sub_sub_main", "verb"]))
+
+    print(["main", "sub_main"], "?")
+    print(datas.nblineof(["main", "sub_main"]))
 
 
 Here is what is obtained when launching the code in a terminal (the ordered
-dictionaries below have been a little reformatted).
+dictionaries below have been a little reformatted). Just note the last error
+raised because the block with query path ``"main/sub_main"`` is not a content
+one.
 
 term::
     --- Default ---
     OrderedDict([
         (
-            (2, 'main/test'),
+            'main/test',
             OrderedDict([
-                ((3, 'a'), {'value': '1 + 9', 'sep': '='}),
-                ((4, 'b'), {'value': '2', 'sep': '<>'}),
-                ((5, 'c'), {'value': '3 and 4', 'sep': '='})
+                ('a', {'sep': '=', 'value': '1 + 9'}),
+                ('b', {'sep': '<>', 'value': '2'}),
+                ('c', {'sep': '=', 'value': '3 and 4'})
             ])
         ),
         (
-            (10, 'main/sub_main/sub_sub_main/verb'),
-            [(11, 'line 1'), (12, 'line 2'), (13, 'line 3')]
+            'main/sub_main/sub_sub_main/verb',
+            ['line 1', 'line 2', 'line 3']
         )
     ])
-    --- All set to True ---
+    --- Without the separators ---
     OrderedDict([
         (
             'main/test',
@@ -1137,44 +1223,24 @@ term::
             ['line 1', 'line 2', 'line 3']
         )
     ])
-
-
-warning::
-    The use of ``nonbline = True`` will raise a ``KeyError`` error in case of
-    duplicated keys. This can't happen with ``nonbline = False`` because the
-    number lines are unique.
+    --- Number line of a block ---
+    main/test ?
+    2
+    ['main', 'sub_main', 'sub_sub_main', 'verb'] ?
+    10
+    ['main', 'sub_main'] ?
+    Traceback (most recent call last):
+    [...]
+    KeyError: 'unknown block << main/sub_main >>'
         """
-        ordered_flatdict = OrderedDict()
-
-        for info in self:
-            if info.isblock():
-                if nonbline:
-                    lastkey = info.querypath
-
-                    if lastkey in ordered_flatdict:
-                        raise KeyError(
-                            "the key << {0} >> is already ".format(lastkey) + \
-                            "in the ordered dictionary"
-                        )
-
-                else:
-                    lastkey = (info.nbline, info.querypath)
-
-                ordered_flatdict[lastkey] = OrderedDict()
-
-            elif info.isdata():
-                if nonbline:
-                    ordered_flatdict[lastkey] = info.short_rtu_data(
-                        nosep = nosep
-                    )
-
-                else:
-                    ordered_flatdict[lastkey] = info.rtu_data(nosep = nosep)
-
-        return ordered_flatdict
+        return self._builddict(
+            classdict = OrderedDict,
+            keymap    = lambda x: x,
+            nosep     = nosep
+        )
 
 
-    def recudict(self, nosep = False, nonbline = False):
+    def recudict(self, nosep = False):
         """
 prototype::
     see = self.flatdict
@@ -1184,116 +1250,85 @@ prototype::
              structure of the ¨peuf file analyzed
 
 
-====================================
-The ¨peuf file used for our examples
-====================================
-
-Let's consider the following ¨peuf file.
-
-orpyste::
-    main::
-        test::
-            a = 1 + 9
-
-    main::
-        sub_main::
-            sub_sub_main::
-                verb::
-                    line 1
-
-
 ======================================================
 All the datas in a single recursive ordered dictionary
 ======================================================
 
-``recudict`` can be called exactly in the same way as for ``flatdict``. In the
-following code, we use pprint so as to obtain easy to read outputs.
+We use exactly the same ¨peuf file as for the documentation of the method
+``self.flatdict``. The ¨python code is also the same excpet that we use
+``recudict`` instead of ``flatdict``. We obtain the following ouput which have
+been hand formatted.
 
-python::
-    from pprint import pprint
-
-    from orpyste.data import ReadBlock
-
-    datas = Read(
-        content = content,
-        mode    = {
-            "container"    : ":default:",
-            "keyval:: = <>": "test",
-            "verbatim"     : "verb"
-        }
-    )
-
-    datas.build()
-
-    print('--- Default ---')
-    print(datas.recudict())
-
-    print('--- All set to True ---')
-    print(datas.recudict(nosep = True, nonbline = True))
-
-
-Here are the dictionaries sent by the method ``recudict`` (the output
-below has been a little reformatted).
 
 term::
     --- Default ---
-    {
-        (2, 'main'): {
-            (2, 'test'): {
-                (3, 'a'): {'sep': '=', 'value': '1 + 9'}
-            }
-        },
-        (8, 'main'): {
-            (8, 'sub_main'): {
-                (8, 'sub_sub_main'): {
-                    (8, 'verb'): [(9, 'line 1')]
-                }
-            }
-        }
-    }
-    --- All set to True ---
-    {
-        'main': {
-            'sub_main': {
-                'sub_sub_main': {
-                    'verb': ['line 1']
-                }
-            }
-        }
-    }
-
-
-warning::
-    The use of ``nonbline = True`` will raise a ``KeyError`` error in case of
-    duplicated keys. This can't happen with ``nonbline = False`` because the
-    number lines are unique.
-        """
-        ordered_recudict = OrderedRecuDict()
-
-        for info in self:
-            if info.isblock():
-                lastkeys = info.querypath.split("/")
-
-                if nonbline:
-                    if lastkeys in ordered_recudict:
-                        raise KeyError(
-                            "the block << {0} >> has already ".format(
-                                "/".join(lastkey)
-                            ) + "been inserted in the ordered dictionary"
+    OrderedRecuDict([
+        (
+            'main',
+            OrderedRecuDict([
+                (
+                    'test',
+                        OrderedDict([
+                            ('a', {'value': '1 + 9', 'sep': '='}),
+                            ('b', {'value': '2', 'sep': '<>'}),
+                            ('c', {'value': '3 and 4', 'sep': '='})
+                        ])
+                    ),
+                (
+                    'sub_main',
+                    OrderedRecuDict([
+                        (
+                            'sub_sub_main',
+                            OrderedRecuDict([
+                                ('verb', ['line 1', 'line 2', 'line 3'])
+                            ])
                         )
-
-                else:
-                    nbline = info.nbline
-
-                    lastkeys = [(nbline, key) for key in lastkeys]
-
-            elif info.isdata():
-                if nonbline:
-                    ordered_recudict[lastkeys] = info.short_rtu_data(
-                        nosep = nosep
-                    )
-
-                else:
-                    ordered_recudict[lastkeys] = info.rtu_data(nosep = nosep)
-
-        return ordered_recudict
+                    ])
+                )
+            ])
+        )
+    ])
+    --- Without the separators ---
+    OrderedRecuDict([
+        (
+            'main',
+            OrderedRecuDict([
+                (
+                    'test',
+                    OrderedDict([
+                        ('a', '1 + 9'),
+                        ('b', '2'),
+                        ('c', '3 and 4')
+                    ])
+                ),
+                ('sub_main',
+                    OrderedRecuDict([
+                        (
+                            'sub_sub_main',
+                            OrderedRecuDict([
+                                (
+                                    'verb',
+                                    ['line 1', 'line 2', 'line 3']
+                                )
+                            ])
+                        )
+                    ])
+                )]
+            )
+        )
+    ])
+    --- Number line of a block ---
+    main/test ?
+    2
+    ['main', 'sub_main', 'sub_sub_main', 'verb'] ?
+    10
+    ['main', 'sub_main'] ?
+    Traceback (most recent call last):
+    [...]
+    KeyError: 'unknown block << main/sub_main >>'
+        """
+        return self._builddict(
+            classdict = OrderedRecuDict,
+            keymap    = lambda x: x.split("/"),
+            nosep     = nosep
+        )
