@@ -711,15 +711,38 @@ class for an example of use).
 class OrderedRecuDict(OrderedDict):
     """
 This subclass of ``collections.OrderedDict`` allows to use a list of hashable
-keys, or just a single hashable key.
+keys, or just a single hashable key. Here is an example of use where the ouput
+is hand formatted.
+
+pyterm::
+    >>> from mistool.python_use import OrderedRecuDict
+    >>> onerecudict = OrderedRecuDict()
+    >>> onerecudict[[1, 2, 4]] = "1st value"
+    >>> onerecudict[(1, 2, 4)] = "2nd value"
+    >>> print(onerecudict)
+    OrderedRecuDict([
+        (
+            1,
+            OrderedRecuDict([
+                (
+                    2,
+                    OrderedRecuDict([ (4, '1st value') ])
+                )
+            ])
+        ),
+        (
+            (1, 2, 4),
+            '2nd value'
+        )
+    ])
     """
     def __init__(self):
-        super(OrderedRecuDict, self).__init__()
+        super().__init__()
 
 
     def __getitem__(self, keys):
         if isinstance(keys, Hashable):
-            return super(OrderedRecuDict, self).__getitem__(keys)
+            return super().__getitem__(keys)
 
         else:
             first, *others = keys
@@ -733,7 +756,7 @@ keys, or just a single hashable key.
 
     def __setitem__(self, keys, val):
         if isinstance(keys, Hashable):
-            super(OrderedRecuDict, self).__setitem__(keys, val)
+            super().__setitem__(keys, val)
 
         else:
             first, *others = keys
@@ -752,7 +775,7 @@ keys, or just a single hashable key.
 
     def __contains__(self, keys):
         if isinstance(keys, Hashable):
-            return super(OrderedRecuDict, self).__contains__(keys)
+            return super().__contains__(keys)
 
         else:
             first, *others = keys
@@ -767,6 +790,7 @@ keys, or just a single hashable key.
                     return others in subdict
 
             return False
+
 
 
 class ReadBlock(Read):
