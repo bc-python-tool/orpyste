@@ -1,8 +1,15 @@
 ==========
+2016-04-06
+==========
+
+**Intégration des "regpaths" de ``mistool.os_use`` :** pour faciliter l'utilisation des itérateurs ``for`` des classes ``data.Read`` et ``data.ReadBlock``, on utilisera dorénavant la syntaxe des "regpaths" de ``mistool.os_use`` au lieu de celle des ¨regex_frs de ¨python. Ceci se fait directement via un "copier-coller" depuis ``mistool.os_use`` (de nouveau on cherche à éviter une dépendance exagérée vis à vis du module ¨mistool).
+
+
+==========
 2016-04-05
 ==========
 
-**Intégration de la classe ``data.OrderedRecuDict`` dans ``mistool.python_use`` :** ce sera dorénavant ``mistool.python_use`` qui fera éventuellement évoluer la classe ``OrderedRecuDict``. Grâce à ``inspect``, le code de ``data.OrderedRecuDict`` est obtenu directement via un "copier-coller" depuis ``mistool.python_use`` (ceci évite d'avoir une dépendance exagérée vis à vis du module ¨mistool).
+**Intégration de la classe ``data.OrderedRecuDict`` depuis ``mistool.python_use`` :** ce sera dorénavant ``mistool.python_use`` qui fera éventuellement évoluer la classe ``OrderedRecuDict``. Grâce à ``inspect``, le code de ``data.OrderedRecuDict`` est obtenu directement via un "copier-coller" depuis ``mistool.python_use`` (ceci évite d'avoir une dépendance exagérée vis à vis du module ¨mistool).
 
 
 ==========

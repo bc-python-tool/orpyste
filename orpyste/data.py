@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-04-04
+    date = 2016-04-06
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -52,6 +52,115 @@ This decorator is used each time that a new data has to be stored.
     return newmeth
 
 
+# -------------- #
+# -- REGPATHS -- #
+# -------------- #
+
+# The codes for regpaths all come directly from the module ``mistool.os_use``
+# where they are maintained.
+
+REGPATH_TO_REGEX = {
+    '.': '\\.',
+    '**': '.+',
+    '@': '.',
+    '/': '[^/]+',
+    '×': '*',
+    '\\': '[^\\]+'
+}
+
+RE_SPECIAL_CHARS = re.compile('(?<!\\\\)((?:\\\\\\\\)*)((\\*+)|(@)|(×)|(\\.))')
+
+REGPATH_SPE_CHARS = ['.', '@', '**', '×', '*']
+
+
+def regexify(pattern, sep = "/"):
+    """
+prototype::
+    arg = str: pattern ;
+          ``pattern`` is a regpath pattern using a syntax which tries to catch
+          the best of the regex and the Unix-glob syntaxes
+    arg = str: sep = "/" ;
+          this indicates an ¨os like separator
+
+    return = str ;
+             a regex uncompiled version of ``pattern``.
+
+
+====================
+Some examples of use
+====================
+
+The next section gives all the difference between the regpath patterns and the
+regexes of ¨python.
+
+
+Let suppose fisrt that we want to find paths without any ``/`` the default
+value of the argument ``sep`` that finish with either path::``.py`` or
+path::``.txt``. The code below shows how ``regexify`` gives easily an
+uncompiled regex pattern to do such searches.
+
+pyterm::
+    >>> from mistool.os_use import regexify
+    >>> print(regexify("*.(py|txt)"))
+    [^/]+\.(py|txt)
+
+
+Let suppose now that we want to find paths that finish with either
+path::``.py`` or path::``.txt``, and that can also be virtually or really
+found recursivly when walking in a directory. Here is how to use ``regexify``.
+
+pyterm::
+    >>> from mistool.os_use import regexify
+    >>> print(regexify("**.(py|txt)"))
+    .+\.(py|txt)
+
+
+=============================
+A Unix-glob like regex syntax
+=============================
+
+Here are the only differences between the Unix-glob like regex syntax with the
+Unix-glob syntax and the traditional regexes.
+
+    1) ``*`` indicates one ore more characters except the separator of the OS.
+    This corresponds to the regex regex::``[^\\]+`` or regex::``[^/]+``
+    regarding to the OS is Windows or Unix.
+
+    2) ``**`` indicates one ore more characters even the separator of the OS.
+    This corresponds to the regex regex::``.+``.
+
+    3) ``.`` is not a special character, this is just a point. This corresponds
+    to regex::``\.`` in regexes.
+
+    4) The multiplication symbol ``×`` is the equivalent of regex::``*`` in
+    regexes. This allows to indicate zero or more repetitions.
+
+    5) ``@`` is the equivalent of regex::``.`` in regexes. This allows to
+    indicate any single character except a newline.
+
+    6) ``\`` is an escaping for special character. For example, you have to use
+    a double backslash ``\\`` to indicate the Windows separator ``\``.
+    """
+    onestar2regex = REGPATH_TO_REGEX[sep]
+
+    newpattern = ""
+    lastpos    = 0
+
+    for m in RE_SPECIAL_CHARS.finditer(pattern):
+        spechar = m.group()
+
+        if spechar not in REGPATH_SPE_CHARS:
+            raise ValueError("too much consecutive stars ''*''")
+
+        spechar     = REGPATH_TO_REGEX.get(spechar, onestar2regex)
+        newpattern += pattern[lastpos:m.start()] + spechar
+        lastpos     = m.end()
+
+    newpattern += pattern[lastpos:]
+
+    return newpattern
+
+
 # ----------- #
 # -- INFOS -- #
 # ----------- #
@@ -69,7 +178,8 @@ prototype::
                without opening ``^`` and closing ``$``
     arg-attr = None , str: mode = None ;
                the mode of a block or a data
-    arg-attr = None , str , {'sep': str, 'key': str, 'value': str}: data = None ;
+    arg-attr = None , str ,
+               {'sep': str, 'key': str, 'value': str}: data = None ;
                the datas found if the mode is for one data
     arg-attr = int: nbline = -1 ;
                the number of the line of the infos
@@ -267,7 +377,7 @@ END_BLOCK   = Infos(END_TAG)
 class Read(WalkInAST):
     """
 prototype::
-    see = parse.ast.AST , parse.walk.WalkInAST
+    see = parse.ast.AST , parse.walk.WalkInAST , regexify
 
     arg-attr = pathlib.Path, str: content ;
                see the documentation of ``parse.ast.AST``
@@ -545,9 +655,9 @@ python::
     infos.build()
 
     for query in [
-        ".*",                # Anything
-        "main/test",         # Only one path
-        "main/sub_main/.*",  # Anything "contained" inside "main/sub_main"
+        "main/test",        # Only one path
+        "**",               # Anything
+        "main/test/*",      # Anything "contained" inside "main/test"
     ]:
         title = "Query: {0}".format(query)
         hrule = "="*len(title)
@@ -572,8 +682,17 @@ python::
 This gives the following ouputs as expected.
 
 term::
+    ================
+    Query: main/test
+    ================
+
+    --- main/test [keyval] ---
+    ['aaa', '=', '1 + 9']
+    ['bbbbbbbbb', '<>', '2']
+    ('c', '=', '3 and 4')
+
     =========
-    Query: .*
+    Query: **
     =========
 
     --- main/test [keyval] ---
@@ -586,23 +705,14 @@ term::
         line 2
             line 3
 
-    ================
-    Query: main/test
-    ================
+    ==================
+    Query: main/test/*
+    ==================
 
     --- main/test [keyval] ---
-    ['aaa', '=', '1 + 9']
-    ['bbbbbbbbb', '<>', '2']
+    ('aaa', '=', '1 + 9')
+    ('bbbbbbbbb', '<>', '2')
     ('c', '=', '3 and 4')
-
-    =======================
-    Query: main/sub_main/.*
-    =======================
-
-    --- main/sub_main/sub_sub_main/verb [verbatim] ---
-    line 1
-        line 2
-            line 3
     """
 
 # ------------------------------- #
@@ -671,7 +781,7 @@ This iterator is very basic.
     that the iteration is finished.
         """
         yield START_BLOCK
-        yield from self[".*"]
+        yield from self["**"]
         yield END_BLOCK
 
 
@@ -688,7 +798,9 @@ accepting queries (see the last section of the main documentation of this
 class for an example of use).
         """
 # What has to be extracted ?
-        query_pattern = re.compile("^{0}$".format(querypath))
+        query_pattern = re.compile(
+            "^{0}$".format(regexify(querypath))
+        )
 
 # We can now extract the matching infos.
         datasfound = False
@@ -707,6 +819,9 @@ class for an example of use).
 # ---------------------------- #
 # -- READING BLOCK BY BLOCK -- #
 # ---------------------------- #
+
+# The following code of the class ``OrderedRecuDict`` comes directly from the
+# module ``mistool.python_use`` where it is maintained.
 
 class OrderedRecuDict(OrderedDict):
     """
@@ -790,7 +905,6 @@ pyterm::
                     return others in subdict
 
             return False
-
 
 
 class ReadBlock(Read):
@@ -1001,7 +1115,7 @@ Looking for particular blocks
 =============================
 
 See the documentation of the class ``Read``. Regarding to the class ``Read``,
-just the ouputs of the class ``ReadBlock`` are different but the way to use
+just the outputs of the class ``ReadBlock`` are different but the way to use
 queries remains the same.
 
 
@@ -1081,7 +1195,7 @@ prototype::
     see = self.flatdict , self.recudict
 
     arg = str, list(str) ;
-          a query path or a list of names of successive blocks
+          a "querypath" or a list of names of successive blocks
 
 
 This method returns the number line of a content block given by ``query``.
@@ -1141,7 +1255,7 @@ and ``self.recudict``.
     def flatdict(self, nosep = False):
         """
 prototype::
-    see = Infos.rtu_data , Infos.short_rtu_data
+    see = Infos.rtu_data , Infos.short_rtu_data , self._builddict
 
     arg = bool: nosep = False ;
           by default ``nosep = False`` associates the value and the separator to
@@ -1279,7 +1393,7 @@ All the datas in a single recursive ordered dictionary
 ======================================================
 
 We use exactly the same ¨peuf file as for the documentation of the method
-``self.flatdict``. The ¨python code is also the same excpet that we use
+``self.flatdict``. The ¨python code is also the same except that we use
 ``recudict`` instead of ``flatdict``. We obtain the following ouput which have
 been hand formatted.
 

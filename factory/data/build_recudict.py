@@ -9,10 +9,8 @@
 # -- SEVERAL IMPORTS -- #
 # --------------------- #
 
-import ast
 import inspect
 from importlib.machinery import SourceFileLoader
-from pathlib import Path
 
 from mistool.os_use import PPath
 from mistool.python_use import OrderedRecuDict
@@ -50,7 +48,10 @@ source_mistool    = "".join(source_mistool)
 
 
 # Infos about the local and NOT the installed version !
-localorpyste = SourceFileLoader("orpyste.data", str(PY_FILE)).load_module()
+localorpyste = SourceFileLoader(
+    "orpyste.data",
+    str(PY_FILE)
+).load_module()
 
 OrderedRecuDictUpdate = localorpyste.OrderedRecuDict
 
@@ -69,11 +70,11 @@ for nbline, line in enumerate(SOURCE_MODULE):
 
     elif nbline == start:
         PY_TEXT.append(source_mistool)
-        PY_TEXT.append("\n"*2)
+        PY_TEXT.append("\n")
 
 PY_TEXT = "".join(PY_TEXT)
 
-print(PY_TEXT)
+
 # ---------------------------- #
 # -- UPDATE THE PYTHON FILE -- #
 # ---------------------------- #
