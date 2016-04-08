@@ -30,7 +30,7 @@ from mistool.os_use import (
 THIS_DIR = PPath(__file__).parent
 
 for parent in THIS_DIR.parents:
-    if parent.name == "orPySte":
+    if parent.name == "orPyste":
         break
 
 PY_FILE = parent / 'orpyste/data.py'
@@ -51,7 +51,39 @@ print('    * Looking for the last code of ``mistool.os_use.regexify``')
 # Codes of the functions
 
 source_mistool, _ = inspect.getsourcelines(regexify)
-source_mistool    = "".join(source_mistool)
+
+# We adapt "by hand" the source code.
+source_mistool = source_mistool[:-2]
+
+nb_change = -1
+
+for nb, line in enumerate(source_mistool):
+    if ">>> print(regexify(" in line:
+        nb_change = nb + 1
+
+    elif nb == nb_change:
+        source_mistool[nb] = "    re.compile('{0}')\n".format(line.strip())
+
+
+source_mistool.append(
+"""    newpattern  = re.compile("^{0}$".format(newpattern))
+
+    return newpattern
+"""
+)
+
+source_mistool = "".join(source_mistool)
+
+source_mistool = source_mistool.replace(
+    "a regex uncompiled version of ``pattern``.",
+    "a compiled regex version of ``pattern``."
+)
+
+source_mistool = source_mistool.replace(
+    "from mistool.os_use import regexify",
+    "from orpyste.data import regexify"
+)
+
 
 # Global constants used (upper case convention)
 
@@ -128,7 +160,7 @@ PY_TEXT = "".join(PY_TEXT)
 # -- UPDATE THE PYTHON FILE -- #
 # ---------------------------- #
 
-print('    * Updating the Python file')
+print('    * Updating the local Python file ``orpyste/data.py``')
 
 with PY_FILE.open(
     mode     = 'w',

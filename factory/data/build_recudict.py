@@ -23,7 +23,7 @@ from mistool.python_use import OrderedRecuDict
 THIS_DIR = PPath(__file__).parent
 
 for parent in THIS_DIR.parents:
-    if parent.name == "orPySte":
+    if parent.name == "orPyste":
         break
 
 PY_FILE = parent / 'orpyste/data.py'
@@ -79,7 +79,7 @@ PY_TEXT = "".join(PY_TEXT)
 # -- UPDATE THE PYTHON FILE -- #
 # ---------------------------- #
 
-print('    * Updating the Python file')
+print('    * Updating the local Python file ``orpyste/data.py``')
 
 with PY_FILE.open(
     mode     = 'w',

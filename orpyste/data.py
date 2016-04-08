@@ -56,21 +56,24 @@ This decorator is used each time that a new data has to be stored.
 # -- REGPATHS -- #
 # -------------- #
 
-# The codes for regpaths all come directly from the module ``mistool.os_use``
+# All the codes for regpaths come directly from the module ``mistool.os_use``
 # where they are maintained.
 
+# There is a little difference with the original code : the following version
+# returns a compiled regex instead of a string to be compiled.
+
 REGPATH_TO_REGEX = {
-    '.': '\\.',
-    '**': '.+',
-    '@': '.',
-    '/': '[^/]+',
     '×': '*',
-    '\\': '[^\\]+'
+    '\\': '[^\\]+',
+    '**': '.+',
+    '/': '[^/]+',
+    '.': '\\.',
+    '@': '.'
 }
 
 RE_SPECIAL_CHARS = re.compile('(?<!\\\\)((?:\\\\\\\\)*)((\\*+)|(@)|(×)|(\\.))')
 
-REGPATH_SPE_CHARS = ['.', '@', '**', '×', '*']
+REGPATH_SPE_CHARS = ['**', '×', '.', '@', '*']
 
 
 def regexify(pattern, sep = "/"):
@@ -83,7 +86,7 @@ prototype::
           this indicates an ¨os like separator
 
     return = str ;
-             a regex uncompiled version of ``pattern``.
+             a compiled regex version of ``pattern``.
 
 
 ====================
@@ -100,9 +103,9 @@ path::``.txt``. The code below shows how ``regexify`` gives easily an
 uncompiled regex pattern to do such searches.
 
 pyterm::
-    >>> from mistool.os_use import regexify
+    >>> from orpyste.data import regexify
     >>> print(regexify("*.(py|txt)"))
-    [^/]+\.(py|txt)
+    re.compile('[^/]+\.(py|txt)')
 
 
 Let suppose now that we want to find paths that finish with either
@@ -110,9 +113,9 @@ path::``.py`` or path::``.txt``, and that can also be virtually or really
 found recursivly when walking in a directory. Here is how to use ``regexify``.
 
 pyterm::
-    >>> from mistool.os_use import regexify
+    >>> from orpyste.data import regexify
     >>> print(regexify("**.(py|txt)"))
-    .+\.(py|txt)
+    re.compile('.+\.(py|txt)')
 
 
 =============================
@@ -157,6 +160,7 @@ Unix-glob syntax and the traditional regexes.
         lastpos     = m.end()
 
     newpattern += pattern[lastpos:]
+    newpattern  = re.compile("^{0}$".format(newpattern))
 
     return newpattern
 
@@ -798,9 +802,7 @@ accepting queries (see the last section of the main documentation of this
 class for an example of use).
         """
 # What has to be extracted ?
-        query_pattern = re.compile(
-            "^{0}$".format(regexify(querypath))
-        )
+        query_pattern = regexify(querypath)
 
 # We can now extract the matching infos.
         datasfound = False
@@ -986,7 +988,8 @@ python::
         )
 
 
-Launching in a terminal, we see the following output.
+Launching in a terminal, we see the following output (for the long ordered
+dictionary, two new lines have been added by hand).
 
 term::
     ---
@@ -999,7 +1002,9 @@ term::
     querypath = <<main/test>>
     ---
     mode      = <<keyval>>
-    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}), ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and 4', 'sep': '='})])>>
+    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}),
+    ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and
+    4', 'sep': '='})])>>
     querypath = <<None>>
     ---
     mode      = <<verbatim>>
@@ -1145,7 +1150,7 @@ prototype::
     see = Read.__getitem__
         """
 # What has to be extracted ?
-        query_pattern = re.compile("^{0}$".format(querypath))
+        query_pattern = regexify(querypath)
 
 # We can now extract the matching infos.
         datasfound  = False
@@ -1394,8 +1399,8 @@ All the datas in a single recursive ordered dictionary
 
 We use exactly the same ¨peuf file as for the documentation of the method
 ``self.flatdict``. The ¨python code is also the same except that we use
-``recudict`` instead of ``flatdict``. We obtain the following ouput which have
-been hand formatted.
+``recudict`` instead of ``flatdict``. We obtain the following ouput which
+have been hand formatted.
 
 
 term::
