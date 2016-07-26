@@ -4,8 +4,6 @@
 # -- SEVERAL IMPORTS -- #
 # --------------------- #
 
-import platform
-
 from mistool.os_use import (
     cd,
     PPath,
@@ -22,9 +20,9 @@ THIS_DIR = PPath(__file__).parent
 LOG_FILE = THIS_DIR / "log.txt"
 
 
-# -------------------------------------- #
-# -- LAUNCHING ALL THE BUILDING TOOLS -- #
-# -------------------------------------- #
+# --------------- #
+# -- FUNCTIONS -- #
+# --------------- #
 
 def printtile(text):
     print(
@@ -33,6 +31,11 @@ def printtile(text):
         "",
         sep = "\n"
     )
+
+
+# ----------------------------- #
+# -- LAUNCHING ALL THE TESTS -- #
+# ----------------------------- #
 
 with cd(THIS_DIR):
     printtile("Launching all the tests...")
@@ -56,11 +59,15 @@ with cd(THIS_DIR):
 printtile("Updating the log file...")
 
 if tests_passed:
-    ...
+    message = ["OK"]
+
+else:
+    message = ["PAS OK"]
 
 
+message = "\n".join(message)
 with LOG_FILE.open(
     mode     = 'w',
     encoding = 'utf-8'
 ) as f:
-    f.write("OK")
+    f.write(message)

@@ -2,14 +2,13 @@
 
 """
 prototype::
-    date = 2016-02-16
+    date = 2016-07-24
 
 
 This module gives an easy way to work either with a pickle file or with a list
 so as to store and read datas.
 """
 
-from os import remove
 import pickle
 
 
@@ -61,7 +60,10 @@ as to store datas. Here is how to use this class.
 
         elif self.mode == PICKLE:
             if self.path.is_file():
-                remove(str(self.path))
+                self.path.unlink()
+
+            with self.path.open(mode = "ab") as f:
+                ...
 
             self.datas = self.path
             self.write = self._writeinfile
@@ -103,4 +105,4 @@ as to store datas. Here is how to use this class.
     def remove(self):
         if self.mode != LIST \
         and self.datas.is_file():
-            remove(str(self.datas))
+            self.datas.unlink()

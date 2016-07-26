@@ -1,0 +1,6 @@
+{
+    "mode"  : {
+        "v"      : "verb",
+        "k::= <>": ["keyval_1", "keyval_2"]
+    }
+}

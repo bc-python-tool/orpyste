@@ -1,0 +1,35 @@
+// Global comment #1
+keyval_1::
+// Single line comment #1
+    a = 1
+// Single line comment #2
+        + 2
+/*
+    Multi-line comment #1
+*/
+    b = 3
+/*
+    Multi-line comment #2
+*/
+        + 4
+    c = 5
+/* Single-multi-line comment #2 */
+        + 6
+// Global comment #2
+keyval_2::
+    d = 7
+    e = 8
+verb::
+
+// Others single line comment #1
+
+// Others single line comment #2
+    Line 1
+    Line 2
+
+// Others single line comment #3
+
+// Others single line comment #4
+    Line 3
+
+    Line 4

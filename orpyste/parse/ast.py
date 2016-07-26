@@ -10,7 +10,6 @@ This module contains classes so as to build an abstract syntax tree view of
 the class ``orpyste.tools.ioview.IOView``.
 """
 
-
 from collections import OrderedDict
 from io import StringIO
 from pathlib import Path
@@ -51,6 +50,8 @@ VERB_CONTENT_TAG = ":verbatim:"
 SPE_CONTENT_TAG  = ":content:"
 CONTENT_TAG      = "content"
 
+COMMENT_TAG = "comment"
+
 # Modes
 
 DEFAULT = ":default:"
@@ -71,9 +72,14 @@ LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
 
 # For the AST
 
-COMMENT_SINGLELINE            = "comment-singleline"
-COMMENT_MULTILINES_SINGLELINE = "comment-multilines-singleline"
-COMMENT_MULTILINES            = "comment-multilines"
+SINGLELINE = "singleline"
+MULTILINES = "multilines"
+
+COMMENT_SINGLELINE            = "{0}-{1}".format(COMMENT_TAG, SINGLELINE)
+COMMENT_MULTILINES            = "{0}-{1}".format(COMMENT_TAG, MULTILINES)
+COMMENT_MULTILINES_SINGLELINE = "{0}-{1}-{2}".format(
+    COMMENT_TAG, MULTILINES , SINGLELINE
+)
 
 MAGIC_COMMENT = "magic-comment"
 
@@ -522,19 +528,20 @@ prototype::
 
 
     attr = file, io.StringIO: view ;
-           this attribut contains an verbose and easy to read version of the
+           this attribut contains a verbose and easy to read version of the
            abstract syntax tree in either a pickle file if the argument attribut
            ``content`` is a ``pathlib.Path``, or a ``io.StringIO`` if the
-           argument attribut ``content`` is a string respectively
+           argument attribut ``content`` is a string
 
     method = build ;
-             you have to call this method each time you must build or rebuild
+             you have to call this method each time you must build, or rebuild,
              the abstract syntax tree
 
 
 This class can build an Abstract Syntax Tree (AST) view of a merely ¨orpyste
-file because here we allow some semantic illegal ¨peuf syntaxes. This will the
-job of ``parse.Walk`` to manage this kind of errors among other ones.
+file. We have written "merely" because here we allow some semantic illegal
+¨peuf syntaxes. This will the job of ``parse.Walk`` to manage this kind of
+errors among some other ones.
 
 
 Here is a very simple example showing how to build the AST view and how to walk
@@ -580,7 +587,6 @@ warning::
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
 # The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
-
 
     CLOSED_BY_INDENT_ID, CLOSED_AT_END_ID, VERBATIM_ID = range(3)
 

@@ -1,0 +1,19 @@
+{
+    "mode": {
+         "keyval:: :=": ["player", "config"],
+         "verbatim"   : "summary"
+    },
+    "dicoview": {
+        "player": {
+            "mode": "keyval",
+            "seps": [":="]
+        },
+        "config": {
+            "mode": "keyval",
+            "seps": [":="]
+        },
+        "summary": {
+            "mode": "verbatim"
+        }
+    }
+}

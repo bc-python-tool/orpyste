@@ -1,0 +1,37 @@
+START
+COMMENT-OPEN:multilines
+COMMENT-LINE:<<>>
+COMMENT-LINE:<< * One example...>>
+COMMENT-LINE:<< >>
+COMMENT-CLOSE:multilines
+BLOCK-OPEN:main
+COMMENT-OPEN:singleline
+COMMENT-LINE:<< Single line comment in the 1st container.>>
+COMMENT-CLOSE:singleline
+BLOCK-OPEN:test
+COMMENT-OPEN:multilines-singleline
+COMMENT-LINE:<< Comment in a key-val block. >>
+COMMENT-CLOSE:multilines-singleline
+KEYVAL:key=<<a>> sep=<<=>> value=<<1 + 9>>
+COMMENT-OPEN:multilines-singleline
+COMMENT-LINE:<< Comment in the value of a key. >>
+COMMENT-CLOSE:multilines-singleline
+KEYVAL:key=<<b>> sep=<<<>>> value=<<2 + 3>>
+KEYVAL:key=<<c>> sep=<<=>> value=<<4 and 5>>
+BLOCK-CLOSE:test
+BLOCK-CLOSE:main
+BLOCK-OPEN:main
+BLOCK-OPEN:sub_main
+BLOCK-OPEN:sub_sub_main
+BLOCK-OPEN:verb
+LINE:<<line 1>>
+LINE:<<    line 2>>
+LINE:<<        line 3>>
+LINE:<<>>
+LINE:<<>>
+MAGIC-COMMENT
+BLOCK-CLOSE:verb
+BLOCK-CLOSE:sub_sub_main
+BLOCK-CLOSE:sub_main
+BLOCK-CLOSE:main
+END

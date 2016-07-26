@@ -1,0 +1,55 @@
+{
+    "lines": [
+"test::",
+"",
+"    Line #2",
+"",
+"",
+"////",
+""
+    ],
+    "mode": "verbatim",
+    "metadatas": [
+        {
+            "nbline"      : 1,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "test"},
+            "mode"        : "verbatim"
+        },
+        {
+            "nbline": 2,
+            "kind"  : ":emptyline:"
+        },
+        {
+            "nbline" : 3,
+            "kind"   : ":content:",
+            "content": {
+                "value_in_line": "Line #2"
+            }
+        },
+        {
+            "nbline": 4,
+            "kind"  : ":emptyline:"
+        },
+        {
+            "nbline": 5,
+            "kind"  : ":emptyline:"
+        },
+        {
+            "nbline"   : 6,
+            "kind"     : "magic-comment",
+            "openclose": "open"
+        },
+        {
+            "nbline"   : 6,
+            "kind"     : "magic-comment",
+            "openclose": "close"
+        },
+        {
+            "nbline"   : 6,
+            "kind"     : "block",
+            "openclose": "close"
+        }
+    ]
+}

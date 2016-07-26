@@ -1,0 +1,14 @@
+{
+    "mode": {
+         "verbatim" : "summary",
+         "container": ":default:"
+    },
+    "dicoview": {
+        "summary": {
+            "mode": "verbatim"
+        },
+        ":default:": {
+            "mode": "container"
+        }
+    }
+}

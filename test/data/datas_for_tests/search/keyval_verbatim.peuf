@@ -1,0 +1,14 @@
+main::
+    test::
+        a = 1 + 9
+        b <>  2
+        c = 3 and 4
+
+
+main::
+    sub_main::
+        sub_sub_main::
+            verb::
+                line 1
+                    line 2
+                        line 3

@@ -1,0 +1,85 @@
+{
+    "lines": [
+"container_1::",
+"    test::    ",
+"        Line A     ",
+"",
+"container_2::",
+"    test::",
+"        Line B"
+    ],
+    "mode": {
+        "verbatim" : "test",
+        "container": ":default:"
+    },
+    "metadatas": [
+        {
+            "nbline"      : 1,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "container_1"},
+            "mode"        : "container"
+        },
+        {
+            "nbline"      : 2,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "test"},
+            "mode"        : "verbatim"
+        },
+
+        {
+            "nbline": 3,
+            "kind"   : ":content:",
+            "content": {
+                "value_in_line": "Line A"
+            }
+        },
+        {
+            "nbline": 4,
+            "kind"  : ":emptyline:"
+        },
+        {
+            "nbline"   : 5,
+            "kind"     : "block",
+            "openclose": "close"
+        },
+        {
+            "nbline"   : 5,
+            "kind"     : "block",
+            "openclose": "close"
+        },
+        {
+            "nbline"      : 5,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "container_2"},
+            "mode"        : "container"
+        },
+        {
+            "nbline"      : 6,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "test"},
+            "mode"        : "verbatim"
+        },
+
+        {
+            "nbline": 7,
+            "kind"   : ":content:",
+            "content": {
+                "value_in_line": "Line B"
+            }
+        },
+        {
+            "nbline"   : 7,
+            "kind"     : "block",
+            "openclose": "close"
+        },
+        {
+            "nbline"   : 7,
+            "kind"     : "block",
+            "openclose": "close"
+        }
+    ]
+}

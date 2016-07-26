@@ -2,12 +2,12 @@
 
 """
 prototype::
-    date = 2016-02-16
+    date = 2016-07-21
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in the
-intermediate AST view made by the class ``parse.ast.AST``, and alsa so as to
-act regarding the context or the data met during the walk.
+intermediate AST view made by the class ``parse.ast.AST``, and also to act
+regarding the context or the data met during the walk.
 
 
 info::
@@ -80,12 +80,16 @@ warning::
 
         * ``start`` and ``end`` are methods called just before and after the
         walk.
+
         * ``open_comment`` and ``close_comment`` are called when a comment has
         to be opened or closed, whereas ``content_in_comment`` allows to add a
         content met inside a comment.
+
         * ``open_block`` and ``close_block`` are methods called just before and
         after a block is opened or closed respectively.
+
         * ``add_keyval`` can add a key-separator-value data.
+
         * ``add_line`` allows to add a single verbatim line.
     """
     AST = AST
@@ -140,6 +144,9 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
+                # --- IMPORTANT DEBUG --- #
+                # print("--- @@@@@ ---", self.metadata,sep="\n");continue
+
                 kind = self.metadata[KIND_TAG]
                 self.nbline = self.metadata[NBLINE_TAG]
 
@@ -147,6 +154,11 @@ warning::
                 if kind.startswith("comment-"):
                     if self.metadata[OPENCLOSE] == OPEN:
                         self.incomment = True
+
+# Verbatim content is verbatim !!!!
+                        if self.last_mode == VERBATIM:
+                            self._add_empty_verbline()
+
                         self.open_comment(kind[8:])
 
                     else:
@@ -257,6 +269,7 @@ warning::
 
                         lastkeyval[VAL_TAG] \
                         += " " + content[VAL_IN_LINE_TAG].strip()
+                        self.kv_nbline = self.metadata[NBLINE_TAG]
 
                     else:
                         if lastkeyval:
@@ -393,20 +406,12 @@ this informations are in the dictionary ``keyval``.
 # -- VERBATIM -- #
 # -------------- #
 
+# We have to take care of the last empty lines !!!
     def _add_empty_verbline(self):
         for _ in range(self.nb_empty_verbline):
             self.add_line("")
 
         self.nb_empty_verbline = 0
-
-
-    def add_magic_comment(self):
-        """
-This method is for adding the magic comment used for empty lines at the end of
-verbatim contents.
-        """
-        ...
-
 
     def add_line(self, line):
         """
@@ -415,5 +420,12 @@ prototype::
 
 
 This method is for adding verbatim content.
+        """
+        ...
+
+    def add_magic_comment(self):
+        """
+This method is for adding the magic comment used for empty lines at the end of
+verbatim contents.
         """
         ...

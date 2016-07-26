@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+# --------------------- #
+# -- SEVERAL IMPORTS -- #
+# --------------------- #
+
+import json
+
+from mistool.os_use import PPath
+
+
+# ------------------- #
+# -- MODULE TESTED -- #
+# ------------------- #
+
+from orpyste import data
+
+
+# ----------------------- #
+# -- GENERAL CONSTANTS -- #
+# ----------------------- #
+
+THIS_DIR  = PPath(__file__).parent
+DATAS_DIR = THIS_DIR / "datas_for_tests"
+
+READ_CLASS = data.Read
+
+
+# --------------- #
+# -- CLEANINGS -- #
+# --------------- #
+
+def test_data_read_all():
+    for jsonpath in DATAS_DIR.walk("file::read/**.json"):
+        with jsonpath.open() as f:
+            mode = json.load(f)
+
+        with jsonpath.with_ext("txt").open(
+            encoding = "utf-8",
+            mode     = "r"
+        ) as f:
+            output = f.read().strip()
+
+        data_infos = READ_CLASS(
+            content = jsonpath.with_ext("peuf"),
+            mode    = mode
+        )
+
+        data_infos.build()
+
+        outputfound = []
+
+        for oneinfo in data_infos:
+            if oneinfo.isblock():
+                outputfound.append('QUERYPATH:{0}'.format(oneinfo.querypath))
+                outputfound.append('MODE:{0}'.format(oneinfo.mode))
+
+            elif oneinfo.isdata():
+                outputfound.append('{0}'.format(oneinfo.rtu_data()))
+
+        outputfound = "\n".join(outputfound)
+
+        data_infos.remove()
+
+        assert output == outputfound

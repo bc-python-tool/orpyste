@@ -1,0 +1,28 @@
+/*
+ * One example...
+ */
+
+main::
+// Single line comment in the 1st container.
+
+    test::
+/* Comment in a key-val block. */
+
+        a = 1 + 9
+        b <>  2
+
+/* Comment in the value of a key. */
+        + 3
+
+        c = 4 and 5
+
+main::
+    sub_main::
+        sub_sub_main::
+            verb::
+                line 1
+                    line 2
+                        line 3
+
+
+////

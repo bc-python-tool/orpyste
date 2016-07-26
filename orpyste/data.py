@@ -59,21 +59,22 @@ This decorator is used each time that a new data has to be stored.
 # All the codes for regpaths come directly from the module ``mistool.os_use``
 # where they are maintained.
 
-# There is a little difference with the original code : the following version
-# returns a compiled regex instead of a string to be compiled.
+# There is just a "little big" difference with the original code : the
+# following version always returns a compiled regex, instead of a string to be
+# compiled.
+
+REGPATH_SPE_CHARS = ['*', '**', '.', '@', '×']
 
 REGPATH_TO_REGEX = {
-    '×': '*',
-    '\\': '[^\\]+',
     '**': '.+',
-    '/': '[^/]+',
     '.': '\\.',
-    '@': '.'
+    '/': '[^/]+',
+    '@': '.',
+    '\\': '[^\\]+',
+    '×': '*'
 }
 
 RE_SPECIAL_CHARS = re.compile('(?<!\\\\)((?:\\\\\\\\)*)((\\*+)|(@)|(×)|(\\.))')
-
-REGPATH_SPE_CHARS = ['**', '×', '.', '@', '*']
 
 
 def regexify(pattern, sep = "/"):
@@ -85,7 +86,7 @@ prototype::
     arg = str: sep = "/" ;
           this indicates an ¨os like separator
 
-    return = str ;
+    return = _sre.SRE_Pattern ;
              a compiled regex version of ``pattern``.
 
 
@@ -691,8 +692,8 @@ term::
     ================
 
     --- main/test [keyval] ---
-    ['aaa', '=', '1 + 9']
-    ['bbbbbbbbb', '<>', '2']
+    ('aaa', '=', '1 + 9')
+    ('bbbbbbbbb', '<>', '2')
     ('c', '=', '3 and 4')
 
     =========
@@ -1130,7 +1131,6 @@ Working with dictionaries
 
 See the documentations of the methods ``flatdict`` and ``recudict``.
     """
-
     def _addblockdata(self, oneinfo):
         if self._lastmode == VERBATIM:
             self._datas.append((oneinfo.nbline, oneinfo.data))
@@ -1194,6 +1194,34 @@ prototype::
         self._lastmode = None
 
 
+    def __init__(
+        self,
+        content,
+        mode,
+        encoding = "utf-8"
+    ):
+        super().__init__(content, mode, encoding)
+        self._nblineof = None
+
+    def build(self):
+        super().build()
+
+        self._nblineof = {}
+
+        for info in self:
+            if info.isblock():
+                querypath = info.querypath
+
+                if info.querypath in self._nblineof:
+                    raise KeyError(
+                        "the block << {0} >> is already ".format(querypath) + \
+                        "in the ordered dictionary"
+                    )
+
+                self._nblineof[querypath] = info.nbline
+
+
+
     def nblineof(self, query):
         """
 prototype::
@@ -1210,13 +1238,16 @@ warning::
     This method needs that either ``self.flatdict``, or ``self.recudict`` has
     been called before.
         """
+        if self._nblineof == None:
+            raise "RRR"
+
         if isinstance(query, list):
             query = "/".join(query)
 
-        if query not in self.nbline:
+        if query not in self._nblineof:
             raise KeyError("unknown block << {0} >>".format(query))
 
-        return self.nbline[query]
+        return self._nblineof[query]
 
 
     def _builddict(self, classdict, keymap, nosep):
@@ -1235,21 +1266,11 @@ prototype::
 This method is an abstraction used directly by the methods ``self.flatdict``
 and ``self.recudict``.
         """
-        self.nbline = {}
-
         newdict = classdict()
 
         for info in self:
             if info.isblock():
                 lastkey = keymap(info.querypath)
-
-                if lastkey in newdict:
-                    raise KeyError(
-                        "the block << {0} >> is already ".format(lastkey) + \
-                        "in the ordered dictionary"
-                    )
-
-                self.nbline[info.querypath] = info.nbline
 
             elif info.isdata():
                 newdict[lastkey] = info.short_rtu_data(nosep = nosep)

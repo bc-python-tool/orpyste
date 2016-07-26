@@ -1,0 +1,11 @@
+{
+    "mode": {
+        "container"    : ":default:",
+        "keyval:: = <>": "test",
+        "verbatim"     : "verb"
+    },
+    "search": {
+        "main/test": 2,
+        "main/sub_main/sub_sub_main/verb": 11
+    }
+}

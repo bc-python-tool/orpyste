@@ -1,0 +1,23 @@
+block_1::
+    verb::
+
+
+
+/* several comments...
+
+//* not a new comment!!!!
+
+// neither a comment
+
+thisisnotablock::
+    ok ?
+     end of multi comment */
+        end of the block "verbatim" is here !!!!!
+
+
+
+block_2::
+    block_3::
+        verb::
+            notablockhere\::
+               OK ?

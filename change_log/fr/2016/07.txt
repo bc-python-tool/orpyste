@@ -1,0 +1,32 @@
+==========
+2016-07-26
+==========
+
+**Création de nouveaux tests unitaires :** voici la procédure retenue.
+
+    1) On fait appel à ¨pytest pour sa simplicité d'utilisation.
+
+    2) Certains tests font appel au très pratique projet ¨hypothesis.
+
+    3) Les tests sont disponibles sur ¨github afin que les utilisateurs avertis puissent tester leur installation, mais ils ne le seront pas sur ¨pypi pour ne pas polluer ¨python lors d'une installation de ¨orpyste.
+
+
+**Correction d'un mini-bug dans la classe ``read.ReadBlock`` :** la méthode ``nblineof`` ne fonctionnait que si l'une au moins des deux méthodes ``flatdict`` ou ``recudict`` était appelée.
+
+
+**Dans le module ``clean``, correction de divers bugs :** voici ce qui a été répéré et réparé.
+
+    1) Les fichiers n'étaient pas bien pris en compte (ceci est normal car le développement avait juste été fait en travaillant sur des chaînes de caractères).
+
+    2) Il y avait des tabulations inutiles pour les lignes vides dans le contenu final. La méthode ``add_indentation`` possède un nouvel argument optionnel ``addempty`` valant ``False`` par défaut.
+
+    3) La gestion des espaces de décoration a été repensée. Voir aussi à ce propos les ¨chgts dans le module ``walk``.
+
+
+**Dans le module ``walk``, ¨chgt de la gestion des commentaires :** les commentaires d'un contenu "verbatim" sont positionnés directement lors de la "marche" (ce travail était anciennement fait par la classe ``clean.Clean``).
+
+
+**Dans le module ``ioview``, correction d'un bug :** lors de l'utilisation du mode ``pickle``, si aucune donnée n'était ajoutée, la lecture levait à tors une erreur au lieu de tout simplement ne rien envoyer (ceci était dû au fait que le fichier ``pickle`` n'était créé que lors de l'ajout de la toute première donnée).
+
+
+**Amélioration du fichier ``README.md`` :** des exemples "en console" ont été ajoutés afin de rendre le package plus "bankable".

@@ -30,7 +30,7 @@ from mistool.os_use import (
 THIS_DIR = PPath(__file__).parent
 
 for parent in THIS_DIR.parents:
-    if parent.name == "orPyste":
+    if parent.name == "orPySte":
         break
 
 PY_FILE = parent / 'orpyste/data.py'
@@ -75,8 +75,10 @@ source_mistool.append(
 source_mistool = "".join(source_mistool)
 
 source_mistool = source_mistool.replace(
-    "a regex uncompiled version of ``pattern``.",
-    "a compiled regex version of ``pattern``."
+    """    return = str ;
+             a regex uncompiled version of ``pattern``.""",
+    """    return = _sre.SRE_Pattern ;
+             a compiled regex version of ``pattern``."""
 )
 
 source_mistool = source_mistool.replace(
@@ -138,11 +140,21 @@ for nbline, line in enumerate(SOURCE_MODULE):
         PY_TEXT.append(line)
 
     elif nbline == start:
-        for varname, source in sources_global_constants.items():
-            # Ugly patches !
-            if source[0] == "{":
-                source = "{" + "\n    " + source[1:-1] + "\n}"
-                source = source.replace("', '", "',\n    '")
+        # Ugly patches !
+        for varname in sorted(list(sources_global_constants.keys())):
+            source = sources_global_constants[varname]
+            firstchar = source[0]
+
+            if firstchar in "[{":
+                source = source[1:-1].split(", ")
+                source.sort()
+
+                if firstchar == "[":
+                    source = "[{0}]".format(", ".join(source))
+
+                else:
+                    source = ",\n    ".join(source)
+                    source = "{\n    " + source + "\n}"
 
             source = "{0} = {1}".format(varname, source)
             PY_TEXT.append(source)

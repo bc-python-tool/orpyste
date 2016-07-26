@@ -1,0 +1,26 @@
+content::
+
+// comment in 1st container.
+
+
+    subcontent::
+
+/*
+    comment
+
+    in the 2nd
+
+    container.
+*/
+        test::
+
+// comment in a block.
+
+
+
+            aaa = 1
+
+
+test::
+          a=2
+    bb      =     7

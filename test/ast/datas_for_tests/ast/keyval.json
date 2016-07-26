@@ -1,0 +1,33 @@
+{
+    "lines": [
+"test::",
+"    Missing a key-val first !",
+"    a = 3",
+""
+    ],
+    "mode": "keyval::=",
+    "metadatas": [
+        {
+            "nbline"      : 1,
+            "kind"        : "block",
+            "openclose"   : "open",
+            "groups_found": {"name": "test"},
+            "mode"        : "keyval"
+         },
+        {
+            "nbline" : 2,
+            "kind"   : ":content:",
+            "content": {"value_in_line": "Missing a key-val first !"}
+        },
+        {
+            "nbline" : 3,
+            "kind"   : ":content:",
+            "content": {"key": "a", "sep": "=", "value": "3"}
+         },
+        {
+            "nbline"   : 3,
+            "kind"     : "block",
+            "openclose": "close"
+        }
+    ]
+}

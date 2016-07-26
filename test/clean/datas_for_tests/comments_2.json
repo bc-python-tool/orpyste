@@ -1,0 +1,6 @@
+{
+    "mode"  : {
+        "container": ":default:",
+        "k::="     : "test"
+    }
+}

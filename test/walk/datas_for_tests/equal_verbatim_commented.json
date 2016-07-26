@@ -1,0 +1,5 @@
+{
+    "container"    : ":default:",
+    "keyval:: = <>": "test",
+    "verbatim"     : "verb"
+}

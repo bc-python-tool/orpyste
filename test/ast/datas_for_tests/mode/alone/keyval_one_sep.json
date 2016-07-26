@@ -1,0 +1,6 @@
+{
+    "keyval::="  : {
+        "mode": "keyval",
+        "seps": ["="]
+    }
+}

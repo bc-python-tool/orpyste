@@ -23,7 +23,7 @@ from mistool.python_use import OrderedRecuDict
 THIS_DIR = PPath(__file__).parent
 
 for parent in THIS_DIR.parents:
-    if parent.name == "orPyste":
+    if parent.name == "orPySte":
         break
 
 PY_FILE = parent / 'orpyste/data.py'
