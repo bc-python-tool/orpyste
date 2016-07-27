@@ -40,7 +40,7 @@ This decorator is used each time that a new data has to be stored.
             nbline = self.nbline
 
         self.walk_view.write(
-            datas(
+            Infos(
                 data   = args[0],
                 mode   = self.last_mode,
                 nbline = nbline
@@ -167,13 +167,13 @@ Unix-glob syntax and the traditional regexes.
 
 
 # ----------- #
-# -- datas -- #
+# -- INFOS -- #
 # ----------- #
 
 START_TAG = ":start:"
 END_TAG   = ":end:"
 
-class datas():
+class Infos():
     """
 prototype::
     see = Read, ReadBlock
@@ -244,7 +244,7 @@ prototype::
              otherwise friendly version of datas is returned
 
 
-If ``self.islinebyline`` is ``True``, the datas looks as it follows.
+If ``self.islinebyline`` is ``True``, the datas look as it follows.
 
     1) For a verbatim content the actual line is returned.
 
@@ -369,15 +369,15 @@ warning::
         if self.querypath != None:
             text.append('querypath = "{0}"'.format(self.querypath))
 
-        return "data.datas[{0}]".format(", ".join(text))
+        return "data.Infos[{0}]".format(", ".join(text))
 
 
 # -------------------------- #
 # -- READING LINE BY LINE -- #
 # -------------------------- #
 
-START_BLOCK = datas(START_TAG)
-END_BLOCK   = datas(END_TAG)
+START_BLOCK = Infos(START_TAG)
+END_BLOCK   = Infos(END_TAG)
 
 class Read(WalkInAST):
     """
@@ -497,18 +497,19 @@ info::
 
 
 It remains to see now how to access to all the datas parsed by the class
-``Read`` (in the following section, we'll see how to use some queries for finding
-special datas). Let's add the following lines to our previous code **(we give
-later in this section an efficient and friendly way to deal with datas found)**.
+``Read`` (in the following section, we'll see how to use some queries for
+finding special datas). Let's add the following lines to our previous code
+**(we give later in this section an efficient and friendly way to deal with
+datas found)**.
 
 ...python::
-    for oneinfo in datas:
+    for onedata in datas:
         print(
             '---',
-            "mode      = <<{0}>>".format(oneinfo.mode),
-            "data      = <<{0}>>".format(oneinfo.data),
-            "querypath = <<{0}>>".format(oneinfo.querypath),
-            "nbline    = <<{0}>>".format(oneinfo.nbline),
+            "mode      = <<{0}>>".format(onedata.mode),
+            "data      = <<{0}>>".format(onedata.data),
+            "querypath = <<{0}>>".format(onedata.querypath),
+            "nbline    = <<{0}>>".format(onedata.nbline),
             sep = "\n"
         )
 
@@ -557,7 +558,7 @@ term::
     ---
 
 
-The iteration gives instances of the class ``datas`` which have three attributs.
+The iteration gives instances of the class ``Infos`` which have three attributs.
 
     1) The attribut ``'mode'`` gives the actual mode of the actual block or data
     (the special blocks for start and end have no mode).
@@ -578,15 +579,15 @@ datas thanks to the methods ``isblock`` and ``isdata``
     There are also methods ``isstart`` and ``isend``. The later can be really
     usefull.
 )),
-together with the property method ``rtu_data`` of the class ``data.datas``.
+together with the property method ``rtu_data`` of the class ``data.Infos``.
 
 ...python::
-    for oneinfo in datas:
-        if oneinfo.isblock():
-            print('--- {0} ---'.format(oneinfo.querypath))
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
 
-        elif oneinfo.isdata():
-            print(oneinfo.rtu_data())
+        elif onedata.isdata():
+            print(onedata.rtu_data())
 
 
 Launched in a terminal, we obtains the following output where for key-value
@@ -616,12 +617,12 @@ To unkeep informations about the separators, just use the optional argument
 is an example of this feature.
 
 ...python::
-    for oneinfo in datas:
-        if oneinfo.isblock():
-            print('--- {0} ---'.format(oneinfo.querypath))
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
 
-        elif oneinfo.isdata():
-            print(oneinfo.rtu_data(nosep = True))
+        elif onedata.isdata():
+            print(onedata.rtu_data(nosep = True))
 
 
 Using this piece of code, you have the following dictionaries in one terminal.
@@ -672,19 +673,19 @@ python::
 
         print("", hrule, title, hrule, sep = "\n")
 
-        for oneinfo in datas[query]:
-            if oneinfo.isblock():
+        for onedata in datas[query]:
+            if onedata.isblock():
                 print(
                     "",
                     "--- {0} [{1}] ---".format(
-                        oneinfo.querypath,
-                        oneinfo.mode
+                        onedata.querypath,
+                        onedata.mode
                     ),
                     sep = "\n"
                 )
 
             else:
-                print(oneinfo.rtu_data())
+                print(onedata.rtu_data())
 
 
 This gives the following outputs as expected.
@@ -743,7 +744,7 @@ term::
         if self.last_mode in [KEYVAL, MULTIKEYVAL, VERBATIM]:
 # Be aware of reference and list !
             self.walk_view.write(
-                datas(
+                Infos(
                     querypath = "/".join(self._qpath),
                     mode      = self.last_mode,
                     nbline    = self.nbline
@@ -779,13 +780,13 @@ prorotype::
 
 This iterator is very basic.
 
-    1) First a special instance of ``datas`` indicating the starting of the
+    1) First a special instance of ``Infos`` indicating the starting of the
     iteration is yielded.
 
-    2) Then the instances of ``datas`` found during the analyze of the ¨peuf
+    2) Then the instances of ``Infos`` found during the analyze of the ¨peuf
     file are yielded.
 
-    3) A special instance of ``datas`` is finally yielded so as to indicate
+    3) A special instance of ``Infos`` is finally yielded so as to indicate
     that the iteration is finished.
         """
         yield START_BLOCK
@@ -808,17 +809,17 @@ class for an example of use).
 # What has to be extracted ?
         query_pattern = regexify(querypath)
 
-# We can now extract the matching datas.
-        datasfound = False
+# We can now extract the matching infos.
+        infosfound = False
 
         for oneinfo in self.walk_view:
             if oneinfo.isblock():
-                datasfound = query_pattern.search(oneinfo.querypath)
+                infosfound = query_pattern.search(oneinfo.querypath)
 
-                if datasfound:
+                if infosfound:
                     yield oneinfo
 
-            elif datasfound:
+            elif infosfound:
                 yield oneinfo
 
 
@@ -1096,12 +1097,12 @@ python::
 
     datas.build()
 
-    for oneinfo in datas:
+    for onedata in datas:
         print(
             '---',
-            "mode      = <<{0}>>".format(oneinfo.mode),
-            "data      = <<{0}>>".format(oneinfo.data),
-            "querypath = <<{0}>>".format(oneinfo.querypath),
+            "mode      = <<{0}>>".format(onedata.mode),
+            "data      = <<{0}>>".format(onedata.data),
+            "querypath = <<{0}>>".format(onedata.querypath),
             sep = "\n"
         )
 
@@ -1138,8 +1139,8 @@ term::
     querypath = <<:end:>>
 
 
-The iteration still gives instances of the class ``datas`` but with different
-kinds of datas reagrding to the ones obtained with the class ``Read``.
+The iteration still gives instances of the class ``Infos`` but with different
+kinds of datas regarding to the ones obtained with the class ``Read``.
 
     1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
     is returned.
@@ -1150,15 +1151,15 @@ kinds of datas reagrding to the ones obtained with the class ``Read``.
 
 
 We can still asks to have easier to use datas thanks to the method ``rtu_data``
-of the class ``data.datas``.
+of the class ``data.Infos``.
 
 ...python::
-    for oneinfo in datas:
-        if oneinfo.isblock():
-            print('--- {0} ---'.format(oneinfo.querypath))
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
 
-        elif oneinfo.isdata():
-            pprint(oneinfo.rtu_data())
+        elif onedata.isdata():
+            pprint(onedata.rtu_data())
 
 
 Launched in a terminal, we obtains the following output (where the dictionary is
@@ -1178,12 +1179,12 @@ its data is bad, but if you really do not want to have the numbers of lines,
 you can use the additional method ``short_rtu_data`` like in the following code.
 
 ...python::
-    for oneinfo in datas:
-        if oneinfo.isblock():
-            print('--- {0} ---'.format(oneinfo.querypath))
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
 
-        elif oneinfo.isdata():
-            print(oneinfo.short_rtu_data())
+        elif onedata.isdata():
+            print(onedata.short_rtu_data())
 
 In a terminal we have the following printings (remember that the dictionary is
 an ordered one).
@@ -1202,16 +1203,16 @@ Using the optional argument ``nosep`` with the methods method ``rtu_data`` and
 is an example of use.
 
 ...python::
-    for oneinfo in datas:
-        if oneinfo.isblock():
-            print('--- {0} ---'.format(oneinfo.querypath))
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
 
-        elif oneinfo.isdata():
+        elif onedata.isdata():
             print("    * rtu_data with nosep = True (non-default value)")
-            pprint(oneinfo.rtu_data(nosep = True))
+            pprint(onedata.rtu_data(nosep = True))
 
             print("    * short_rtu_data with nosep = True (non-default value)")
-            pprint(oneinfo.short_rtu_data(nosep = True))
+            pprint(onedata.short_rtu_data(nosep = True))
 
 
 Using this piece of code, you have the following dictionaries in one terminal.
@@ -1284,14 +1285,24 @@ term::
     [...]
     KeyError: 'unknown block << main/sub_main >>'
     """
-    def _addblockdata(self, oneinfo):
+    def __init__(
+        self,
+        content,
+        mode,
+        encoding = "utf-8"
+    ):
+        super().__init__(content, mode, encoding)
+        self._nblineof = None
+
+
+    def _addblockdata(self, onedata):
         if self._lastmode == VERBATIM:
-            self._datas.append((oneinfo.nbline, oneinfo.data))
+            self._infos.append((onedata.nbline, onedata.data))
 
         else:
-            key, sep, val = oneinfo.rtu_data()
+            key, sep, val = onedata.rtu_data()
 
-            self._datas[(oneinfo.nbline, key)] = {
+            self._infos[(onedata.nbline, key)] = {
                 SEP_TAG: sep,
                 VAL_TAG: val
             }
@@ -1305,56 +1316,47 @@ prototype::
 # What has to be extracted ?
         query_pattern = regexify(querypath)
 
-# We can now extract the matching datas.
-        datasfound  = False
-        self._datas = None
+# We can now extract the matching infos.
+        infosfound  = False
+        self._infos = None
 
         for oneinfo in self.walk_view:
             if oneinfo.isblock():
-                datasfound = query_pattern.search(oneinfo.querypath)
+                infosfound = query_pattern.search(oneinfo.querypath)
 
-                if datasfound:
-                    if self._datas != None:
-                        yield datas(
+                if infosfound:
+                    if self._infos != None:
+                        yield Infos(
                             mode         = self._lastmode,
-                            data         = self._datas,
+                            data         = self._infos,
                             islinebyline = False
                         )
 
                     self._lastmode = oneinfo.mode
 
                     if self._lastmode == VERBATIM:
-                        self._datas = []
+                        self._infos = []
 
                     else:
-                        self._datas = OrderedDict()
+                        self._infos = OrderedDict()
 
                     yield oneinfo
 
 
-            elif datasfound:
+            elif infosfound:
                 self._addblockdata(oneinfo)
 
 
-        if self._datas != None:
-            yield datas(
+        if self._infos != None:
+            yield Infos(
                 mode         = oneinfo.mode,
-                data         = self._datas,
+                data         = self._infos,
                 islinebyline = False
             )
 
-        self._datas    = None
+        self._infos    = None
         self._lastmode = None
 
-
-    def __init__(
-        self,
-        content,
-        mode,
-        encoding = "utf-8"
-    ):
-        super().__init__(content, mode, encoding)
-        self._nblineof = None
 
     def build(self):
         super().build()
@@ -1374,7 +1376,6 @@ prototype::
                 self._nblineof[querypath] = info.nbline
 
 
-
     def nblineof(self, query):
         """
 prototype::
@@ -1386,6 +1387,9 @@ prototype::
 
 This method returns the number line of a content block given by ``query``.
         """
+        if self._nblineof == None:
+            raise "you must use the method << build >>"
+
         if isinstance(query, list):
             query = "/".join(query)
 
@@ -1426,7 +1430,7 @@ and ``self.recudict``.
     def flatdict(self, nosep = False):
         """
 prototype::
-    see = datas.rtu_data , datas.short_rtu_data , self._builddict
+    see = Infos.rtu_data , Infos.short_rtu_data , self._builddict
 
     arg = bool: nosep = False ;
           by default ``nosep = False`` associates the value and the separator to

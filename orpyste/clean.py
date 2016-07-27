@@ -589,7 +589,7 @@ prototype::
 
     def start(self):
 # We have to take care of some extra stuffs !
-        self._datas             = {}
+        self._infos             = {}
         self._last_comments     = []
         self._isnotfirstline    = False
         self._isnotfirstkeyval  = False
@@ -639,12 +639,12 @@ prototype::
                             indentlevel = self.indentlevel
                         )
 
-                    elif self._mode in self._datas:
+                    elif self._mode in self._infos:
                         if self._layout[ALIGN] \
-                        and self._datas[self._mode][MODE_TAG] == KEYVAL:
-                            lenkey, lensep = self._datas[self._mode][LENMAX_TAG]
+                        and self._infos[self._mode][MODE_TAG] == KEYVAL:
+                            lenkey, lensep = self._infos[self._mode][LENMAX_TAG]
 
-                        self.indentlevel = self._datas[self._mode][INDENTLEVEL_TAG]
+                        self.indentlevel = self._infos[self._mode][INDENTLEVEL_TAG]
 
                 text = self.wrap(text)
 
@@ -682,7 +682,7 @@ prototype::
                 self.metadata[KIND_TAG]
             )
 
-            self._datas[self._last_tag] = {
+            self._infos[self._last_tag] = {
                 INDENTLEVEL_TAG: self.indentlevel + 1,
                 MODE_TAG       : self.modes_stack[-1]
             }
@@ -692,7 +692,7 @@ prototype::
 
         if self.modes_stack[-1].startswith(KEYVAL):
             if self._layout[ALIGN]:
-                self._datas[self._last_tag][LENMAX_TAG] = (0, 0)
+                self._infos[self._last_tag][LENMAX_TAG] = (0, 0)
 
         if not self._iscommentendblock \
         and self.isnotfirstline():
@@ -729,12 +729,12 @@ prototype::
         self.walk_view.write((KEYVAL, keyval))
 
         if self._layout[ALIGN]:
-            keylen, seplen = self._datas[self._last_tag][LENMAX_TAG]
+            keylen, seplen = self._infos[self._last_tag][LENMAX_TAG]
 
             keylen = max(len(keyval[KEY_TAG]), keylen)
             seplen = max(len(keyval[SEP_TAG]), seplen)
 
-            self._datas[self._last_tag][LENMAX_TAG] = (keylen, seplen)
+            self._infos[self._last_tag][LENMAX_TAG] = (keylen, seplen)
 
 
 # -------------- #

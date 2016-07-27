@@ -2,7 +2,13 @@
 2016-07-28
 ==========
 
+**Gros problème de renommage de variables :** ceci concernait les modules ``data`` et ``clean``.
+
+
 **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu passer à ``setuptools`` (rien de bien douloureux).
+
+
+**Publication de la nouvelle version de ``orpyste`` :** toutes les améliorations techniques précédentes permettent de rendre public l'actuelle nouvelle version qui casse totalement la rétro-compatibilité (voir les ¨chgts depuis le date::``2015-11-06``). Il faut considérer ce package comme un tout nouveau !
 
 
 ==========
