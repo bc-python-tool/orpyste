@@ -61,8 +61,8 @@ PATTERNS_BOOL_LAYOUTS = {
 # << WARNING ! >> Keep the following lines in case of future more advanced
 # features !
 VAL_LAYOUTS \
-= COLUMNS, SPACES, SPACES_COMMENT, SPACES_BLOCK \
-= "columns", "spaces", "spaces-comment", "spaces-block"
+= COLUMNS, SPACES, SPACES_BLOCK, SPACES_COMMENT \
+= "columns", "spaces", "spaces-block", "spaces-comment"
 
 LONG_VAL_LAYOUTS = {
     "".join(y[0] for y in x.split('-')): x
@@ -201,7 +201,7 @@ formatted. let's consider the following ¨python script where the variable
 this section, you can work directly with a ¨peuf file).
 
 python::
-    infos = Clean(
+    datas = Clean(
         content = content,
         layout  = "aline wrap columns=50",
         mode    = {
@@ -210,9 +210,9 @@ python::
         }
     )
 
-    infos.build()
+    datas.build()
 
-    content_cleaned = "\n".join(line for line in infos.view):
+    content_cleaned = "\n".join(line for line in datas.view):
 
 
 How the preceding code works ?
@@ -589,7 +589,7 @@ prototype::
 
     def start(self):
 # We have to take care of some extra stuffs !
-        self._infos             = {}
+        self._datas             = {}
         self._last_comments     = []
         self._isnotfirstline    = False
         self._isnotfirstkeyval  = False
@@ -639,12 +639,12 @@ prototype::
                             indentlevel = self.indentlevel
                         )
 
-                    elif self._mode in self._infos:
+                    elif self._mode in self._datas:
                         if self._layout[ALIGN] \
-                        and self._infos[self._mode][MODE_TAG] == KEYVAL:
-                            lenkey, lensep = self._infos[self._mode][LENMAX_TAG]
+                        and self._datas[self._mode][MODE_TAG] == KEYVAL:
+                            lenkey, lensep = self._datas[self._mode][LENMAX_TAG]
 
-                        self.indentlevel = self._infos[self._mode][INDENTLEVEL_TAG]
+                        self.indentlevel = self._datas[self._mode][INDENTLEVEL_TAG]
 
                 text = self.wrap(text)
 
@@ -682,7 +682,7 @@ prototype::
                 self.metadata[KIND_TAG]
             )
 
-            self._infos[self._last_tag] = {
+            self._datas[self._last_tag] = {
                 INDENTLEVEL_TAG: self.indentlevel + 1,
                 MODE_TAG       : self.modes_stack[-1]
             }
@@ -692,7 +692,7 @@ prototype::
 
         if self.modes_stack[-1].startswith(KEYVAL):
             if self._layout[ALIGN]:
-                self._infos[self._last_tag][LENMAX_TAG] = (0, 0)
+                self._datas[self._last_tag][LENMAX_TAG] = (0, 0)
 
         if not self._iscommentendblock \
         and self.isnotfirstline():
@@ -729,12 +729,12 @@ prototype::
         self.walk_view.write((KEYVAL, keyval))
 
         if self._layout[ALIGN]:
-            keylen, seplen = self._infos[self._last_tag][LENMAX_TAG]
+            keylen, seplen = self._datas[self._last_tag][LENMAX_TAG]
 
             keylen = max(len(keyval[KEY_TAG]), keylen)
             seplen = max(len(keyval[SEP_TAG]), seplen)
 
-            self._infos[self._last_tag][LENMAX_TAG] = (keylen, seplen)
+            self._datas[self._last_tag][LENMAX_TAG] = (keylen, seplen)
 
 
 # -------------- #

@@ -1,4 +1,11 @@
 ==========
+2016-07-28
+==========
+
+**Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu passer à ``setuptools`` (rien de bien douloureux).
+
+
+==========
 2016-07-26
 ==========
 
