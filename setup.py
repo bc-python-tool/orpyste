@@ -36,7 +36,7 @@ with readme.open(encoding='utf-8') as f:
 setup(
 # General
     name         = "orpyste",
-    version      = "1.0.0-beta",
+    version      = "1.0.1-beta",
     url          = 'https://github.com/bc-python-tools/orpyste',
     license      = 'GPLv3',
     author       = "Christophe BAL",

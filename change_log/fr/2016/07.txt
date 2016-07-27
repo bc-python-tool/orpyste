@@ -2,7 +2,7 @@
 2016-07-28
 ==========
 
-**Gros problème de renommage de variables :** ceci concernait les modules ``data`` et ``clean``.
+**Gros problème de renommage de variables :** ceci concernait les modules ``data`` et ``clean`` (ceci a imposé le changement du numéro de version, merci PyPI !).
 
 
 **Utilisation de ``setuptools`` :** comme ``pip`` a décidé d'abandonner le support de ``distutils``, il a fallu passer à ``setuptools`` (rien de bien douloureux).

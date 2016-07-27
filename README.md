@@ -13,7 +13,7 @@ I beg your pardon for my english...
 English is not my native language, so be nice if you notice misunderstandings, misspellings or grammatical errors in my documents and my codes.
 
 
-Warning about this new version `1.0.0-beta`
+Warning about this new version `1.0.1-beta`
 ==========================================
 
 This version which breaks everything regarding to the previous ones. So this is really a new package that still follows the same philosophy than the original project.
