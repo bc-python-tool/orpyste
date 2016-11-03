@@ -15,7 +15,7 @@ from io import StringIO
 from pathlib import Path
 import re
 
-from orpyste.tools.ioview import IOView
+from orpyste.tool.ioview import IOView
 
 
 # ------------------------- #

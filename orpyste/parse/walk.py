@@ -16,7 +16,7 @@ info::
 """
 
 from orpyste.parse.ast import *
-from orpyste.tools.ioview import IOView
+from orpyste.tool.ioview import IOView
 
 
 # ------------------------- #

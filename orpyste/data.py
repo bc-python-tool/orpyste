@@ -2,17 +2,25 @@
 
 """
 prototype::
-    date = 2016-07-27
+    date = 2016-11-04 ??????
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
 """
 
 from collections import Hashable, OrderedDict
+from json import dumps, load, loads
 import re
 
 from orpyste.parse.walk import *
-from orpyste.tool.ioview import IOView
+
+
+# -------------------- #
+# -- SAFE CONSTANTS -- #
+# -------------------- #
+
+_FLAT_TAG, _RECU_TAG  = "flat", "recu"
+_DATAS_TAG, _KIND_TAG = "datas", "kind"
 
 
 # ----------------------------------- #
@@ -1016,7 +1024,6 @@ If you prefer to have a recursive dictionnary, just use the method ``recudict``
 instead of ``flatdict``. The preceding code with ``flatdict`` replacing by
 ``recudict`` gives the output below which has been hand formatted.
 
-
 term::
     --- Default ---
     OrderedRecuDict([
@@ -1449,7 +1456,11 @@ prototype::
     def recudict(self, nosep = False):
         """
 prototype::
-    see = self.flatdict
+    see = Infos.rtu_data , Infos.short_rtu_data , self._builddict
+
+    arg = bool: nosep = False ;
+          by default ``nosep = False`` associates the value and the separator to
+          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
 
     return = dict ;
              an easy-to-use recursive dictionary which mimics the recursive
@@ -1460,3 +1471,240 @@ prototype::
             keymap    = lambda x: x.split("/"),
             nosep     = nosep
         )
+
+    def jsonify(self, kind = _FLAT_TAG, nosep = False):
+        """
+prototype::
+    see = self.flatdict, self.recudict, loadjson
+
+    arg = str: kind = "flat"
+               in [_FLAT_TAG, _FLAT_TAG[0], _RECU_TAG, _RECU_TAG[0]] ;
+          by default ``kind = "flat"`` indicates to "jsonify" the flat
+          dictionnary build by the method ``self.flatdict``.
+          You can use ``kind = "recu"`` if you need the json version of the
+          recursive dictionnary build by the method ``self.flatdict``.
+          It is allow to just use the initial ``"f"`` and ``"r"`` instead of
+          ``"flat"`` and ``"recu"`` respectivly.
+    arg = bool: nosep = False ;
+          by default ``nosep = False`` associates the value and the separator to
+          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
+
+    return = str ;
+             the json version a flat or recursive dictionary version of the
+             ¨peuf file analyzed
+
+
+Because ¨json from ¨python doesn't have a support of the special recursive
+ordered defined in this file, the json format is not a simple dictionary like
+variable. The following code will give us just after the strucure used.
+
+python::
+    from orpyste.data import ReadBlock
+
+    content = '''
+    main::
+        test::
+            a = 1 + 9
+            b <>  2
+            c = 3 and 4
+
+        sub_main::
+            sub_sub_main::
+                verb::
+                    line 1
+                        line 2
+                            line 3
+    '''
+
+    datas = ReadBlock(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    )
+
+    datas.build()
+
+    jsonobj = datas.jsonify()
+    print("--- flatdict ---", jsonobj, sep="\n")
+
+    print()
+
+    jsonobj = datas.jsonify(kind="r")
+    print("--- recudict ---", jsonobj, sep="\n")
+
+    datas.remove()
+
+
+Launched in a terminal, we obtain the following output which has been hand
+formatted.
+
+term::
+    --- flatdict ---
+    {
+        "datas": [
+            [
+                "main/test",
+                [
+                    [
+                        "a",
+                        [
+                            null,
+                            {"value": "1 + 9", "sep": "="}
+                        ]
+                    ],
+                    [
+                        "b",
+                        [
+                            null,
+                            {"value": "2", "sep": "<>"}]
+                        ],
+                    [
+                        "c",
+                        [
+                            null,
+                            {"value": "3 and 4", "sep": "="}
+                        ]
+                    ]
+                ]
+            ],
+            [
+                "main/sub_main/sub_sub_main/verb",
+                [
+                    null,
+                    ["line 1", "    line 2", "        line 3"]
+                ]
+            ]
+        ],
+        "kind": "flat"
+    }
+
+    --- recudict ---
+    {
+        "datas": [
+            [
+                "main",
+                [
+                    [
+                        "test",
+                        [
+                            [
+                                "a",
+                                [null, {"value": "1 + 9", "sep": "="}]
+                            ],
+                            [
+                                "b",
+                                [null, {"value": "2", "sep": "<>"}]
+                            ],
+                            [
+                                "c",
+                                [null, {"value": "3 and 4", "sep": "="}]
+                            ]
+                        ]
+                    ],
+                    [
+                        "sub_main",
+                        [
+                            [
+                                "sub_sub_main",
+                                [
+                                    [
+                                        "verb",
+                                        [null,
+                                        ["line 1", "    line 2",
+                                        "        line 3"]]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        "kind": "recu"
+    }
+        """
+        if kind == _FLAT_TAG[0]:
+            kind = _FLAT_TAG
+
+        elif kind == _RECU_TAG[0]:
+            kind = _RECU_TAG
+
+        if kind not in [_FLAT_TAG, _RECU_TAG]:
+            raise ValueError("illegal value of ``kind``")
+
+        if kind == _FLAT_TAG:
+            onedict = self.flatdict(nosep)
+
+        else:
+            onedict = self.recudict(nosep)
+
+        return dumps({
+            _KIND_TAG : kind,
+            _DATAS_TAG: self._dict2json(onedict)
+        })
+
+    def _dict2json(self, onevar):
+        """
+????
+
+prototype::
+    see = self.jsonify
+
+    arg = onevar ;
+          ????
+        """
+        if isinstance(onevar, OrderedDict) \
+        or isinstance(onevar, OrderedRecuDict):
+            jsonvar = []
+
+            for key, val in onevar.items():
+                jsonvar.append(
+                    [key, self._dict2json(val)]
+                )
+
+        else:
+            jsonvar = [None, onevar]
+
+        return jsonvar
+
+
+def _loadjson(jsonvar, classdict):
+    if jsonvar[0] == None:
+        return jsonvar[1]
+
+    newdict = classdict()
+
+    for key, val in jsonvar:
+        newdict[key] = _loadjson(val, classdict)
+
+    return newdict
+
+def loadjson(jsonvar):
+    """
+????
+
+prototype::
+    see = ReadBlock.jsonify
+
+    arg = onevar ;
+          ????
+    """
+    if isinstance(jsonvar, str):
+        jsonvar = loads(jsonvar)
+
+    else:
+        jsonvar = load(jsonvar)
+
+    if jsonvar[_KIND_TAG] == _FLAT_TAG:
+        classdict = OrderedDict
+
+    else:
+        classdict = OrderedRecuDict
+
+    return _loadjson(
+        jsonvar[_DATAS_TAG],
+        classdict
+    )
