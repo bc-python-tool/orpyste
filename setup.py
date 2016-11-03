@@ -17,6 +17,7 @@
 
 from setuptools import setup, find_packages
 from pathlib import Path
+import pypandoc
 
 
 # ----------------- #
@@ -25,8 +26,7 @@ from pathlib import Path
 
 readme = Path(__file__).parent / 'README.md'
 
-with readme.open(encoding='utf-8') as f:
-    longdesc = f.read()
+longdesc = pypandoc.convert(str(readme), 'rst')
 
 
 # ----------------- #
@@ -43,8 +43,8 @@ setup(
     author_email = "projetmbc@gmail.com",
 
 # Descritions
-    description      = "orPyste is a tool to store and read simple structured datas in TXT files using a human efficient syntax.",
     long_description = longdesc,
+    description      = "orPyste is a tool to store and read simple structured datas in TXT files using a human efficient syntax.",
 
 # What to add ?
     packages = find_packages(),

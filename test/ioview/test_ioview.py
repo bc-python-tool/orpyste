@@ -15,7 +15,7 @@ from mistool.os_use import PPath
 # -- MODULE TESTED -- #
 # ------------------- #
 
-from orpyste.tools import ioview
+from orpyste.tool import ioview
 
 
 # ----------------------- #

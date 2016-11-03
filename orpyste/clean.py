@@ -120,7 +120,7 @@ _METHOD_ADD_LINE, _METHOD_ADD_MAGIC_COMMENT = "add_line", "add_magic_comment"
 
 def auto_add_extra(meth):
     """
-property::
+prototype::
     see = Clean
 
     type = decorator
@@ -420,7 +420,7 @@ info::
 
     def add_indentation(self, text, indentlevel, addempty = False):
         """
-property::
+prototype::
     arg = str: text
     arg = int: indentlevel
 

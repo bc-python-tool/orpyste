@@ -1,0 +1,5 @@
+==========
+2016-11-????
+==========
+
+**Ajout d'une méthode ``json`` à la classe ``data.ReadBlock`` :** ceci permet d'avoir directement sans effort les données au format ¨json (ceci peut être utile pour interagir avec d'autres applications).

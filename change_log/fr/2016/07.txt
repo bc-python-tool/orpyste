@@ -1,4 +1,11 @@
 ==========
+2016-07-29
+==========
+
+**Utilisation du format ¨rest pour le README:** comme ¨pypi ne supporte pas le ¨markdown, il faut convertire le path::``README.md`` au format. C'est ¨pypandoc qui s'en charge.
+
+
+==========
 2016-07-28
 ==========
 

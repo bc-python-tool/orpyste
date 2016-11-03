@@ -362,7 +362,7 @@ main::
 
 The classes `Read` and `ReadBlock` allow to search for data blocks using queries on "querypaths". The special syntax to use tries to catch the best of the Python regex and the Unix-glob syntaxes. Take a look at the documentation of the function ``data.regexify`` for details. The following examples give some examples of queries.
 
-```
+```python
 from pathlib import Path
 
 from orpyste.data import Read

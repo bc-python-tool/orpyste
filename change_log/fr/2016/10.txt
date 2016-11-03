@@ -1,0 +1,5 @@
+==========
+2016-10-25
+==========
+
+**Changement de nom pour le sous-module ``tools``:** on utilise le singulier ``tool``.

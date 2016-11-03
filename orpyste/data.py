@@ -12,7 +12,7 @@ from collections import Hashable, OrderedDict
 import re
 
 from orpyste.parse.walk import *
-from orpyste.tools.ioview import IOView
+from orpyste.tool.ioview import IOView
 
 
 # ----------------------------------- #
@@ -21,7 +21,7 @@ from orpyste.tools.ioview import IOView
 
 def adddata(meth):
     """
-property::
+prototype::
     see = Read
 
     type = decorator
