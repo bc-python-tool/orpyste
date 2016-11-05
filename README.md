@@ -13,10 +13,10 @@ I beg your pardon for my english...
 English is not my native language, so be nice if you notice misunderstandings, misspellings or grammatical errors in my documents and my codes.
 
 
-Warning about this new version `1.0.1-beta`
+Warning about this new version `1.1.0-beta`
 ==========================================
 
-This version which breaks everything regarding to the previous ones. So this is really a new package that still follows the same philosophy than the original project.
+This version breaks everything regarding to the previous ones. So this is really a new package that still follows the same philosophy than the original project.
 
 
 Why yet another tiny language to store textual datas ?
@@ -107,9 +107,9 @@ Let's explain the content of the preceding example.
 
   * A block can be a container like the block `book`. This is for gathering different blocks.
 
-  * The block `general` stores key-value datas with the possibility to choose the seprataors. **Here we have used `=` but it is not an obligation.** You can also choose to allow or not multiple use of the same key.
+  * The block `general` stores key-value datas with the possibility to choose the separators. **Here we have used `=` but it is not an obligation.** You can also choose to allow or not multiple use of the same key.
 
-  * The last kind of blocks is for a verbatim content. The last empty lines except are removed except if you use the magic comment `////` as we have done. In our example the block `resume` has a content made of `This book is an ode to the passing time...` followed by two empty lines.
+  * The last kind of blocks is for a verbatim content. The last empty lines are removed except if you use the magic comment `////` as we have done. In our example the block `resume` has a content made of `This book is an ode to the passing time...` followed by two empty lines.
 
 
 Reading the datas line by line
@@ -170,7 +170,7 @@ Launching in a terminal, the script will produce the following output where you 
 'A challenging thinking.'
 ```
 
-You can see that verbatim contents are given line by line, and that the separator between one key and its value is aways indicated. This last behavior is due to the fact that you can use different separators if you want. Let's see an example of this with the following data file.
+You can see that verbatim contents are given line by line, and that the separator between one key and its value is always indicated. This last behavior is due to the fact that you can use different separators if you want. Let's see an example of this with the following data file.
 
 ```
 logic::
@@ -441,3 +441,88 @@ Query: main/*
 ('b', '<>', '2')
 ('c', '=', '3 and 4')
 ```
+
+
+Storing your datas in a `json` variable
+=======================================
+
+The class ``ReadBlock`` has a method `jsonify` that allows to store your datas in a `json` file *(the storing has to be done by you)*. The following code will give us just after the strucure used.
+
+```python
+from orpyste.data import ReadBlock
+
+content = '''
+main::
+    test::
+        a = 1 + 9
+        b <>  2
+        c = 3 and 4
+
+    sub_main::
+        sub_sub_main::
+            verb::
+                line 1
+                    line 2
+                        line 3
+'''
+
+datas = ReadBlock(
+    content = content,
+    mode    = {
+        "container"    : ":default:",
+        "keyval:: = <>": "test",
+        "verbatim"     : "verb"
+    }
+)
+
+datas.build()
+
+jsonobj = datas.jsonify()
+print(jsonobj)
+```
+
+
+Launched in a terminal, we obtain the following output which has been hand formatted. As you can see, we use the format `[key, value]` so as to store the keys and the values of the `python` dictionary given by the method `ReadBlock.flatdict`  and `ReadBlock.recudict` .
+
+```
+{
+    "kind": "flat",
+    "datas" : [
+        [
+            "main/test",
+            [
+                [
+                    "a",
+                    [
+                        null,
+                        {"value": "1 + 9", "sep": "="}
+                    ]
+                ],
+                [
+                    "b",
+                    [
+                        null,
+                        {"value": "2", "sep": "<>"}]
+                    ],
+                [
+                    "c",
+                    [
+                        null,
+                        {"value": "3 and 4", "sep": "="}
+                    ]
+                ]
+            ]
+        ],
+        [
+            "main/sub_main/sub_sub_main/verb",
+            [
+                null,
+                ["line 1", "    line 2", "        line 3"]
+            ]
+        ]
+    ]
+}
+```
+
+
+You can easily go back to the `python` dictionary thanks to the function `loadjson` that transforms one json variable stored in one string or in a file into a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict``.

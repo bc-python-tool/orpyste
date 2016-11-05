@@ -1,9 +1,9 @@
 ==========
-2016-11-04 ??????
+2016-11-05
 ==========
 
-**Gestion d'un format ¨json :**
+**Stockage au format ¨json des dictionnaires créés par la classe ``data.ReadBlock`` :** voici les deux fonctionnalités ajoutées.
 
-    jout d'une méthode ``jsonify`` à la classe ``data.ReadBlock`` ceci permet d'avoir directement sans effort les données au format ¨json (ceci peut être utile pour interagir avec d'autres applications).
+    1) Ajout d'une méthode ``jsonify`` à la classe ``data.ReadBlock`` pour fabriquer une chaîne de caractères donnant une variable de type ¨json représentant l'un des dictionnaires proposés pour lire les données (ceci peut être utile pour un stockage permanent ou pour interagir avec d'autres applications).
 
-    ``loadjson``
+    2) La fonction ``loadjson`` fait le travail inverse de la méthode ``data.ReadBlock.jsonify``.

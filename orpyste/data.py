@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-11-04 ??????
+    date = 2016-11-05
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -1495,8 +1495,9 @@ prototype::
 
 
 Because ¨json from ¨python doesn't have a support of the special recursive
-ordered defined in this file, the json format is not a simple dictionary like
-variable. The following code will give us just after the strucure used.
+ordered used by the class ``ReadBlock``, the json format is not a simple
+dictionary like variable. The following code will give us just after the
+strucure used.
 
 python::
     from orpyste.data import ReadBlock
@@ -1528,23 +1529,17 @@ python::
     datas.build()
 
     jsonobj = datas.jsonify()
-    print("--- flatdict ---", jsonobj, sep="\n")
-
-    print()
-
-    jsonobj = datas.jsonify(kind="r")
-    print("--- recudict ---", jsonobj, sep="\n")
-
-    datas.remove()
+    print(jsonobj)
 
 
 Launched in a terminal, we obtain the following output which has been hand
-formatted.
+formatted. As you can see, we use the format json::``[key, value]`` so as
+to store the keys and the values of the dictionary.
 
 term::
-    --- flatdict ---
     {
-        "datas": [
+        "kind": "flat",
+        "datas" : [
             [
                 "main/test",
                 [
@@ -1577,53 +1572,7 @@ term::
                     ["line 1", "    line 2", "        line 3"]
                 ]
             ]
-        ],
-        "kind": "flat"
-    }
-
-    --- recudict ---
-    {
-        "datas": [
-            [
-                "main",
-                [
-                    [
-                        "test",
-                        [
-                            [
-                                "a",
-                                [null, {"value": "1 + 9", "sep": "="}]
-                            ],
-                            [
-                                "b",
-                                [null, {"value": "2", "sep": "<>"}]
-                            ],
-                            [
-                                "c",
-                                [null, {"value": "3 and 4", "sep": "="}]
-                            ]
-                        ]
-                    ],
-                    [
-                        "sub_main",
-                        [
-                            [
-                                "sub_sub_main",
-                                [
-                                    [
-                                        "verb",
-                                        [null,
-                                        ["line 1", "    line 2",
-                                        "        line 3"]]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ],
-        "kind": "recu"
+        ]
     }
         """
         if kind == _FLAT_TAG[0]:
@@ -1636,25 +1585,30 @@ term::
             raise ValueError("illegal value of ``kind``")
 
         if kind == _FLAT_TAG:
-            onedict = self.flatdict(nosep)
+            onedict = self.flatdict(nosep = nosep)
 
         else:
-            onedict = self.recudict(nosep)
+            onedict = self.recudict(nosep = nosep)
 
         return dumps({
             _KIND_TAG : kind,
-            _DATAS_TAG: self._dict2json(onedict)
+            _DATAS_TAG: self._recujson(onedict)
         })
 
-    def _dict2json(self, onevar):
+    def _recujson(self, onevar):
         """
-????
-
 prototype::
     see = self.jsonify
 
     arg = onevar ;
-          ????
+          one variable to be "jsonified"
+
+    return = ? ;
+             a ¨python object that can be safely "jsonified"
+
+
+This methods works recursively to convert a dictionary of the datas into a
+convenient json version.
         """
         if isinstance(onevar, OrderedDict) \
         or isinstance(onevar, OrderedRecuDict):
@@ -1662,7 +1616,7 @@ prototype::
 
             for key, val in onevar.items():
                 jsonvar.append(
-                    [key, self._dict2json(val)]
+                    [key, self._recujson(val)]
                 )
 
         else:
@@ -1672,6 +1626,22 @@ prototype::
 
 
 def _loadjson(jsonvar, classdict):
+    """
+prototype::
+    see = loadjson
+
+    arg = jsonvar ;
+          one json variable built by the method ``ReadBlock.jsonify``
+    arg = classdict ;
+          the kind of dictionary to used for the "jsonification"
+
+    return = OrderedDict, data.OrderedRecuDict ;
+             a dictionary that was built by the method ``ReadBlock.jsonify``
+
+
+This methods works recursivly to convert a json variable, built by the method
+``ReadBlock.jsonify``, into a dictionary of the type ``classdict``.
+    """
     if jsonvar[0] == None:
         return jsonvar[1]
 
@@ -1684,14 +1654,26 @@ def _loadjson(jsonvar, classdict):
 
 def loadjson(jsonvar):
     """
-????
-
 prototype::
     see = ReadBlock.jsonify
 
-    arg = onevar ;
-          ????
-    """
+    arg = str, file: jsonvar ;
+          one json variable stored in one string or in a file that was built
+          by the method ``ReadBlock.jsonify``
+
+    return = OrderedDict, data.OrderedRecuDict ;
+             a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the json 
+             variable
+
+
+This function "pythonifies" a json variable built by the method ``jsonify`` of
+the class ``ReadBlock``.
+
+
+info::
+    The function will use the good kind of dictionnary ``OrderedDict`` or
+    ``OrderedRecuDict``.
+"""
     if isinstance(jsonvar, str):
         jsonvar = loads(jsonvar)
 

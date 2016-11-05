@@ -1,0 +1,9 @@
+==========
+2016-11-04
+==========
+
+**Storage in the JSON format of the dictionaries created by the class ``data.ReadBlock``:** here are the two features added.
+
+     1) Adding a method ``jsonify`` to the` `data.ReadBlock`` class so as to produce a string giving a JSON variable representing one of the dictionaries proposed to read the datas (this can be useful for permanent storage or to interact with other applications).
+
+     2) The function ``loadjson`` does the opposite work of the method ``data.ReadBlock.jsonify``.
