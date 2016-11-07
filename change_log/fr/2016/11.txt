@@ -1,4 +1,11 @@
 ==========
+2016-11-06
+==========
+
+**Modification du type de clés autorisées :** on peut maintenant utiliser en fait n'importe quoi comme caractère excepté ceux correspondant à un séparateur qui eux sont par contre autorisées dans les valeurs.
+
+
+==========
 2016-11-05
 ==========
 

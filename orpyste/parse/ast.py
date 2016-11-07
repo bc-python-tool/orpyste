@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-02-17
+    date = 2016-11-06
 
 
 This module contains classes so as to build an abstract syntax tree view of
@@ -609,19 +609,19 @@ warning::
     }
 
     CTXTS_CONFIGS[COMMENT_SINGLELINE] = {
-        OPEN          : "^[ \t]*//(?P<content>.*)$",
+        OPEN          : "^//(?P<content>.*)$",
         INFINITY_LEVEL: True,
         SUBCTXTS      : VERBATIM_ID
     }
 
     CTXTS_CONFIGS[COMMENT_MULTILINES_SINGLELINE] = {
-        OPEN          : "^[ \t]*/\*(?P<content>.*)\*/[ \t]*$",
+        OPEN          : "^/\*(?P<content>.*)\*/[ \t]*$",
         INFINITY_LEVEL: True,
         SUBCTXTS      : VERBATIM_ID
     }
 
     CTXTS_CONFIGS[COMMENT_MULTILINES] =  {
-        OPEN            : "^[ \t]*/\*(?P<content>.*)$",
+        OPEN            : "^/\*(?P<content>.*)$",
         CLOSE           : "^(?P<content>.*)\*/[ \t]*$",
         SUBCTXTS        : VERBATIM_ID,
         INFINITY_LEVEL  : True,
@@ -642,6 +642,12 @@ warning::
         CLOSE           : CLOSED_BY_INDENT_ID,
         CLOSED_AT_END_ID: True
     }
+
+    SPACES_PATTERN = "[ \\t]*"
+    LINE_PATTERN   = "^.*$"
+
+    KEY_GRP_PATTERN   = "(?P<key>.*?)"
+    VALUE_GRP_PATTERN = "(?P<value>.*)"
 
 
     def __init__(
@@ -869,12 +875,6 @@ prototype::
              have been analyzed.
         """
 # Configurations of the patterns for datas in contexts
-        SPACES_PATTERN = "[ \\t]*"
-        LINE_PATTERN   = "^.*$"
-
-        KEY_GRP_PATTERN   = "(?P<key>[\d_a-zA-Z]+)"
-        VALUE_GRP_PATTERN = "(?P<value>.*)"
-
         self.CONTENTS_MATCHERS = {}
 
         id_matcher = len(self.MATCHERS)
@@ -903,9 +903,9 @@ prototype::
                 pattern = re.compile(
                     "{spaces}{key}{spaces}(?P<sep>{seps}){spaces}{value}" \
                         .format(
-                            spaces = SPACES_PATTERN,
-                            key    = KEY_GRP_PATTERN,
-                            value  = VALUE_GRP_PATTERN,
+                            spaces = self.SPACES_PATTERN,
+                            key    = self.KEY_GRP_PATTERN,
+                            value  = self.VALUE_GRP_PATTERN,
                             seps   = "|".join(seps)
                         )
                 )

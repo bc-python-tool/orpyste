@@ -1,4 +1,11 @@
 ==========
+2016-11-06
+==========
+
+**Modification of the kind of keys allowed: ** you can now use any kind of character except those corresponding to a separator which can be used in the values.
+
+
+==========
 2016-11-04
 ==========
 

@@ -1472,18 +1472,18 @@ prototype::
             nosep     = nosep
         )
 
-    def jsonify(self, kind = _FLAT_TAG, nosep = False):
+    def jsonify(self, kind = _RECU_TAG, nosep = False):
         """
 prototype::
     see = self.flatdict, self.recudict, loadjson
 
     arg = str: kind = "flat"
                in [_FLAT_TAG, _FLAT_TAG[0], _RECU_TAG, _RECU_TAG[0]] ;
-          by default ``kind = "flat"`` indicates to "jsonify" the flat
+          by default ``kind = "recu"`` indicates to "jsonify" the recursive
+          dictionnary build by the method ``self.recudict``.
+          You can use ``kind = "flat"`` if you need the json version of the flat
           dictionnary build by the method ``self.flatdict``.
-          You can use ``kind = "recu"`` if you need the json version of the
-          recursive dictionnary build by the method ``self.flatdict``.
-          It is allow to just use the initial ``"f"`` and ``"r"`` instead of
+          It is allow to just use the initials ``"f"`` and ``"r"`` instead of
           ``"flat"`` and ``"recu"`` respectivly.
     arg = bool: nosep = False ;
           by default ``nosep = False`` associates the value and the separator to
@@ -1496,8 +1496,9 @@ prototype::
 
 Because ¨json from ¨python doesn't have a support of the special recursive
 ordered used by the class ``ReadBlock``, the json format is not a simple
-dictionary like variable. The following code will give us just after the
-strucure used.
+dictionary like variable for the flat and recursive dicrionnaries built by the
+methods ``flatdict`` and ``recudict`` respectivly. The following code gives us
+just after the structure used for those special ¨python dictionaries.
 
 python::
     from orpyste.data import ReadBlock
@@ -1530,6 +1531,8 @@ python::
 
     jsonobj = datas.jsonify()
     print(jsonobj)
+
+    datas.remove()
 
 
 Launched in a terminal, we obtain the following output which has been hand
@@ -1662,7 +1665,7 @@ prototype::
           by the method ``ReadBlock.jsonify``
 
     return = OrderedDict, data.OrderedRecuDict ;
-             a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the json 
+             a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the json
              variable
 
 

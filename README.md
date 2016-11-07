@@ -7,16 +7,16 @@ What about this package  ?
 a look in the docstrings.***
 
 
+Actual version
+==============
+
+This version is numbered  `1.1.1-beta`.
+
+
 I beg your pardon for my english...
 ===================================
 
 English is not my native language, so be nice if you notice misunderstandings, misspellings or grammatical errors in my documents and my codes.
-
-
-Warning about this new version `1.1.0-beta`
-==========================================
-
-This version breaks everything regarding to the previous ones. So this is really a new package that still follows the same philosophy than the original project.
 
 
 Why yet another tiny language to store textual datas ?
@@ -479,12 +479,14 @@ datas.build()
 
 jsonobj = datas.jsonify()
 print(jsonobj)
+
+datas.remove()
 ```
 
 
 Launched in a terminal, we obtain the following output which has been hand formatted. As you can see, we use the format `[key, value]` so as to store the keys and the values of the `python` dictionary given by the method `ReadBlock.flatdict`  and `ReadBlock.recudict` .
 
-```
+```json
 {
     "kind": "flat",
     "datas" : [

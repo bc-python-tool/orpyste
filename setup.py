@@ -8,7 +8,7 @@
 #         > python setup.py sdist bdist_wheel
 #
 #     2) Upload with twine:
-#         > twine upload dist/*
+#         > twine upload dist/* --skip-existing
 
 
 # -------------------- #
@@ -36,8 +36,8 @@ longdesc = pypandoc.convert(str(readme), 'rst')
 setup(
 # General
     name         = "orpyste",
-    version      = "1.1.0-beta",
-    url          = 'https://github.com/bc-python-tools/orpyste',
+    version      = "1.1.1-beta",
+    url          = 'https://github.com/bc-python-tool/orpyste',
     license      = 'GPLv3',
     author       = "Christophe BAL",
     author_email = "projetmbc@gmail.com",
