@@ -9,7 +9,6 @@ This module contains a class `Clean` for formating a ¨peuf file following some
 rules that be customized by the user.
 """
 
-from collections import deque   # maxlen
 import re
 
 from orpyste.parse.walk import *
@@ -48,7 +47,7 @@ LONG_BOOL_LAYOUTS = {
 
 PATTERNS_BOOL_LAYOUTS = {
     re.compile(
-        "(^|{spaces}+)(?P<kind>{name}|{abrev})({spaces}+|$)" \
+        "(^|{spaces}+)(?P<kind>{name}|{abrev})({spaces}+|$)"
             .format(
                 spaces = "[ \\t]",
                 name   = name,
@@ -72,7 +71,7 @@ LONG_VAL_LAYOUTS = {
 PATTERNS_VAL_LAYOUTS = {
     re.compile(
         "^((?P<kind>{name}|{abrev})"
-        "{spaces}*={spaces}*(?P<size>\d+))({spaces}+|$)" \
+        "{spaces}*={spaces}*(?P<size>\d+))({spaces}+|$)"
             .format(
                 spaces = "[ \\t]",
                 name   = name,
@@ -644,7 +643,8 @@ prototype::
                         and self._infos[self._mode][MODE_TAG] == KEYVAL:
                             lenkey, lensep = self._infos[self._mode][LENMAX_TAG]
 
-                        self.indentlevel = self._infos[self._mode][INDENTLEVEL_TAG]
+                        self.indentlevel \
+                        = self._infos[self._mode][INDENTLEVEL_TAG]
 
                 text = self.wrap(text)
 

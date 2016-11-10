@@ -301,11 +301,11 @@ prototype::
           this a mode defined using a single string
 
     return = dict ;
-             either ``{"mode": mode}`` if ``mode`` is equal to ``"verbatim"`` or
-             ``"container"``, or ``{"mode": mode, "seps": list_of_seps}`` where
-             ``list_of_seps`` is a list of strings where each string is a legal
-             separator (this list is sorted from the longest to the shortest
-             string)
+             either ``{"mode": mode}`` if ``mode`` is equal to ``"verbatim"``
+             or ``"container"``, or ``{"mode": mode, "seps": list_of_seps}``
+             where ``list_of_seps`` is a list of strings where each string is
+             a legal separator (this list is sorted from the longest to the
+             shortest string)
         """
         mode = mode.strip()
         i    = mode.find("::")
@@ -719,9 +719,9 @@ warning::
         """
 prototype::
     action = this method builds ¨python none human lists and dictionaries used
-             to build an intermediate abstract syntax tree of the contexts which
-             are either opening or closing blocks or comments, or empty lines,
-             or lines of contents (you can breath now).
+             to build an intermediate abstract syntax tree of the contexts
+             which are either opening or closing blocks or comments, or empty
+             lines, or lines of contents (you can breath now).
              This will be the job of ``self.build_contents_rules`` to take care
              of lines of contents.
         """
@@ -901,7 +901,7 @@ prototype::
                     seps.append(onesep)
 
                 pattern = re.compile(
-                    "{spaces}{key}{spaces}(?P<sep>{seps}){spaces}{value}" \
+                    "{spaces}{key}{spaces}(?P<sep>{seps}){spaces}{value}"
                         .format(
                             spaces = self.SPACES_PATTERN,
                             key    = self.KEY_GRP_PATTERN,
@@ -999,8 +999,8 @@ property::
         """
 property::
     arg = str: text ;
-          this string is a text where we look for some metadatas (a context or a
-          data content)
+          this string is a text where we look for some metadatas (a context or
+          a data content)
     arg = CtxtInfos, ContentInfos: infos ;
           this indicates which matcher must be used to test a matching on the
           argument ``text``
@@ -1026,10 +1026,10 @@ property::
                     elif search:
                         self._groups_found.update(search.groupdict())
 
-                if match_found == False:
+                if match_found is False:
                     break
 
-            if match_found == True:
+            if match_found is True:
                 break
 
 # We have a winning mathcing.
@@ -1355,7 +1355,7 @@ prototype::
         if ctxtinfos.verbatim:
             verbatim = self._groups_found.get(CONTENT_TAG, None)
 
-            if verbatim != None:
+            if verbatim is not None:
                 del self._groups_found[CONTENT_TAG]
 
         else:
@@ -1364,7 +1364,7 @@ prototype::
         if not_add_groups_alone and self._groups_found:
             metadatas[GRPS_FOUND_TAG] = self._groups_found
 
-        if verbatim != None:
+        if verbatim is not None:
             verbatim = {
                 KIND_TAG   : VERB_CONTENT_TAG,
                 NBLINE_TAG : self._nbline,
@@ -1412,7 +1412,7 @@ prototype::
                 self._verbatim = False
 
         if ctxtinfos.openclose == AUTOCLOSE:
-            new_metadatas = {k: v for k,v in metadatas.items()}
+            new_metadatas = {k: v for k, v in metadatas.items()}
             new_metadatas[OPENCLOSE] = CLOSE
             self.add_partial(new_metadatas)
 

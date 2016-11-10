@@ -5,14 +5,14 @@ prototype::
     date = 2016-07-21
 
 
-This module contains a class ``WalkInAST`` to be subclassed so as to walk in the
-intermediate AST view made by the class ``parse.ast.AST``, and also to act
+This module contains a class ``WalkInAST`` to be subclassed so as to walk in
+the intermediate AST view made by the class ``parse.ast.AST``, and also to act
 regarding the context or the data met during the walk.
 
 
 info::
-    The class ``WalkInAST`` do some semantic analysis that have not been done by
-    the class ``parse.ast.AST``.
+    The class ``WalkInAST`` do some semantic analysis that had not been done
+    by the class ``parse.ast.AST``.
 """
 
 from orpyste.parse.ast import *
@@ -196,8 +196,8 @@ warning::
                         if self.last_mode != CONTAINER:
                             self.indentlevel += 1
 
-# We have to manage key-value modes fo which a value can be written over several
-# lines !
+# We have to manage key-value modes fo which a value can be written over
+# several lines !
                         if self.last_mode.endswith(KEYVAL):
                             lastkeyval = {}
                             keysused   = []
@@ -396,8 +396,8 @@ prototype::
     arg = {"key": str, "sep": str, "value": str}: keyval
 
 
-This method is for adding a new key with its associated value and separator. All
-this informations are in the dictionary ``keyval``.
+This method is for adding a new key with its associated value and separator.
+All this informations are in the dictionary ``keyval``.
         """
         ...
 

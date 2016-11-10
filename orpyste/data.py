@@ -229,7 +229,7 @@ Here are some examples.
         return self.querypath not in [None, START_TAG, END_TAG]
 
     def isdata(self):
-        return self.data != None
+        return self.data is not None
 
     def isstart(self):
         return self.querypath == START_TAG
@@ -264,11 +264,11 @@ If ``self.islinebyline`` is ``True``, the datas look as it follows.
 
 
 If ``self.islinebyline`` is ``False``, the datas are of the following kinds
-where ``nbline`` refers to the number line in the ¨peuf file (this can be useful
-for raising errors to the user or for the ``"multikeyval"`` mode).
+where ``nbline`` refers to the number line in the ¨peuf file (this can be
+useful for raising errors to the user or for the ``"multikeyval"`` mode).
 
-    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
-    is returned.
+    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like
+    tuples is returned.
 
     2) For a key-value content, the method returns an ordered dictionary with
     ``(nbline, key)`` like tuples for keys, and values depending of the value
@@ -277,8 +277,8 @@ for raising errors to the user or for the ``"multikeyval"`` mode).
         a) If ``nosep == True`` then the value is simply a string corresponding
         to the value.
 
-        b) If ``nosep == False`` then the list value will be a dictionary of the
-        kind  ``{"sep": ..., "val": ...}``.
+        b) If ``nosep == False`` then the list value will be a dictionary of
+        the kind  ``{"sep": ..., "val": ...}``.
 
 
 info::
@@ -290,7 +290,7 @@ info::
 info::
     "rtu" is the acronym of "Ready To Use".
         """
-        if self.data == None:
+        if self.data is None:
             raise ValueError('no data available')
 
 # Line by line delivery
@@ -336,7 +336,7 @@ warning::
     be raised (the number line is also used to diiferentiate the same key used
     at different places in a ``"multikeyval"`` block).
         """
-        if self.data == None:
+        if self.data is None:
             raise ValueError('no data available')
 
         if self.islinebyline:
@@ -367,14 +367,14 @@ warning::
     def __str__(self):
         text = ['mode = {0}'.format(repr(self.mode))]
 
-        if self.data != None:
+        if self.data is not None:
             if isinstance(self.data, str):
                 text.append('data = "{0}"'.format(self.data))
 
             else:
                 text.append("data = {0}".format(self.data))
 
-        if self.querypath != None:
+        if self.querypath is not None:
             text.append('querypath = "{0}"'.format(self.querypath))
 
         return "data.Infos[{0}]".format(", ".join(text))
@@ -449,10 +449,10 @@ Basic use
 =========
 
 info::
-    We will work with a string for the ¨peuf content to be analyzed, but you can
-    work with a file using the class ``pathlib.Path`` directly instead of the
-    string. The syntax remains the same exceot that with files you have to use
-    the method ``remove`` to clean the special files build by ¨orpyste !
+    We will work with a string for the ¨peuf content to be analyzed, but you
+    can work with a file using the class ``pathlib.Path`` directly instead of
+    the string. The syntax remains the same exceot that with files you have to
+    use the method ``remove`` to clean the special files build by ¨orpyste !
 
 
 The most important thing to do is to tell to ¨orpyste the semantic of our ¨peuf
@@ -1169,8 +1169,8 @@ of the class ``data.Infos``.
             pprint(onedata.rtu_data())
 
 
-Launched in a terminal, we obtains the following output (where the dictionary is
-indeed an ordered one).
+Launched in a terminal, we obtains the following output (where the dictionary
+is indeed an ordered one).
 
 term::
     --- main/test ---
@@ -1332,7 +1332,7 @@ prototype::
                 infosfound = query_pattern.search(oneinfo.querypath)
 
                 if infosfound:
-                    if self._infos != None:
+                    if self._infos is not None:
                         yield Infos(
                             mode         = self._lastmode,
                             data         = self._infos,
@@ -1354,7 +1354,7 @@ prototype::
                 self._addblockdata(oneinfo)
 
 
-        if self._infos != None:
+        if self._infos is not None:
             yield Infos(
                 mode         = oneinfo.mode,
                 data         = self._infos,
@@ -1376,8 +1376,8 @@ prototype::
 
                 if info.querypath in self._nblineof:
                     raise KeyError(
-                        "the block << {0} >> is already ".format(querypath) + \
-                        "in the ordered dictionary"
+                        "the block << {0} >> is already ".format(querypath)
+                        + "in the ordered dictionary"
                     )
 
                 self._nblineof[querypath] = info.nbline
@@ -1394,7 +1394,7 @@ prototype::
 
 This method returns the number line of a content block given by ``query``.
         """
-        if self._nblineof == None:
+        if self._nblineof is None:
             raise "you must use the method << build >>"
 
         if isinstance(query, list):
@@ -1481,8 +1481,8 @@ prototype::
                in [_FLAT_TAG, _FLAT_TAG[0], _RECU_TAG, _RECU_TAG[0]] ;
           by default ``kind = "recu"`` indicates to "jsonify" the recursive
           dictionnary build by the method ``self.recudict``.
-          You can use ``kind = "flat"`` if you need the json version of the flat
-          dictionnary build by the method ``self.flatdict``.
+          You can use ``kind = "flat"`` if you need the json version of the
+          flat dictionnary build by the method ``self.flatdict``.
           It is allow to just use the initials ``"f"`` and ``"r"`` instead of
           ``"flat"`` and ``"recu"`` respectivly.
     arg = bool: nosep = False ;
@@ -1645,7 +1645,7 @@ prototype::
 This methods works recursivly to convert a json variable, built by the method
 ``ReadBlock.jsonify``, into a dictionary of the type ``classdict``.
     """
-    if jsonvar[0] == None:
+    if jsonvar[0] is None:
         return jsonvar[1]
 
     newdict = classdict()
@@ -1665,8 +1665,9 @@ prototype::
           by the method ``ReadBlock.jsonify``
 
     return = OrderedDict, data.OrderedRecuDict ;
-             a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the json
-             variable
+             a flat or recursive dictionary regarding to the method used
+             ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the
+             json variable
 
 
 This function "pythonifies" a json variable built by the method ``jsonify`` of

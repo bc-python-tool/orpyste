@@ -37,8 +37,8 @@ prototype::
                datas, so it is unseful if ``mode = "list"``
 
 
-This class gives an easy way to work either with a pickle file or with a list so
-as to store datas. Here is how to use this class.
+This class gives an easy way to work either with a pickle file or with a list
+so as to store datas. Here is how to use this class.
 
     1) The context syntax ``with ...:`` opens the IO stream like object.
 

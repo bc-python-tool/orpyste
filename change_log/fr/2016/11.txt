@@ -1,4 +1,12 @@
 ==========
+2016-11-10
+==========
+
+**Amélioration côté développement interne :** ¨flake8 est consulté pour améliorer le code de ¨orpyste lorsque cela paraît pertinent
+(??????? ceci a aussi permis de corriger quelques bugs très cachés).
+
+
+==========
 2016-11-06
 ==========
 
