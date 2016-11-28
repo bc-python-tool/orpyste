@@ -7,10 +7,19 @@ What about this package  ?
 a look in the docstrings.***
 
 
-Actual version
-==============
+????? What's new in this version `1.2.0-beta` ?
+=========================================
 
-This version is numbered  `1.1.0-beta`.
+There are some importnat changes in this version.
+
+1. The real novelty is the possibility to use a context manager to work with the classes ``Read``, ``ReadBlock`` and ``Clean``. This is better than to work with the methods ``build`` and ``remove_extras`` *(this method was named ``remove`` before)*.
+
+1. chgt aussi flatdict and co !!!!!!!
+
+1. chgt important du comportement de rtu anciennement rtu_datas !!!
+
+
+
 
 
 I beg your pardon for my english...
@@ -138,24 +147,19 @@ import pprint
 
 from orpyste.data import Read
 
-datas = Read(
+with Read(
     content = Path("x-debug-x.txt"),
     mode    = {
         "container" : ":default:",
         "keyval:: =": "general",
         "verbatim"  : "resume"
     }
-)
-
-datas.build()
-
-for onedata in datas:
-    if onedata.isblock():
-        print('--- {0} ---'.format(onedata.querypath))
-    elif onedata.isdata():
-        pprint.pprint(onedata.rtu_data())
-
-datas.remove()
+) as datas:
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
+        elif onedata.isdata():
+            pprint.pprint(onedata.rtu_data())
 ```
 
 Launching in a terminal, the script will produce the following output where you can note that a "querypath" like `book/general` indicates that the block `general` is inside the block `book`.
@@ -187,20 +191,15 @@ import pprint
 
 from orpyste.data import Read
 
-datas = Read(
+with Read(
     content = Path("x-debug-x.txt"),
     mode    = "multikeyval:: <==> <== ==>"
-)
-
-datas.build()
-
-for onedata in datas:
-    if onedata.isblock():
-        print('--- {0} ---'.format(onedata.querypath))
-    elif onedata.isdata():
-        pprint.pprint(onedata.rtu_data())
-
-datas.remove()
+) as datas:
+    for onedata in datas:
+        if onedata.isblock():
+            print('--- {0} ---'.format(onedata.querypath))
+        elif onedata.isdata():
+            pprint.pprint(onedata.rtu_data())
 ```
 
 The output below shows the necessity to always give the separators.
@@ -239,24 +238,19 @@ import pprint
 
 from orpyste.data import ReadBlock
 
-datas = ReadBlock(
+with ReadBlock(
     content = Path("user/example.peuf"),
     mode    = {
         "container" : ":default:",
         "mk:: =": "general",
         "verbatim"  : "resume"
     }
-)
+) as datas:
+    print('--- Default ---')
+    pprint.pprint(datas.flatdict())
 
-datas.build()
-
-print('--- Default ---')
-pprint.pprint(datas.flatdict())
-
-print('--- Without the separators ---')
-pprint.pprint(datas.flatdict(nosep = True))
-
-datas.remove()
+    print('--- Without the separators ---')
+    pprint.pprint(datas.flatdict(nosep = True))
 ```
 
 
@@ -290,15 +284,12 @@ As you can see, the keys are "querypaths" and the values are the datas. You can 
 ```python
 [...]
 
-datas.build()
+with ReadBlock(...) as datas:
+    print('--- Default ---')
+    pprint.pprint(datas.recudict())
 
-print('--- Default ---')
-pprint.pprint(datas.recudict())
-
-print('--- Without the separators ---')
-pprint.pprint(datas.recudict(nosep = True))
-
-datas.remove()
+    print('--- Without the separators ---')
+    pprint.pprint(datas.recudict(nosep = True))
 ```
 
 
@@ -367,42 +358,37 @@ from pathlib import Path
 
 from orpyste.data import Read
 
-datas = Read(
+with Read(
     content = Path("user/example.peuf"),
     mode    = {
         "container"    : ":default:",
         "keyval:: = <>": "test",
         "verbatim"     : "verb"
     }
-)
+) as datas:
+    for query in [
+        "main/test",    # Only one path
+        "**",           # Anything
+        "main/*",       # Anything "contained" inside "main"
+    ]:
+        title = "Query: {0}".format(query)
+        hrule = "="*len(title)
 
-datas.build()
+        print("", hrule, title, hrule, sep = "\n")
 
-for query in [
-    "main/test",    # Only one path
-    "**",           # Anything
-    "main/*",       # Anything "contained" inside "main"
-]:
-    title = "Query: {0}".format(query)
-    hrule = "="*len(title)
+        for oneinfo in datas[query]:
+            if oneinfo.isblock():
+                print(
+                    "",
+                    "--- {0} [{1}] ---".format(
+                        oneinfo.querypath,
+                        oneinfo.mode
+                    ),
+                    sep = "\n"
+                )
 
-    print("", hrule, title, hrule, sep = "\n")
-
-    for oneinfo in datas[query]:
-        if oneinfo.isblock():
-            print(
-                "",
-                "--- {0} [{1}] ---".format(
-                    oneinfo.querypath,
-                    oneinfo.mode
-                ),
-                sep = "\n"
-            )
-
-        else:
-            print(oneinfo.rtu_data())
-
-datas.remove()
+            else:
+                print(oneinfo.rtu_data())
 ```
 
 
@@ -466,21 +452,16 @@ main::
                         line 3
 '''
 
-datas = ReadBlock(
+with ReadBlock(
     content = content,
     mode    = {
         "container"    : ":default:",
         "keyval:: = <>": "test",
         "verbatim"     : "verb"
     }
-)
-
-datas.build()
-
-jsonobj = datas.jsonify()
-print(jsonobj)
-
-datas.remove()
+) as datas:
+    jsonobj = datas.jsonify()
+    print(jsonobj)
 ```
 
 
