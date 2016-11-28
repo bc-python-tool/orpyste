@@ -38,20 +38,16 @@ def test_clean():
         layout = jsonobj.get("layout", "")
         mode   = jsonobj["mode"]
 
-        cleaned_infos = CLEAN_CLASS(
+        with CLEAN_CLASS(
             content = jsonpath.with_ext("peuf"),
             layout  = layout,
             mode    = mode
-        )
-
-        cleaned_infos.build()
-
+        ) as cleaned_infos:
 # Comments are sent into a single piece of lines with necessary back returns  !
-        cleaned_lines_found = "\n".join(line for line in cleaned_infos.view)
-        cleaned_lines_found = ["file tested >>> {0}".format(jsonpath.stem)] \
-                            + cleaned_lines_found.split("\n")
-
-        cleaned_infos.remove()
+            cleaned_lines_found = "\n".join(line for line in cleaned_infos.view)
+            cleaned_lines_found = [
+                "file tested >>> {0}".format(jsonpath.stem)
+            ] + cleaned_lines_found.split("\n")
 
         path_cleaned_text_wanted = DATAS_DIR / jsonpath.with_ext("txt")
         cleaned_lines_wanted     = [cleaned_lines_found[0]]

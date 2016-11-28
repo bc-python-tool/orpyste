@@ -2,25 +2,18 @@
 
 """
 prototype::
-    date = 2016-11-05
+    date = 2016-11-????
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
 """
 
-from collections import Hashable, OrderedDict
+from collections import OrderedDict
+from copy import deepcopy
 from json import dumps, load, loads
 import re
 
 from orpyste.parse.walk import *
-
-
-# -------------------- #
-# -- SAFE CONSTANTS -- #
-# -------------------- #
-
-_FLAT_TAG, _RECU_TAG  = "flat", "recu"
-_DATAS_TAG, _KIND_TAG = "datas", "kind"
 
 
 # ----------------------------------- #
@@ -119,7 +112,7 @@ pyterm::
 
 Let suppose now that we want to find paths that finish with either
 path::``.py`` or path::``.txt``, and that can also be virtually or really
-found recursivly when walking in a directory. Here is how to use ``regexify``.
+found recursively when walking in a directory. Here is how to use ``regexify``.
 
 pyterm::
     >>> from orpyste.data import regexify
@@ -191,13 +184,10 @@ prototype::
                without opening ``^`` and closing ``$``
     arg-attr = None , str: mode = None ;
                the mode of a block or a data
-    arg-attr = None , str ,
-               {'sep': str, 'key': str, 'value': str}: data = None ;
-               the datas found if the mode is for one data
+    arg-attr = data = None ;
+               the datas found if the mode is for some datas
     arg-attr = int: nbline = -1 ;
                the number of the line of the datas
-    arg-attr = bool: islinebyline = True;
-               datas can be returned line by line or block by block
 
 
 Here are some examples.
@@ -212,17 +202,15 @@ Here are some examples.
 
     def __init__(
         self,
-        querypath    = None,
-        mode         = None,
-        data         = None,
-        nbline       = -1,
-        islinebyline = True
+        querypath  = None,
+        mode       = None,
+        data       = None,
+        nbline     = -1
     ):
-        self.querypath    = querypath
-        self.mode         = mode
-        self.data         = data
-        self.nbline       = nbline
-        self.islinebyline = islinebyline
+        self.querypath = querypath
+        self.mode      = mode
+        self.data      = data
+        self.nbline    = nbline
 
 
     def isblock(self):
@@ -237,54 +225,27 @@ Here are some examples.
     def isend(self):
         return self.querypath == END_TAG
 
-
-    def rtu_data(self, nosep = False):
+    @property
+    def rtu(self):
         """
 prototype::
-    arg = bool: nosep = False;
-          by default ``nosep = False`` asks to give all informations for
-          "key-val" datas that is to keep the key, its value and also the
-          separator used.
-          If you don't want the separator, just use ``nosep = True``.
-
     return = ? ;
              if we have no data, a ``ValueError`` exception is raised,
-             otherwise friendly version of datas is returned
+             otherwise a friendly version of the datas is returned
 
 
-If ``self.islinebyline`` is ``True``, the datas look as it follows.
+The datas return are tuples of the following kinds where ``nbline`` refers to
+the number line in the ¨peuf content (this can be useful for raising errors to
+the user or for the ``"multikeyval"`` mode).
 
-    1) For a verbatim content the actual line is returned.
+    1) For a single verbatim content, a tuple ``(nbline, verbatim_line)`` is
+    returned.
 
-    2) For a key-value content that is a list which can be of two kinds.
+    2) For a single key-value content, a tuple ``(nbline, key, sep, value)``
+    is returned.
 
-        a) If ``nosep == True`` then the list looks like ``[key, value]``.
-
-        b) If ``nosep == False`` then the list looks like ``[key, sep, value]``.
-
-
-If ``self.islinebyline`` is ``False``, the datas are of the following kinds
-where ``nbline`` refers to the number line in the ¨peuf file (this can be
-useful for raising errors to the user or for the ``"multikeyval"`` mode).
-
-    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like
-    tuples is returned.
-
-    2) For a key-value content, the method returns an ordered dictionary with
-    ``(nbline, key)`` like tuples for keys, and values depending of the value
-    of ``nosep``.
-
-        a) If ``nosep == True`` then the value is simply a string corresponding
-        to the value.
-
-        b) If ``nosep == False`` then the list value will be a dictionary of
-        the kind  ``{"sep": ..., "val": ...}``.
-
-
-info::
-    If ``self.islinebyline`` is ``True``, the user can still access to the
-    number line in the original ¨peuf file simply by using the attribut
-    ``nbline``.
+    3) For block contents, either a list of tuples ``(nbline, verbatim_line)``
+    or a ``MKOrderedDict`` is returned.
 
 
 info::
@@ -293,75 +254,22 @@ info::
         if self.data is None:
             raise ValueError('no data available')
 
-# Line by line delivery
-        if self.islinebyline:
-            if self.mode == VERBATIM:
-                return self.data
+        elif self.mode == VERBATIM:
+            if isinstance(self.data, str):
+                return (self.nbline, self.data)
 
             else:
-                if nosep:
-                    tokeep = [KEY_TAG, VAL_TAG]
+                return tuple(self.data)
 
-                else:
-                    tokeep = [KEY_TAG, SEP_TAG, VAL_TAG]
+# Single key-value
+        elif isinstance(self.data, dict):
+            return tuple(
+                [self.nbline] + [self.data[x] for x in KEYVAL_TAGS]
+            )
 
-                return tuple(self.data[x] for x in tokeep)
-
-# Block by block delivery
-        elif self.mode != VERBATIM and nosep:
-            data = OrderedDict()
-
-            for k, v in self.data.items():
-                data[k] = v["value"]
-
-            return data
-
+# Multi key-value
         else:
             return self.data
-
-
-    def short_rtu_data(self, nosep = False):
-        """
-prototype::
-    see = self.rtu_data()
-
-
-If ``self.islinebyline == True``, a ``ValueError`` error is raised, otherwise
-this method gives the same kind of values than ``self.rtu_data()`` but without
-any number line.
-
-
-warning::
-    For the ``"multikeyval"`` mode, if the keys is met two times, an error will
-    be raised (the number line is also used to diiferentiate the same key used
-    at different places in a ``"multikeyval"`` block).
-        """
-        if self.data is None:
-            raise ValueError('no data available')
-
-        if self.islinebyline:
-            raise ValueError('no short data for a line by line delivery')
-
-        if self.mode == VERBATIM:
-            return [line for (nb, line) in self.data]
-
-        else:
-            data = OrderedDict()
-
-            for (nb, key), val in self.data.items():
-                if key in data:
-                    raise ValueError(
-                        "output impossible because the key "
-                        + "<< {0} >> ".format(key) +
-                        "has been already used"
-                    )
-
-                if nosep:
-                    val = val[VAL_TAG]
-
-                data[key] = val
-
-            return data
 
 
     def __str__(self):
@@ -384,6 +292,8 @@ warning::
 # -- READING LINE BY LINE -- #
 # -------------------------- #
 
+FLAT_TAG, TREE_TAG = "flat", "tree"
+
 START_BLOCK = Infos(START_TAG)
 END_BLOCK   = Infos(END_TAG)
 
@@ -391,13 +301,6 @@ class Read(WalkInAST):
     """
 prototype::
     see = parse.ast.AST , parse.walk.WalkInAST , regexify
-
-    arg-attr = pathlib.Path, str: content ;
-               see the documentation of ``parse.ast.AST``
-    arg-attr = str, dict: mode ;
-               see the documentation of ``parse.ast.AST``
-    arg-attr = str: encoding = "utf-8" ;
-               see the documentation of ``parse.ast.AST``
 
 
 ====================================
@@ -433,12 +336,12 @@ orpyste::
                             line 3
 
 
-We want blocks of this file to be defined as follows.
+We want the blocks of this file to be defined as follows.
 
-    1) The blocks named orpyste:``test`` are for key-value datas with either
-    orpyste:``=``, or orpyste:``<>`` as a separator.
+    1) The blocks named orpyste::``test`` are for single key-value datas with
+    either orpyste::``=``, or orpyste::``<>`` as a separator.
 
-    2) The blocks named orpyste:``verb`` are for verbatim contents.
+    2) The blocks named orpyste::``verb`` are for verbatim contents.
 
     3) All the remaining blocks are containers. This means that they are blocks
     just containing others blocks.
@@ -451,27 +354,26 @@ Basic use
 info::
     We will work with a string for the ¨peuf content to be analyzed, but you
     can work with a file using the class ``pathlib.Path`` directly instead of
-    the string. The syntax remains the same exceot that with files you have to
-    use the method ``remove`` to clean the special files build by ¨orpyste !
+    the string. The syntax remains the same.
 
 
 The most important thing to do is to tell to ¨orpyste the semantic of our ¨peuf
-file. This is done using the argument ``mode`` in the following ¨python script
-where the variable ``content`` is the string value of our ¨peuf file.
+file. This is done using the argument ``mode`` in the following partial ¨python
+script where the variable ``content`` is the string value of our ¨peuf file. As
+you can see we can use a context ``with Read(...) as ...: ...``.
 
 python::
     from orpyste.data import Read
 
-    datas = Read(
+    with Read(
         content = content,
         mode    = {
             "container"    : ":default:",
             "keyval:: = <>": "test",
             "verbatim"     : "verb"
         }
-    )
-
-    datas.build()
+    ) as datas:
+        ...
 
 
 Let's see how we have used the argument ``mode`` (this variable is fully
@@ -483,14 +385,18 @@ presented in the documentation of ``parse.ast.AST``).
     behavior.
 
     2) ``"keyval:: = <>": "test"`` indicates that the blocks named
-    orpyste:``test`` are for key-value datas with either orpyste:``=``, or
-    orpyste:``<>`` as a separator as expected. You can indicate several names
+    orpyste::``test`` are for key-value datas with either orpyste::``=``, or
+    orpyste::``<>`` as a separator as expected. You can indicate several names
     by using a list of strings.
 
     3) ``"verbatim" : "verb"`` is now easy to understand.
 
     4) ``"container": ":default:"`` indicates taht blocks are by default
     containers.
+
+    5) When you call the context manager, indeed the class uses, more or less,
+    the methods ``build`` when the context is opened, and ``remove_extras`` to
+    close the context (see the class ``parse.walk.WalkInAST``).
 
 
 info::
@@ -511,15 +417,16 @@ finding special datas). Let's add the following lines to our previous code
 datas found)**.
 
 ...python::
-    for onedata in datas:
-        print(
-            '---',
-            "mode      = <<{0}>>".format(onedata.mode),
-            "data      = <<{0}>>".format(onedata.data),
-            "querypath = <<{0}>>".format(onedata.querypath),
-            "nbline    = <<{0}>>".format(onedata.nbline),
-            sep = "\n"
-        )
+    with Read(...) as datas:
+        for onedata in datas:
+            print(
+                '---',
+                "mode      = <<{0}>>".format(onedata.mode),
+                "data      = <<{0}>>".format(onedata.data),
+                "querypath = <<{0}>>".format(onedata.querypath),
+                "nbline    = <<{0}>>".format(onedata.nbline),
+                sep = "\n"
+            )
 
 
 Launching in a terminal, we see the following output where you can note that
@@ -587,32 +494,31 @@ datas thanks to the methods ``isblock`` and ``isdata``
     There are also methods ``isstart`` and ``isend``. The later can be really
     usefull.
 )),
-together with the property method ``rtu_data`` of the class ``data.Infos``.
+together with the property method ``rtu`` of the class ``data.Infos``.
 
 ...python::
-    for onedata in datas:
-        if onedata.isblock():
-            print('--- {0} ---'.format(onedata.querypath))
+    with Read(...) as datas:
+        for onedata in datas:
+            if onedata.isblock():
+                print('--- {0} ---'.format(onedata.querypath))
 
-        elif onedata.isdata():
-            print(onedata.rtu_data())
+            elif onedata.isdata():
+                print(onedata.rtu)
 
 
 Launched in a terminal, we obtains the following output where for key-value
-datas we obtains a list of the kind : ``(key, separator, value)``. This is
-very useful because ¨python allows to use for example
-``key, sep, value = ('a', '=', '1 + 9')`` such as to have directly
-``key = "a"``, ``sep = "="`` and `` value = "1 + 9"``.
+datas we obtains lists of the kinds  ``(nbline, line)`` for verbatim lines,
+and  ``(nbline, key, separator, value)`` for keys and their value.
 
 term::
     --- main/test ---
-    ('a', '=', '1 + 9')
-    ('b', '<>', '2')
-    ('c', '=', '3 and 4')
+    (11, 'a', '=', '1 + 9')
+    (12, 'b', '<>', '2')
+    (16, 'c', '=', '3 and 4')
     --- main/sub_main/sub_sub_main/verb ---
-    line 1
-        line 2
-            line 3
+    (22, 'line 1')
+    (23, '    line 2')
+    (24, '        line 3')
 
 
 info::
@@ -620,30 +526,14 @@ info::
     orpyste::``////`` at the end of the content.
 
 
-To unkeep informations about the separators, just use the optional argument
-``nosep`` of the methods method ``rtu_data`` and ``short_rtu_data``. Here
-is an example of this feature.
+info::
+    Remember that ¨python allows to use
+    ``nbline, key, sep, value = (11, 'a', '=', '1 + 9')``
+    such as to have directly
+    ``nbline = 11``, ``key = "a"``, ``sep = "="`` and `` value = "1 + 9"``.
 
-...python::
-    for onedata in datas:
-        if onedata.isblock():
-            print('--- {0} ---'.format(onedata.querypath))
-
-        elif onedata.isdata():
-            print(onedata.rtu_data(nosep = True))
-
-
-Using this piece of code, you have the following dictionaries in one terminal.
-
-term::
-    --- main/test ---
-    ('aaa', '1 + 9')
-    ('bbbbbbbbb', '2')
-    ('c', '3 and 3 and 3 and 3 and 3 and 3 and 3...')
-    --- main/sub_main/sub_sub_main/verb ---
-    line 1
-        line 2
-            line 3
+    You can even use ``_, key, _, value = (11, 'a', '=', '1 + 9')`` such as to
+    only keep keys and their values.
 
 
 =============================
@@ -660,40 +550,37 @@ your own regex like queries.
 python::
     from orpyste.data import Read
 
-    datas = Read(
+    with Read(
         content = content,
         mode    = {
             "container"    : ":default:",
             "keyval:: = <>": "test",
             "verbatim"     : "verb"
         }
-    )
+    ) as datas:
+        for query in [
+            "main/test",    # Only one path
+            "**",           # Anything
+            "main/*",       # Anything "contained" inside "main/test"
+        ]:
+            title = "Query: {0}".format(query)
+            hrule = "="*len(title)
 
-    datas.build()
+            print("", hrule, title, hrule, sep = "\n")
 
-    for query in [
-        "main/test",    # Only one path
-        "**",           # Anything
-        "main/*",       # Anything "contained" inside "main/test"
-    ]:
-        title = "Query: {0}".format(query)
-        hrule = "="*len(title)
+            for onedata in datas[query]:
+                if onedata.isblock():
+                    print(
+                        "",
+                        "--- {0} [{1}] ---".format(
+                            onedata.querypath,
+                            onedata.mode
+                        ),
+                        sep = "\n"
+                    )
 
-        print("", hrule, title, hrule, sep = "\n")
-
-        for onedata in datas[query]:
-            if onedata.isblock():
-                print(
-                    "",
-                    "--- {0} [{1}] ---".format(
-                        onedata.querypath,
-                        onedata.mode
-                    ),
-                    sep = "\n"
-                )
-
-            else:
-                print(onedata.rtu_data())
+                else:
+                    print(onedata.rtu)
 
 
 This gives the following outputs as expected.
@@ -704,37 +591,35 @@ term::
     ================
 
     --- main/test [keyval] ---
-    ('aaa', '=', '1 + 9')
-    ('bbbbbbbbb', '<>', '2')
-    ('c', '=', '3 and 4')
+    (11, 'a', '=', '1 + 9')
+    (12, 'b', '<>', '2')
+    (16, 'c', '=', '3 and 4')
 
     =========
     Query: **
     =========
 
     --- main/test [keyval] ---
-    ('aaa', '=', '1 + 9')
-    ('bbbbbbbbb', '<>', '2')
-    ('c', '=', '3 and 4')
+    (11, 'a', '=', '1 + 9')
+    (12, 'b', '<>', '2')
+    (16, 'c', '=', '3 and 4')
 
     --- main/sub_main/sub_sub_main/verb [verbatim] ---
-    line 1
-        line 2
-            line 3
+    (22, 'line 1')
+    (23, '    line 2')
+    (24, '        line 3')
 
     =============
     Query: main/*
     =============
 
     --- main/test [keyval] ---
-    ('aaa', '=', '1 + 9')
-    ('bbbbbbbbb', '<>', '2')
-    ('c', '=', '3 and 4')
+    (11, 'a', '=', '1 + 9')
+    (12, 'b', '<>', '2')
+    (16, 'c', '=', '3 and 4')
     """
 
-# ------------------------------- #
 # -- START AND END OF THE WALK -- #
-# ------------------------------- #
 
     def start(self):
         self._verblines = []
@@ -742,9 +627,7 @@ term::
         self._qpath     = []
 
 
-# ---------------- #
 # -- FOR BLOCKS -- #
-# ---------------- #
 
     def open_block(self, name):
         self._qpath.append(name)
@@ -763,9 +646,7 @@ term::
         self._qpath.pop(-1)
 
 
-# ------------------------------------- #
 # -- DATAS: (MULTI)KEYVAL & VERBATIM -- #
-# ------------------------------------- #
 
     @adddata
     def add_keyval(self, keyval):
@@ -776,9 +657,7 @@ term::
         ...
 
 
-# ----------------------------- #
 # -- USER FRIENDLY ITERATORS -- #
-# ----------------------------- #
 
     def __iter__(self):
         """
@@ -835,115 +714,35 @@ class for an example of use).
 # -- READING BLOCK BY BLOCK -- #
 # ---------------------------- #
 
-# The following code of the class ``OrderedRecuDict`` comes directly from the
-# module ``mistool.python_use`` where it is maintained.
+STD_TAG          = "std"
+MYDICT_KIND_TAGS = set([FLAT_TAG, TREE_TAG])
 
-class OrderedRecuDict(OrderedDict):
-    """
-This subclass of ``collections.OrderedDict`` allows to use a list of hashable
-keys, or just a single hashable key. Here is an example of use where the ouput
-is hand formatted.
+NOSEP_TAG, NONB_TAG, NOVAL_TAG = "nosep", "nonb", "noval"
+NOTHING_TAGS                   = set([NOSEP_TAG, NONB_TAG, NOVAL_TAG])
 
-pyterm::
-    >>> from mistool.python_use import OrderedRecuDict
-    >>> onerecudict = OrderedRecuDict()
-    >>> onerecudict[[1, 2, 4]] = "1st value"
-    >>> onerecudict[(1, 2, 4)] = "2nd value"
-    >>> print(onerecudict)
-    OrderedRecuDict([
-        (
-            1,
-            OrderedRecuDict([
-                (
-                    2,
-                    OrderedRecuDict([ (4, '1st value') ])
-                )
-            ])
-        ),
-        (
-            (1, 2, 4),
-            '2nd value'
-        )
-    ])
-    """
-    def __init__(self):
-        super().__init__()
+_NO_DICT_KEY = {
+    NOSEP_TAG: SEP_TAG,
+    NONB_TAG : NBLINE_TAG,
+    NOVAL_TAG: VAL_TAG
+}
 
-
-    def __getitem__(self, keys):
-        if isinstance(keys, Hashable):
-            return super().__getitem__(keys)
-
-        else:
-            first, *others = keys
-
-            if others:
-                return self[first][others]
-
-            else:
-                return self[first]
-
-
-    def __setitem__(self, keys, val):
-        if isinstance(keys, Hashable):
-            super().__setitem__(keys, val)
-
-        else:
-            first, *others = keys
-
-            if first in self and others:
-                self[first][others] = val
-
-            else:
-                if others:
-                    subdict         = OrderedRecuDict()
-                    subdict[others] = val
-                    val             = subdict
-
-                self[first] = val
-
-
-    def __contains__(self, keys):
-        if isinstance(keys, Hashable):
-            return super().__contains__(keys)
-
-        else:
-            first, *others = keys
-
-            if first in self:
-                if not others:
-                    return True
-
-                subdict = self[first]
-
-                if isinstance(subdict, OrderedDict):
-                    return others in subdict
-
-            return False
+MYDICT_TAGS = MYDICT_KIND_TAGS | NOTHING_TAGS
 
 
 class ReadBlock(Read):
     """
-prototype::
-    see = Read
-
-
-=====================================================
-``ReadBlock`` is similar to ``Read`` but not the same
-=====================================================
+=============================================================
+``ReadBlock`` is similar to ``Read`` but not exactly the same
+=============================================================
 
 The main difference between the classes ``ReadBlock`` and ``Read`` is that the
-former returns the datas block by block, whereas the second one gives line by
-line informations (with huge files, a line by line reader is a better tool).
-
-
-warning::
-    With ``ReadBlock``, all blocks must have different query paths.
+former returns the datas block by block, whereas the second one gives the datas
+line by line (with huge files, a line by line reader is a better tool).
 
 
 info::
-    Take a look first at the documentation of the class ``Read`` because we are
-    going to give only new informations regarding the class ``ReadBlock``.
+    Take first a look at the documentation of the class ``Read`` because we are
+    going to give only new informations regarding to the class ``ReadBlock``.
 
 
 ====================================
@@ -951,8 +750,8 @@ The ¨peuf file used for our examples
 ====================================
 
 Here is the uncommented ¨peuf file that will be used for our ¨python examples
-where the block orpyste:``test`` has key-value datas, and orpyste:``verb`` uses
-a verbatim content.
+where the block orpyste::``test`` has key-value datas, and orpyste::``verb``
+uses a verbatim content.
 
 orpyste::
     main::
@@ -971,116 +770,80 @@ orpyste::
 
 
 ==================================
-Working with friendly dictionaries
+Working with a friendly dictionary
 ==================================
 
-The method ``flatdict`` returns an ordered dictionnary with keys equal to
-"querypaths". Let's consider the following code where ``content`` is the string
-given in the at the beg section (so we do not have to use the method ``remove``
-to clean the special files build by ¨orpyste).
+The property ``flatdict`` gives an ordered dictionnary with keys equal to
+``(id, querypaths)`` where ``id`` is an id number allowing the use of the same
+"paths" for blocks in differnt places of a ¨peuf content.
+Let's consider the following code where ``content`` is the string given in the
+first section.
 
 python::
-    import pprint
+    from pprint import pprint
 
     from orpyste.data import ReadBlock
 
-    datas = ReadBlock(
+    with ReadBlock(
         content = content,
         mode    = {
             "container"    : ":default:",
             "keyval:: = <>": "test",
             "verbatim"     : "verb"
         }
-    )
-
-    datas.build()
-
-    print('--- Default ---')
-    pprint.pprint(datas.flatdict())
-
-    print('--- Without the separators ---')
-    pprint.pprint(datas.flatdict(nosep = True))
+    ) as datas:
+        pprint(datas.flatdict)
 
 
-Here is what is obtained when the code is launching in a terminal. You can see
-that verbatim contents are stored line by line and not in a single string !
+Here is what is obtained when the code is launching in a terminal (the ouput
+has benn hand formatted). You can see that verbatim contents are stored line
+by line and not in a single string !
 
 term::
-    --- Default ---
-    OrderedDict([('main/test',
-                  OrderedDict([('a', {'sep': '=', 'value': '1 + 9'}),
-                               ('b', {'sep': '<>', 'value': '2'}),
-                               ('c', {'sep': '=', 'value': '3 and 4'})])),
-                 ('main/sub_main/sub_sub_main/verb',
-                  ['line 1', 'line 2', 'line 3'])])
-    --- Without the separators ---
-    OrderedDict([('main/test',
-                  OrderedDict([('a', '1 + 9'), ('b', '2'), ('c', '3 and 4')])),
-                 ('main/sub_main/sub_sub_main/verb',
-                  ['line 1', 'line 2', 'line 3'])])
+    MKOrderedDict([
+        (id=0, key='main/test',
+         value=MKOrderedDict([
+            (id=0, key='a', value={'sep': '=', 'nbline': 3, 'value': '1 + 9'}),
+            (id=0, key='b', value={'sep': '<>', 'nbline': 4, 'value': '2'}),
+            (id=0, key='c', value={'sep': '=', 'nbline': 5, 'value': '3 and 4'})
+        ])),
+        (id=0, key='main/sub_main/sub_sub_main/verb',
+         value=((11, 'line 1'), (12, 'line 2'), (13, 'line 3')))
+    ])
 
 
-If you prefer to have a recursive dictionnary, just use the method ``recudict``
-instead of ``flatdict``. The preceding code with ``flatdict`` replacing by
-``recudict`` gives the output below which has been hand formatted.
+As you can see you will have to work with a ``MKOrderedDict`` which is indeed
+implemented in the module ``parse.walk``. This is necessary regarding to the
+mode ``"multikeyval"``. You can merly work with ``MKOrderedDict`` as you will
+do with dictionaries as you can see in the following example.
+
+python::
+    with ReadBlock(
+        content = content,
+        mode    = {
+            "container"    : ":default:",
+            "keyval:: = <>": "test",
+            "verbatim"     : "verb"
+        }
+    ) as datas:
+        print("--- With ID numbers ---")
+
+        for (idkey, key), value in datas.flatdict.items():
+            print((idkey, key))
+
+        print("--- Without ID numbers ---")
+
+        for key, value in datas.flatdict.items(noid = True):
+            print(key)
+
 
 term::
-    --- Default ---
-    OrderedRecuDict([
-        (
-            'main',
-            OrderedRecuDict([
-                (
-                    'test',
-                        OrderedDict([
-                            ('a', {'value': '1 + 9', 'sep': '='}),
-                            ('b', {'value': '2', 'sep': '<>'}),
-                            ('c', {'value': '3 and 4', 'sep': '='})
-                        ])
-                    ),
-                (
-                    'sub_main',
-                    OrderedRecuDict([
-                        (
-                            'sub_sub_main',
-                            OrderedRecuDict([
-                                ('verb', ['line 1', 'line 2', 'line 3'])
-                            ])
-                        )
-                    ])
-                )
-            ])
-        )
-    ])
-    --- Without the separators ---
-    OrderedRecuDict([
-        (
-            'main',
-            OrderedRecuDict([
-                (
-                    'test',
-                    OrderedDict([
-                        ('a', '1 + 9'),
-                        ('b', '2'),
-                        ('c', '3 and 4')
-                    ])
-                ),
-                ('sub_main',
-                    OrderedRecuDict([
-                        (
-                            'sub_sub_main',
-                            OrderedRecuDict([
-                                (
-                                    'verb',
-                                    ['line 1', 'line 2', 'line 3']
-                                )
-                            ])
-                        )
-                    ])
-                )]
-            )
-        )
-    ])
+    --- With ID numbers ---
+    (0, 'main/test')
+    (0, 'main/sub_main/sub_sub_main/verb')
+    --- Without ID numbers ---
+    main/test
+    main/sub_main/sub_sub_main/verb
 
 
 ========================================
@@ -1093,29 +856,26 @@ Let's see how the datas are roughly sent by the basic iterator of the class
 python::
     from orpyste.data import ReadBlock
 
-    datas = ReadBlock(
+    with ReadBlock(
         content = content,
         mode    = {
             "container"    : ":default:",
             "keyval:: = <>": "test",
             "verbatim"     : "verb"
         }
-    )
-
-    datas.build()
-
-    for onedata in datas:
-        print(
-            '---',
-            "mode      = <<{0}>>".format(onedata.mode),
-            "data      = <<{0}>>".format(onedata.data),
-            "querypath = <<{0}>>".format(onedata.querypath),
-            sep = "\n"
-        )
+    ) as datas:
+        for onedata in datas:
+            print(
+                '---',
+                "mode      = <<{0}>>".format(onedata.mode),
+                "data      = <<{0}>>".format(onedata.data),
+                "querypath = <<{0}>>".format(onedata.querypath),
+                sep = "\n"
+            )
 
 
-Launching in a terminal, we see the following output (for the long ordered
-dictionary, two new lines have been added by hand).
+Launching in a terminal, we see the following output (for the long dictionary,
+new lines have been added by hand).
 
 term::
     ---
@@ -1128,9 +888,10 @@ term::
     querypath = <<main/test>>
     ---
     mode      = <<keyval>>
-    data      = <<OrderedDict([((11, 'aaa'), {'val': '1 + 9', 'sep': '='}),
-    ((12, 'bbbbbbbbb'), {'val': '2', 'sep': '<>'}), ((16, 'c'), {'val': '3 and
-    4', 'sep': '='})])>>
+    data      = <<MKOrderedDict([(id=0, key='a', value={'value': '1 + 9',
+                'nbline': 3, 'sep': '='}), (id=0, key='b', value={'value': '2',
+                'nbline': 4, 'sep': '<>'}), (id=0, key='c', value={'value': '3
+                and 4', 'nbline': 5, 'sep': '='})])>>
     querypath = <<None>>
     ---
     mode      = <<verbatim>>
@@ -1138,7 +899,7 @@ term::
     querypath = <<main/sub_main/sub_sub_main/verb>>
     ---
     mode      = <<verbatim>>
-    data      = <<[(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]>>
+    data      = <<[(11, 'line 1'), (12, 'line 2'), (13, 'line 3')]>>
     querypath = <<None>>
     ---
     mode      = <<None>>
@@ -1149,24 +910,24 @@ term::
 The iteration still gives instances of the class ``Infos`` but with different
 kinds of datas regarding to the ones obtained with the class ``Read``.
 
-    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like tuples
-    is returned.
+    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like
+    tuples is returned.
 
-    2) For a key-value content, the method returns an ordered dictionary with
-    ``(nbline, key)`` like tuples for keys, and ``{"sep": ..., "val": ...}``
-    like dictionary for values.
+    2) For a key-value content, the method returns a ``MKOrderedDict``
+    dictionary.
 
 
-We can still asks to have easier to use datas thanks to the method ``rtu_data``
+We can still ask to have easier to use datas thanks to the method ``rtu``
 of the class ``data.Infos``.
 
 ...python::
-    for onedata in datas:
-        if onedata.isblock():
-            print('--- {0} ---'.format(onedata.querypath))
+    with ReadBlock(...) as datas:
+        for onedata in datas:
+            if onedata.isblock():
+                print('--- {0} ---'.format(onedata.querypath))
 
-        elif onedata.isdata():
-            pprint(onedata.rtu_data())
+            elif onedata.isdata():
+                pprint(onedata.rtu)
 
 
 Launched in a terminal, we obtains the following output (where the dictionary
@@ -1174,71 +935,18 @@ is indeed an ordered one).
 
 term::
     --- main/test ---
-    {(11, 'aaa'): {'sep': '=', 'val': '1 + 9'},
-     (12, 'bbbbbbbbb'): {'sep': '<>', 'val': '2'},
-     (16, 'c'): {'sep': '=', 'val': '3 and 4'}}
+    MKOrderedDict([
+        (id=0, key='a', value={'sep': '=', 'value': '1 + 9', 'nbline': 3}),
+        (id=0, key='b', value={'sep': '<>', 'value': '2', 'nbline': 4}),
+        (id=0, key='c', value={'sep': '=', 'value': '3 and 4', 'nbline': 5})
+    ])
     --- main/sub_main/sub_sub_main/verb ---
-    [(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]
+    ((11, 'line 1'), (12, 'line 2'), (13, 'line 3'))
 
 
-Having number of lines allows to give fine informations to the user if one of
-its data is bad, but if you really do not want to have the numbers of lines,
-you can use the additional method ``short_rtu_data`` like in the following code.
-
-...python::
-    for onedata in datas:
-        if onedata.isblock():
-            print('--- {0} ---'.format(onedata.querypath))
-
-        elif onedata.isdata():
-            print(onedata.short_rtu_data())
-
-In a terminal we have the following printings (remember that the dictionary is
-an ordered one).
-
-term::
-    --- main/test ---
-    {'aaa': {'sep': '=', 'value': '1 + 9'},
-     'bbbbbbbbb': {'sep': '<>', 'value': '2'},
-     'c': {'sep': '=', 'value': '3 and 4'}}
-    --- main/sub_main/sub_sub_main/verb ---
-    ['line 1', 'line 2', 'line 3']
-
-
-Using the optional argument ``nosep`` with the methods method ``rtu_data`` and
-``short_rtu_data``, you will have no information about the seprators used. Here
-is an example of use.
-
-...python::
-    for onedata in datas:
-        if onedata.isblock():
-            print('--- {0} ---'.format(onedata.querypath))
-
-        elif onedata.isdata():
-            print("    * rtu_data with nosep = True (non-default value)")
-            pprint(onedata.rtu_data(nosep = True))
-
-            print("    * short_rtu_data with nosep = True (non-default value)")
-            pprint(onedata.short_rtu_data(nosep = True))
-
-
-Using this piece of code, you have the following dictionaries in one terminal.
-
-term::
-    --- main/test ---
-        * rtu_data with nosep = True (non-default value)
-    {(11, 'aaa'): '1 + 9',
-     (12, 'bbbbbbbbb'): '2',
-     (16, 'c'): '3 and 4'}
-        * short_rtu_data with nosep = True (non-default value)
-    {'aaa': '1 + 9',
-     'bbbbbbbbb': '2',
-     'c': '3 and 4'}
-    --- main/sub_main/sub_sub_main/verb ---
-        * rtu_data with nosep = True (non-default value)
-    [(22, 'line 1'), (23, 'line 2'), (24, 'line 3')]
-        * short_rtu_data with nosep = True (non-default value)
-    ['line 1', 'line 2', 'line 3']
+info::
+    Having number of lines allows to give fine informations to the user if one
+    of its data is bad.
 
 
 =============================
@@ -1246,52 +954,10 @@ Looking for particular blocks
 =============================
 
 See first the documentation of the class ``Read``. Regarding to the class
-``Read``, just the outputs of the class ``ReadBlock`` are different but the way
-to use queries remains the same.
-
-
-``ReadBlock`` has an additional well named method ``nblineof``. Here is a code
-using it.
-
-python::
-    datas = Read(
-        content = content,
-        mode    = {
-            "container"    : ":default:",
-            "keyval:: = <>": "test",
-            "verbatim"     : "verb"
-        }
-    )
-
-    datas.build()
-
-    print('--- Number line of a block ---')
-    print("main/test ?")
-    print(datas.nblineof("main/test"))
-
-    print(["main", "sub_main", "sub_sub_main", "verb"], "?")
-    print(datas.nblineof(["main", "sub_main", "sub_sub_main", "verb"]))
-
-    print(["main", "sub_main"], "?")
-    print(datas.nblineof(["main", "sub_main"]))
-
-    datas.remove()
-
-
-The corresponding output is the following one where you can see that you can't
-look for container block (internally, ¨orpyste works only with data blocks).
-
-term::
-    --- Number line of a block ---
-    main/test ?
-    2
-    ['main', 'sub_main', 'sub_sub_main', 'verb'] ?
-    10
-    ['main', 'sub_main'] ?
-    Traceback (most recent call last):
-    [...]
-    KeyError: 'unknown block << main/sub_main >>'
+``Read``, just the outputs of the class ``ReadBlock`` are different but the
+way to use queries remains the same.
     """
+
     def __init__(
         self,
         content,
@@ -1299,20 +965,6 @@ term::
         encoding = "utf-8"
     ):
         super().__init__(content, mode, encoding)
-        self._nblineof = None
-
-
-    def _addblockdata(self, onedata):
-        if self._lastmode == VERBATIM:
-            self._infos.append((onedata.nbline, onedata.data))
-
-        else:
-            key, sep, val = onedata.rtu_data()
-
-            self._infos[(onedata.nbline, key)] = {
-                SEP_TAG: sep,
-                VAL_TAG: val
-            }
 
 
     def __getitem__(self, querypath):
@@ -1334,9 +986,9 @@ prototype::
                 if infosfound:
                     if self._infos is not None:
                         yield Infos(
-                            mode         = self._lastmode,
-                            data         = self._infos,
-                            islinebyline = False
+                            mode       = self._lastmode,
+                            data       = self._infos,
+                            nbline     = oneinfo.nbline
                         )
 
                     self._lastmode = oneinfo.mode
@@ -1345,7 +997,7 @@ prototype::
                         self._infos = []
 
                     else:
-                        self._infos = OrderedDict()
+                        self._infos = MKOrderedDict()
 
                     yield oneinfo
 
@@ -1353,152 +1005,260 @@ prototype::
             elif infosfound:
                 self._addblockdata(oneinfo)
 
-
         if self._infos is not None:
             yield Infos(
-                mode         = oneinfo.mode,
-                data         = self._infos,
-                islinebyline = False
+                mode       = oneinfo.mode,
+                nbline     = oneinfo.nbline,
+                data       = self._infos
             )
 
         self._infos    = None
         self._lastmode = None
 
 
-    def build(self):
-        super().build()
+    def _addblockdata(self, onedata):
+        if self._lastmode == VERBATIM:
+            nbline, line = onedata.rtu
 
-        self._nblineof = {}
+            self._infos.append({
+                NBLINE_TAG: nbline,
+                VAL_TAG   : line
+            })
+
+        else:
+            nbline, key, sep, val = onedata.rtu
+
+            self._infos[key] = {
+                NBLINE_TAG: nbline,
+                SEP_TAG   : sep,
+                VAL_TAG   : val
+            }
+
+
+    @property
+    def flatdict(self):
+        """
+prototype::
+    see = Infos.rtu , Infos.short_rtu , self._builddict
+
+    return = parse.walk.MKOrderedDict ;
+             an easy-to-use dictionary with keys equal to flat query paths
+        """
+        self._keepthis = []
+
+        return self._builddict()
+
+    def _builddict(self):
+        """
+This method is an abstraction used by the property-method ``self.flatdict``.
+        """
+        newdict = MKOrderedDict()
 
         for info in self:
             if info.isblock():
-                querypath = info.querypath
-
-                if info.querypath in self._nblineof:
-                    raise KeyError(
-                        "the block << {0} >> is already ".format(querypath)
-                        + "in the ordered dictionary"
-                    )
-
-                self._nblineof[querypath] = info.nbline
-
-
-    def nblineof(self, query):
-        """
-prototype::
-    see = self.flatdict , self.recudict
-
-    arg = str, list(str) ;
-          a "querypath" or a list of names of successive blocks
-
-
-This method returns the number line of a content block given by ``query``.
-        """
-        if self._nblineof is None:
-            raise "you must use the method << build >>"
-
-        if isinstance(query, list):
-            query = "/".join(query)
-
-        if query not in self._nblineof:
-            raise KeyError("unknown block << {0} >>".format(query))
-
-        return self._nblineof[query]
-
-
-    def _builddict(self, classdict, keymap, nosep):
-        """
-prototype::
-    arg = cls: classdict ;
-          this class is used to define which kind of dictionary must be used
-          to store the informations
-    arg = func: keymap ;
-          this function allows to modify the query path found for a block
-    arg = bool: nosep = False ;
-          ``nosep = False`` associates the value and the separator to each
-          "key-val" datas, and ``nosep = True`` just keeps the value alone.
-
-
-This method is an abstraction used directly by the methods ``self.flatdict``
-and ``self.recudict``.
-        """
-        newdict = classdict()
-
-        for info in self:
-            if info.isblock():
-                lastkey = keymap(info.querypath)
+                lastkey = info.querypath
 
             elif info.isdata():
-                newdict[lastkey] = info.short_rtu_data(nosep = nosep)
+                val = info.rtu
+
+                if self._keepthis:
+# Verbatim datas
+                    if isinstance(val, tuple):
+                        newval = tuple(x[VAL_TAG] for x in val)
+
+# Key-val datas
+                    else:
+                        newval = deepcopy(val)
+
+                        for k, v in newval.items():
+                            print(">>>", k, v)
+                            print("   ", type(k), type(v))
+
+# Keep anything !
+                else:
+                    newval = val
+
+                newdict[lastkey] = newval
 
         return newdict
 
 
-    def flatdict(self, nosep = False):
+    @property
+    def treedict(self):
         """
 prototype::
-    see = Infos.rtu_data , Infos.short_rtu_data , self._builddict
-
-    arg = bool: nosep = False ;
-          by default ``nosep = False`` associates the value and the separator to
-          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
+    see = self.flatdict , self._recudict
 
     return = dict ;
-             an easy-to-use dictionary with keys equal to flat query paths
+             ????
         """
-        return self._builddict(
-            classdict = OrderedDict,
-            keymap    = lambda x: x,
-            nosep     = nosep
-        )
+        self._keepthis = None
+
+        return self._recudict(value = self.flatdict)
+
+    def _recudict(self, value):
+        if isinstance(value, MKOrderedDict):
+            newdict = RecuOrderedDict()
+
+            for key, val in value.items(noid = True):
+                key = key.split("/")
+
+                if key in newdict:
+                    raise KeyError(
+                        "the key << {0} >> is used at least two times".format(
+                            key
+                        )
+                    )
+
+                newval = {}
+
+                for k in self._keepthis:
+                    newval[k] = val[k]
+
+                newdict[key] = self._recudict(val)
+
+            return newdict
+
+        # if isinstance(value, OrderedDict) \
+        # or isinstance(value, dict):
+        #     return value
+
+        return value
 
 
-    def recudict(self, nosep = False):
+    def _myvalue(self, stdict):
+        """
+    see = sef.mydict
+    arg = dict: stddict
+        """
+# Just keep what is wanted.
+        for option in self._settings:
+            if option in NOTHING_TAGS:
+                infotag = _NO_DICT_KEY[option]
+
+                if infotag in stdict:
+                    del stdict[infotag]
+
+# Juste one key-val association ==> only keep the value (this is a choice !)
+        if len(stdict.keys()) == 1:
+            for _, value in stdict.items():
+                stdict = value
+
+        return stdict
+
+    def _specialtodict(self, oneval):
+        """
+MKOrderedDict ou RecuOrderedDict --> standard dict si possible !
+        """
+        if isinstance(oneval, MKOrderedDict):
+            newdict = {}
+
+            for (_, k), v in oneval.items():
+                if k in newdict:
+                    raise KeyError(
+                        "the key << {0} >> is used at least two times".format(k)
+                    )
+
+                newdict[k] = self._specialtodict(v)
+
+            oneval = newdict
+
+        elif isinstance(oneval, RecuOrderedDict):
+            newdict = {}
+
+            for k, v in oneval.items():
+                newdict[k] = self._specialtodict(v)
+
+            oneval = newdict
+
+        return oneval
+
+    def mydict(self, kind):
         """
 prototype::
-    see = Infos.rtu_data , Infos.short_rtu_data , self._builddict
+    see = self.flatdict , self._recudict
 
-    arg = bool: nosep = False ;
-          by default ``nosep = False`` associates the value and the separator to
-          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
+    arg = str: format ;
+          ????
+
 
     return = dict ;
-             an easy-to-use recursive dictionary which mimics the recursive
-             structure of the ¨peuf file analyzed
-        """
-        return self._builddict(
-            classdict = OrderedRecuDict,
-            keymap    = lambda x: x.split("/"),
-            nosep     = nosep
-        )
+             ????
 
-    def jsonify(self, kind = _RECU_TAG, nosep = False):
+format = "flat" comme flatdict
+format = "tree" comme treedict
+
+format = "flat nosep" flatdict mais sans sep
+...etc !!!
+
+sortie dépend des choix faits
+
+on renvoie toujours donnés sous forme de chaîne si possible
+
+on travaille sur le flat dict toujours et si besoin on le transfrme en tree
+        """
+        self._settings = set(x.strip() for x in kind.split(" "))
+
+# Unknown setting.
+        if not MYDICT_TAGS & self._settings:
+            raise ValueError(
+                "unknown settings in {0}".format(self._settings)
+            )
+
+# Nothing to keep ?
+        if NOTHING_TAGS <= self._settings:
+            raise ValueError("illegal settings: nothing to keep")
+
+
+# Goo kind of dictionary wanted ?
+        if len(MYDICT_KIND_TAGS & self._settings) == 2:
+            raise ValueError("flat or tree like dict ?")
+
+# Let's customize the values of the flat dictionary.
+        newdict = MKOrderedDict()
+
+        for (_, blockname), infos in self.flatdict.items():
+# Verbatim content
+            if isinstance(infos, tuple):
+                newdict[blockname] = tuple(
+                    self._myvalue(oneval) for oneval in infos
+                )
+
+# Key-value
+            else:
+                newinfos = MKOrderedDict()
+
+                for (_, key), val in infos.items():
+                    newinfos[key] = self._myvalue(val)
+
+                newdict[blockname] = newinfos
+
+# A recrusrive tree like dict ?.
+        if TREE_TAG in self._settings:
+            newdict = self._recudict(newdict)
+
+# Standard dict wanted ?
+        if STD_TAG in self._settings:
+            newdict = self._specialtodict(newdict)
+
+# The job has been done !
+        return newdict
+
+
+    @property
+    def forjson(self):
         """
 prototype::
-    see = self.flatdict, self.recudict, loadjson
-
-    arg = str: kind = "flat"
-               in [_FLAT_TAG, _FLAT_TAG[0], _RECU_TAG, _RECU_TAG[0]] ;
-          by default ``kind = "recu"`` indicates to "jsonify" the recursive
-          dictionnary build by the method ``self.recudict``.
-          You can use ``kind = "flat"`` if you need the json version of the
-          flat dictionnary build by the method ``self.flatdict``.
-          It is allow to just use the initials ``"f"`` and ``"r"`` instead of
-          ``"flat"`` and ``"recu"`` respectivly.
-    arg = bool: nosep = False ;
-          by default ``nosep = False`` associates the value and the separator to
-          each "key-val" datas, and ``nosep = True`` just keeps the value alone.
+    see = self.flatdict, loadjson
 
     return = str ;
-             the json version a flat or recursive dictionary version of the
-             ¨peuf file analyzed
+             the ¨json version of the flat dictionary version of the ¨peuf file
+             analyzed
 
 
-Because ¨json from ¨python doesn't have a support of the special recursive
-ordered used by the class ``ReadBlock``, the json format is not a simple
-dictionary like variable for the flat and recursive dicrionnaries built by the
-methods ``flatdict`` and ``recudict`` respectivly. The following code gives us
-just after the structure used for those special ¨python dictionaries.
+Because ¨json types are not all transposable from and to ¨python ones, the
+¨json variables made here is a little ugly. The following code gives us just
+after the structure used.
 
 python::
     from orpyste.data import ReadBlock
@@ -1508,95 +1268,58 @@ python::
         test::
             a = 1 + 9
             b <>  2
-            c = 3 and 4
 
         sub_main::
             sub_sub_main::
                 verb::
                     line 1
                         line 2
-                            line 3
     '''
 
-    datas = ReadBlock(
+    with ReadBlock(
         content = content,
         mode    = {
             "container"    : ":default:",
             "keyval:: = <>": "test",
             "verbatim"     : "verb"
         }
-    )
-
-    datas.build()
-
-    jsonobj = datas.jsonify()
-    print(jsonobj)
-
-    datas.remove()
+    ) as datas:
+        print(datas.forjson)
 
 
 Launched in a terminal, we obtain the following output which has been hand
 formatted. As you can see, we use the format json::``[key, value]`` so as
-to store the keys and the values of the dictionary.
+to store the keys and their coresponding value of the dictionary.
 
-term::
-    {
-        "kind": "flat",
-        "datas" : [
+json::
+    [
+        [
+            [0, "main/test"],
             [
-                "main/test",
                 [
-                    [
-                        "a",
-                        [
-                            null,
-                            {"value": "1 + 9", "sep": "="}
-                        ]
-                    ],
-                    [
-                        "b",
-                        [
-                            null,
-                            {"value": "2", "sep": "<>"}]
-                        ],
-                    [
-                        "c",
-                        [
-                            null,
-                            {"value": "3 and 4", "sep": "="}
-                        ]
-                    ]
+                    [0, "a"],
+                    {"sep": "=", "nbline": 4, "value": "1 + 9"}
+                ],
+                [
+                    [0, "b"],
+                    {"sep": "<>", "nbline": 5, "value": "2"}
                 ]
-            ],
+            ]
+        ],
+        [
+            [0, "main/sub_main/sub_sub_main/verb"],
             [
-                "main/sub_main/sub_sub_main/verb",
+                null,
                 [
-                    null,
-                    ["line 1", "    line 2", "        line 3"]
+                    {"nbline": 10, "value": "line 1"},
+                    {"nbline": 11, "value": "    line 2"}
                 ]
             ]
         ]
-    }
+    ]
         """
-        if kind == _FLAT_TAG[0]:
-            kind = _FLAT_TAG
+        return dumps(self._recujson(self.flatdict))
 
-        elif kind == _RECU_TAG[0]:
-            kind = _RECU_TAG
-
-        if kind not in [_FLAT_TAG, _RECU_TAG]:
-            raise ValueError("illegal value of ``kind``")
-
-        if kind == _FLAT_TAG:
-            onedict = self.flatdict(nosep = nosep)
-
-        else:
-            onedict = self.recudict(nosep = nosep)
-
-        return dumps({
-            _KIND_TAG : kind,
-            _DATAS_TAG: self._recujson(onedict)
-        })
 
     def _recujson(self, onevar):
         """
@@ -1610,11 +1333,10 @@ prototype::
              a ¨python object that can be safely "jsonified"
 
 
-This methods works recursively to convert a dictionary of the datas into a
-convenient json version.
+This method works recursively to convert a dictionary of the datas into a
+convenient ¨json version.
         """
-        if isinstance(onevar, OrderedDict) \
-        or isinstance(onevar, OrderedRecuDict):
+        if isinstance(onevar, MKOrderedDict):
             jsonvar = []
 
             for key, val in onevar.items():
@@ -1622,38 +1344,66 @@ convenient json version.
                     [key, self._recujson(val)]
                 )
 
+        elif isinstance(onevar, dict):
+            jsonvar = onevar
+
         else:
             jsonvar = [None, onevar]
 
         return jsonvar
 
 
-def _loadjson(jsonvar, classdict):
+def _tuplize(val):
+    """
+prototype::
+    see = _loadjson
+
+    arg = val ;
+          a ¨python variable to be recursively "tuplized"
+
+    return = ? ;
+             a ¨python variable using always tuples isntead lists
+
+
+This method works recursively.
+    """
+    if isinstance(val, list):
+        val = tuple(_tuplize(x) for x in val)
+
+    return val
+
+
+def _loadjson(jsonvar):
     """
 prototype::
     see = loadjson
 
     arg = jsonvar ;
-          one json variable built by the method ``ReadBlock.jsonify``
+          one ¨json variable built by the method ``ReadBlock.jsonify``
     arg = classdict ;
           the kind of dictionary to used for the "jsonification"
 
-    return = OrderedDict, data.OrderedRecuDict ;
+    return = OrderedDict, data.RecuOrderedDict ;
              a dictionary that was built by the method ``ReadBlock.jsonify``
 
 
-This methods works recursivly to convert a json variable, built by the method
+This method works recursively to convert a ¨json variable, built by the method
 ``ReadBlock.jsonify``, into a dictionary of the type ``classdict``.
     """
-    if jsonvar[0] is None:
-        return jsonvar[1]
+    if isinstance(jsonvar, dict):
+        return jsonvar
 
-    newdict = classdict()
+    elif jsonvar[0] is None:
+        return _tuplize(jsonvar[1])
 
-    for key, val in jsonvar:
-        newdict[key] = _loadjson(val, classdict)
+    else:
+        newdict = MKOrderedDict()
 
-    return newdict
+        for key, val in jsonvar:
+            newdict[key[1]] = _loadjson(val)
+
+        return newdict
+
 
 def loadjson(jsonvar):
     """
@@ -1661,22 +1411,21 @@ prototype::
     see = ReadBlock.jsonify
 
     arg = str, file: jsonvar ;
-          one json variable stored in one string or in a file that was built
+          one ¨json variable stored in one string or in a file that was built
           by the method ``ReadBlock.jsonify``
 
-    return = OrderedDict, data.OrderedRecuDict ;
-             a flat or recursive dictionary regarding to the method used
-             ``ReadBlock.flatdict`` or ``ReadBlock.recudict`` to build the
-             json variable
+    return = parse.walk.MKOrderedDict ;
+             a flat dictionary built by the method ``ReadBlock.flatdict`` when
+             producing the ¨json variable via ``ReadBlock.forjson``
 
 
-This function "pythonifies" a json variable built by the method ``jsonify`` of
+This function "pythonifies" a ¨json variable built by the method ``forjson`` of
 the class ``ReadBlock``.
 
 
 info::
-    The function will use the good kind of dictionnary ``OrderedDict`` or
-    ``OrderedRecuDict``.
+    The function will use a dictionnary ``MKOrderedDict`` implemented in the
+    module ``parse.walk``.
 """
     if isinstance(jsonvar, str):
         jsonvar = loads(jsonvar)
@@ -1684,13 +1433,4 @@ info::
     else:
         jsonvar = load(jsonvar)
 
-    if jsonvar[_KIND_TAG] == _FLAT_TAG:
-        classdict = OrderedDict
-
-    else:
-        classdict = OrderedRecuDict
-
-    return _loadjson(
-        jsonvar[_DATAS_TAG],
-        classdict
-    )
+    return _loadjson(jsonvar)

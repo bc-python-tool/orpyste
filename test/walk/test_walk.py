@@ -79,14 +79,10 @@ def test_walk():
         ) as f:
             output = f.read().strip()
 
-        walk_class = WALK_CLASS(
+        with WALK_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
-        )
-
-        walk_class.build()
-        walk_class.remove()
-
-        outputfound = "\n".join(walk_class.lines)
+        ) as walk_class:
+            outputfound = "\n".join(walk_class.lines)
 
         assert output == outputfound

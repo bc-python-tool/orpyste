@@ -22,3 +22,11 @@ main::
                 line 1
                     line 2
                         line 3
+
+multi::
+    a = 0
+    b = 1
+    c = 2
+    a = 3
+    b = 4
+    c = 5

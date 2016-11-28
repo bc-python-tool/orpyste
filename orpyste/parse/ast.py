@@ -15,7 +15,7 @@ from io import StringIO
 from pathlib import Path
 import re
 
-from orpyste.tool.ioview import IOView
+from orpyste.tools.ioview import IOView
 
 
 # ------------------------- #
@@ -251,9 +251,7 @@ argument ``mode`` will be interpreted as an illegal one.
         self.mode = mode
 
 
-# -------------------- #
 # -- SPECIAL SETTER -- #
-# -------------------- #
 
     @property
     def mode(self):
@@ -265,9 +263,7 @@ argument ``mode`` will be interpreted as an illegal one.
         self.build()
 
 
-# ------------------------- #
 # -- LET'S BUILD THE AST -- #
-# ------------------------- #
 
     def build(self):
         """
@@ -290,9 +286,7 @@ prototype::
             raise TypeError("illegal type for the argument ``mode``.")
 
 
-# ---------------------------------------- #
 # -- MODE DEFINED USING A SINGLE STRING -- #
-# ---------------------------------------- #
 
     def _single_mode(self, mode):
         """
@@ -347,17 +341,15 @@ prototype::
 
     action = from a mode given in one string, this method builds a list
              ``self.allmodes`` of all single modes and a dictionary
-             ``self.dicoview`` with key corresponding to names of blocks, with
-             also the special key ``":default:"``, and with values equal to the
-             index in ``self.allmodes`` of the associate single mode.
+             ``self.dicoview`` with key corresponding to names of blocks,
+             with also the special key ``":default:"``, and with values equal
+             to the index in ``self.allmodes`` of the associate single mode.
         """
         self.allmodes = [self._single_mode(self.mode)]
         self.dicoview = {DEFAULT: 0}
 
 
-# ------------------------------------- #
 # -- MODE DEFINED USING A DICTIONARY -- #
-# ------------------------------------- #
 
     def _build_from_dict(self):
         """
@@ -389,9 +381,7 @@ prototype::
                     self.dicoview[oneblock] = id_mode
 
 
-# ------------------- #
 # -- MAGIC METHODS -- #
-# ------------------- #
 
     def __getitem__(self, item):
         if item in self.dicoview:
@@ -666,9 +656,7 @@ warning::
         self.build_contents_rules()
 
 
-# --------------------- #
 # -- SPECIAL SETTERS -- #
-# --------------------- #
 
     @property
     def content(self):
@@ -711,9 +699,7 @@ warning::
         self._mode = Mode(value)
 
 
-# ------------------------------ #
 # -- INTERNAL CONTEXTS' RULES -- #
-# ------------------------------ #
 
     def build_ctxts_rules(self):
         """
@@ -862,9 +848,7 @@ prototype::
                 self.CTXTS_KINDS_SUBCTXTS[kind] = subctxts
 
 
-# ------------------------------ #
 # -- INTERNAL CONTENTS' RULES -- #
-# ------------------------------ #
 
     def build_contents_rules(self):
         """
@@ -937,9 +921,7 @@ prototype::
                     )
                 )
 
-# ---------------------------- #
 # -- WALKING IN THE CONTENT -- #
-# ---------------------------- #
 
     def nextline(self):
         """
@@ -962,9 +944,7 @@ property::
                     yield line.rstrip()
 
 
-# ----------------- #
 # -- INDENTATION -- #
-# ----------------- #
 
     def manage_indent(self):
         """
@@ -991,9 +971,7 @@ property::
             self._level //= 4
 
 
-# ------------- #
 # -- REGEXES -- #
-# ------------- #
 
     def match(self, text, infos):
         """
@@ -1036,9 +1014,7 @@ property::
         return match_found
 
 
-# ------------------- #
 # -- BUILD THE AST -- #
-# ------------------- #
 
     def build(self):
         """
@@ -1076,9 +1052,7 @@ prototype::
         self._partial_view.remove()
 
 
-# -------------------------- #
 # -- LOOKING FOR CONTEXTS -- #
-# -------------------------- #
 
     def search_ctxts(self):
         """
@@ -1217,8 +1191,8 @@ prototype::
     def close_ctxt_at_end(self):
         """
 prototype::
-    action = this method closes all contexts than can be closed automatically at
-             the very end of the ¨orpyste file
+    action = this method closes all contexts than can be closed automatically
+             at the very end of the ¨orpyste file
         """
         while self._ctxts_stack:
             lastctxt_kind = self._ctxts_stack.pop(-1).kind
@@ -1236,9 +1210,7 @@ prototype::
             )
 
 
-# ----------------------------------- #
 # -- LOOKING FOR DATAS IN CONTENTS -- #
-# ----------------------------------- #
 
     def search_contents(self):
         """
@@ -1322,9 +1294,7 @@ prototype::
         return True
 
 
-# --------------------------- #
 # -- STORING THE METADATAS -- #
-# --------------------------- #
 
     def add(self, metadatas):
         self.view.write(metadatas)
@@ -1417,9 +1387,7 @@ prototype::
             self.add_partial(new_metadatas)
 
 
-# ------------------- #
-# -- MAGIC METHODS -- #
-# ------------------- #
+# -- MAGIC METHOD -- #
 
     def __iter__(self):
         for x in self.view:

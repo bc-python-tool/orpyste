@@ -1,10 +1,18 @@
 QUERYPATH:main/test
 MODE:keyval
-('a', '=', '1 + 9')
-('b', '<>', '2')
-('c', '=', '3 and 4')
+(11, 'a', '=', '1 + 9')
+(12, 'b', '<>', '2')
+(16, 'c', '=', '3 and 4')
 QUERYPATH:main/sub_main/sub_sub_main/verb
 MODE:verbatim
-line 1
-    line 2
-        line 3
+(22, 'line 1')
+(23, '    line 2')
+(24, '        line 3')
+QUERYPATH:multi
+MODE:multikeyval
+(27, 'a', '=', '0')
+(28, 'b', '=', '1')
+(29, 'c', '=', '2')
+(30, 'a', '=', '3')
+(31, 'b', '=', '4')
+(32, 'c', '=', '5')

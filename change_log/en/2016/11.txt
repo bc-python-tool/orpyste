@@ -1,8 +1,25 @@
 ==========
+2016-11-16
+==========
+
+**Name change of the method ``remove`` of the class ``parse.WalkInAST``:** the new name is ``remove_extras`` (see the new big novelty below).
+
+
+**Adding a context handler to the ``parse.WalkInAST`` class:** this implies that the classes ``data.Read``, ``data.ReadBlock`` and ``clean.Clean`` can be used via a syntax like ``with. ... as ...:`` instead of using the methods ``build`` and ``remove_extras``.
+
+
+==========
+2016-11-15
+==========
+
+**Change of the name of the module ``tool``: ** the new name is ``tools`` (the author of ¨orpyste will follow some specifications).
+
+
+==========
 2016-11-06
 ==========
 
-**Modification of the kind of keys allowed: ** you can now use any kind of character except those corresponding to a separator which can be used in the values.
+**Modification of the kind of keys allowed: ** you can now use any kind of character except those corresponding to separators. This last ones can be used in the values.
 
 
 ==========
@@ -11,6 +28,6 @@
 
 **Storage in the JSON format of the dictionaries created by the class ``data.ReadBlock``:** here are the two features added.
 
-     1) Adding a method ``jsonify`` to the` `data.ReadBlock`` class so as to produce a string giving a JSON variable representing one of the dictionaries proposed to read the datas (this can be useful for permanent storage or to interact with other applications).
+     1) Adding a method ``jsonify`` to the` `data.ReadBlock`` class so as to produce a string giving a JSON variable representing one of the dictionaries proposed to read the datas (this can be useful for permanent storage and/or to interact with other applications).
 
      2) The function ``loadjson`` does the opposite work of the method ``data.ReadBlock.jsonify``.

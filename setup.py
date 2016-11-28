@@ -36,8 +36,8 @@ longdesc = pypandoc.convert(str(readme), 'rst')
 setup(
 # General
     name         = "orpyste",
-    version      = "1.1.1-beta",
-    url          = 'https://github.com/bc-python-tool/orpyste',
+    version      = "1.2.0-beta",
+    url          = 'https://github.com/bc-python-tools/orpyste',
     license      = 'GPLv3',
     author       = "Christophe BAL",
     author_email = "projetmbc@gmail.com",

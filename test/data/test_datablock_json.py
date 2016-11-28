@@ -42,23 +42,12 @@ def test_datablock_json():
         ) as f:
             output = f.read().strip()
 
-        data_infos = READBLOCK_CLASS(
+        with READBLOCK_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
-        )
+        ) as data_infos:
+            dictversion = data_infos.flatdict
 
-        data_infos.build()
+            jsonobj = data_infos.forjson
 
-        for kind in ["f", "r"]:
-            for nosep in [True, False]:
-                if kind == "r":
-                    dictversion = data_infos.recudict(nosep = nosep)
-
-                else:
-                    dictversion = data_infos.flatdict(nosep = nosep)
-
-                jsonobj = data_infos.jsonify(kind = kind, nosep = nosep)
-
-                assert dictversion == LOADJSON(jsonobj)
-
-        data_infos.remove()
+            assert dictversion == LOADJSON(jsonobj)

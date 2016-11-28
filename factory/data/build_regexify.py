@@ -30,7 +30,7 @@ from mistool.os_use import (
 THIS_DIR = PPath(__file__).parent
 
 for parent in THIS_DIR.parents:
-    if parent.name == "orPySte":
+    if parent.name == "orPyste":
         break
 
 PY_FILE = parent / 'orpyste/data.py'

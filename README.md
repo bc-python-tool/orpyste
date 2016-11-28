@@ -10,7 +10,7 @@ a look in the docstrings.***
 Actual version
 ==============
 
-This version is numbered  `1.1.1-beta`.
+This version is numbered  `1.1.0-beta`.
 
 
 I beg your pardon for my english...

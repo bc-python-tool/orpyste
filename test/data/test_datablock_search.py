@@ -38,14 +38,9 @@ def test_datablock_search_nblineof():
         mode   = jsonobj["mode"]
         search = jsonobj["search"]
 
-        data_infos = READBLOCK_CLASS(
+        with READBLOCK_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
-        )
-
-        data_infos.build()
-
-        for querypath, nblineof in search.items():
-            assert nblineof == data_infos.nblineof(querypath)
-
-        data_infos.remove()
+        ) as data_infos:
+            for querypath, nblineof in search.items():
+                assert nblineof == data_infos.nblineof(querypath)

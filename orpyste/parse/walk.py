@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-07-21
+    date = 2016-11-16
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in
@@ -15,8 +15,10 @@ info::
     by the class ``parse.ast.AST``.
 """
 
+from collections import Hashable, OrderedDict
+
 from orpyste.parse.ast import *
-from orpyste.tool.ioview import IOView
+from orpyste.tools.ioview import IOView
 
 
 # ------------------------- #
@@ -36,10 +38,267 @@ prototype::
 # -- SAFE CONSTANTS -- #
 # -------------------- #
 
-KEY_TAG         = "key"
-SEP_TAG         = "sep"
-VAL_TAG         = "value"
+KEYVAL_TAGS = KEY_TAG, SEP_TAG, VAL_TAG \
+            = "key"  , "sep"  , "value"
 VAL_IN_LINE_TAG = "value_in_line"
+
+
+# -------------------------- #
+# -- SPECIAL DICTIONARIES -- #
+# -------------------------- #
+
+# The following code of the class ``MKOrderedDict`` comes directly from the
+# module ``mistool.python_use`` where it is maintained.
+
+class MKOrderedDict():
+    """
+This class allows to work easily with multikeys ordered dictionaries. Here is
+a complete example of use where some ouputs have been hand formatted.
+
+pyterm::
+    >>> from orpyste.parse.walk import MKOrderedDict
+    >>> onemkdict = MKOrderedDict()
+    >>> onemkdict[(1, 2, 4)] = "1st value"
+    >>> onemkdict["key"] = "2nd value"
+    >>> onemkdict["key"] = "3rd value"
+    >>> print(onemkdict)
+    MKOrderedDict([
+        ((id=0, key=(1, 2, 4)), value='1st value'),
+        ((id=0, key='key')    , value='2nd value'),
+        ((id=1, key='key')    , value='3rd value')
+    ])
+    >>> for k_id, val in onemkdict["key"]:
+    ...     print(k_id, val)
+    ...
+    0 2nd value
+    1 3rd value
+    >>> print(onemkdict.getitembyid(1, "key"))
+    3rd value
+    >>> for (k_id, key), val in onemkdict.items():
+    ...     print((k_id, key), "===>", val)
+    ...
+    (0, (1, 2, 4)) ===> 1st value
+    (0, 'key') ===> 2nd value
+    (1, 'key') ===> 3rd value
+    >>> for key, val in onemkdict.items(noid=True):
+    ...     print(key, "===>", val)
+    ...
+    (1, 2, 4) ===> 1st value
+    key ===> 2nd value
+    key ===> 3rd value
+    >>> "key" in onemkdict
+    True
+    >>> "kaaaay" in onemkdict
+    False
+    >>> onemkdict.setitembyid(0, "key", "New 2nd value")
+    >>> print(onemkdict)
+    MKOrderedDict([
+        ((id=0, key=(1, 2, 4)), value='1st value'),
+        ((id=0, key='key')    , value='New 2nd value'),
+        ((id=1, key='key')    , value='3rd value')])
+    """
+
+    def __init__(self):
+        self._internaldict = OrderedDict()
+        self._keyids       = {}
+
+
+    def __setitem__(self, key, val):
+        if not isinstance(key, Hashable):
+            raise KeyError("key must be hashable")
+
+        if key in self._keyids:
+            self._keyids[key] += 1
+
+        else:
+            self._keyids[key] = 0
+
+        self._internaldict[(self._keyids[key], key)] = val
+
+
+    def setitembyid(self, keyid, key, val):
+        self._internaldict[(keyid, key)] = val
+
+
+    def __getitem__(self, key, keyid = None):
+        keyfound = False
+
+        for (oneid, onekey), oneval in self._internaldict.items():
+            if key == onekey:
+                keyfound = True
+
+                yield oneid, oneval
+
+        if not keyfound:
+            raise KeyError("key not used in the MKOrderedDict")
+
+
+    def getitembyid(self, keyid, key):
+        for (oneid, onekey), oneval in self._internaldict.items():
+            if keyid == oneid and key == onekey:
+                return oneval
+
+        raise KeyError("key not used in the MKOrderedDict")
+
+
+    def items(self, noid = False):
+        for id_key, oneval in self._internaldict.items():
+            if noid:
+                yield id_key[1], oneval
+
+            else:
+                yield id_key, oneval
+
+
+    def __contains__(self, key):
+        for (oneid, onekey), oneval in self._internaldict.items():
+            if key == onekey:
+                return True
+
+        return False
+
+
+    def __eq__(self, other):
+        if not isinstance(other, MKOrderedDict):
+            return False
+
+        if self._internaldict.keys() != other._internaldict.keys():
+            return False
+
+        for k, v in self._internaldict.items():
+            if v != other.getitembyid(*k):
+                return False
+
+        return True
+
+
+    def __str__(self):
+        text = repr(self)
+
+        while "\n    " in text:
+            text = text.replace("\n    ", "\n")
+
+        text = text.replace("\n", "")
+
+        return text
+
+
+    def __repr__(self):
+        text = ["MKOrderedDict(["]
+
+        for (oneid, onekey), oneval in self._internaldict.items():
+            text.append(
+                "    (id={0}, key={1}, value={2}), ".format(
+                    oneid,
+                    repr(onekey),
+                    repr(oneval).replace("\n    ", "\n        ")
+                )
+            )
+
+        if len(text) != 1:
+            text[-1] = text[-1][:-2]
+
+        text.append("])")
+
+        text = "\n".join(text)
+
+        return text
+
+
+# The following code of the class ``MKOrderedDict`` comes directly from the
+# module ``mistool.python_use`` where it is maintained.
+
+class RecuOrderedDict(OrderedDict):
+    """
+This subclass of ``collections.OrderedDict`` allows to use a list of hashable
+keys, or just a single hashable key. Here is a complete example of use where
+some ouputs have been hand formatted.
+
+pyterm::
+    >>> from orpyste.parse.walk import RecuOrderedDict
+    >>> onerecudict = RecuOrderedDict()
+    >>> onerecudict[[1, 2, 4]] = "1st value"
+    >>> onerecudict[(1, 2, 4)] = "2nd value"
+    >>> onerecudict["key"] = "3rd value"
+    >>> print(onerecudict)
+    RecuOrderedDict([
+        (
+            1,
+            RecuOrderedDict([
+                (
+                    2,
+                    RecuOrderedDict([ (4, '1st value') ])
+                )
+            ])
+        ),
+        (
+            (1, 2, 4),
+            '2nd value'
+        ),
+        (
+            'key',
+            '3rd value'
+        )
+    ])
+    >>> [1, 2, 4] in onerecudict
+    True
+    >>> [2, 4] in onerecudict[1]
+    True
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+    def __getitem__(self, keys):
+        if isinstance(keys, Hashable):
+            return super().__getitem__(keys)
+
+        else:
+            first, *others = keys
+
+            if others:
+                return self[first][others]
+
+            else:
+                return self[first]
+
+
+    def __setitem__(self, keys, val):
+        if isinstance(keys, Hashable):
+            super().__setitem__(keys, val)
+
+        else:
+            first, *others = keys
+
+            if first in self and others:
+                self[first][others] = val
+
+            else:
+                if others:
+                    subdict         = RecuOrderedDict()
+                    subdict[others] = val
+                    val             = subdict
+
+                self[first] = val
+
+
+    def __contains__(self, keys):
+        if isinstance(keys, Hashable):
+            return super().__contains__(keys)
+
+        else:
+            first, *others = keys
+
+            if first in self:
+                if not others:
+                    return True
+
+                subdict = self[first]
+
+                if isinstance(subdict, OrderedDict):
+                    return others in subdict
+
+            return False
 
 
 # ------------- #
@@ -57,8 +316,20 @@ prototype::
                see the documentation of ``parse.ast.AST``
     arg-attr = str: encoding = "utf-8" ;
                see the documentation of ``parse.ast.AST``
+    arg-attr = bool: build_asts = True ;
+               **this variable is only useful for a content in a file.**
+               ``build_asts = True`` indicates to analyse a file and to produce
+               temporary files, whereas ``build_asts = False`` asks to use
+               the temporary files (this is a way to store physically the
+               partial analysis)
+    arg-attr = bool: remove_asts = True ;
+               **this variable is only useful for a content in a file.**
+               ``remove_asts = True`` indicates to remove temporary files built
+               to analyze a file, whereas ``remove_asts = False`` asks to keep
+               the temporary files (this is a way to store physically the
+               partial analysis)
 
-    attr = orpyste.tools.ioview.IOView: self.walk_view ;
+    attr = orpyste.tools.ioview.IOView: walk_view ;
            this is the attribut to use if you want to store information during
            the walk.
     attr = str: last_mode ;
@@ -75,8 +346,8 @@ warning::
     This class only implements the walking but she doesn't acheive any action.
     To do something, you have to subclass ``WalkInAST`` and to implement what
     you need in the following methods (see their documentations for more
-    informations and also the class ``orpyste.data.Read`` for one example of
-    use).
+    informations and also the class ``orpyste.data.Read`` for one real example
+    of use).
 
         * ``start`` and ``end`` are methods called just before and after the
         walk.
@@ -98,11 +369,16 @@ warning::
         self,
         content,
         mode,
-        encoding = "utf-8"
+        encoding    = "utf-8",
+        build_asts  = True,
+        remove_asts = True
     ):
         self.content  = content
         self.mode     = mode
         self.encoding = encoding
+
+        self.build_asts  = build_asts
+        self.remove_asts = remove_asts
 
         self.builddone = False
 
@@ -144,13 +420,15 @@ warning::
             lastkeyval     = {}
 
             for self.metadata in self.ast:
-                # --- IMPORTANT DEBUG --- #
+                # --- IMPORTANT : UGLY DEBUG --- #
                 # print("--- @@@@@ ---", self.metadata,sep="\n");continue
 
                 kind = self.metadata[KIND_TAG]
                 self.nbline = self.metadata[NBLINE_TAG]
 
+
 # -- COMMENT -- #
+
                 if kind.startswith("comment-"):
                     if self.metadata[OPENCLOSE] == OPEN:
                         self.incomment = True
@@ -167,11 +445,13 @@ warning::
 
 
 # -- COMMENT LINE -- #
+
                 elif kind == VERB_CONTENT_TAG:
                     self.content_in_comment(self.metadata[CONTENT_TAG])
 
 
 # -- EMPTY LINE -- #
+
                 elif kind == EMPTYLINE_TAG:
                     if self.incomment:
                         self.content_in_comment("")
@@ -179,7 +459,9 @@ warning::
                     elif self.last_mode == VERBATIM:
                         self.nb_empty_verbline += 1
 
+
 # -- BLOCK -- #
+
                 elif kind == BLOCK_TAG:
 # An opening block
                     if self.metadata[OPENCLOSE] == OPEN:
@@ -238,6 +520,7 @@ warning::
 
 
 # -- MAGIC COMMENT -- #
+
                 elif kind == MAGIC_COMMENT:
                     if self.last_mode != VERBATIM:
                         raise PeufError(
@@ -250,12 +533,14 @@ warning::
 
 
 # -- VERBATIM CONTENT -- #
+
                 elif self.last_mode == VERBATIM:
                     self._add_empty_verbline()
                     self.add_line(self.metadata[CONTENT_TAG][VAL_IN_LINE_TAG])
 
 
 # -- KEY-VAL CONTENT -- #
+
                 else:
                     content = self.metadata[CONTENT_TAG]
 
@@ -291,14 +576,15 @@ warning::
 
 
 # -- END OF THE WALK -- #
+
             self.end()
 
         self.builddone = True
 
+        return self
 
-# ------------------------------- #
+
 # -- START AND END OF THE WALK -- #
-# ------------------------------- #
 
     def start(self):
         """
@@ -312,14 +598,12 @@ This method is called just after the end of the walk.
         """
         ...
 
-    def remove(self):
+    def remove_extras(self):
         self.ast.view.remove()
         self.walk_view.remove()
 
 
-# -------------- #
 # -- COMMENTS -- #
-# -------------- #
 
     def open_comment(self, kind):
         """
@@ -365,9 +649,7 @@ This method is for adding content inside a comment (see the methods
         ...
 
 
-# ------------ #
 # -- BLOCKS -- #
-# ------------ #
 
     def open_block(self, name):
         """
@@ -386,9 +668,7 @@ This method is for closing a block knowning its name.
         ...
 
 
-# ------------------- #
 # -- (MULTI)KEYVAL -- #
-# ------------------- #
 
     def add_keyval(self, keyval):
         """
@@ -402,16 +682,19 @@ All this informations are in the dictionary ``keyval``.
         ...
 
 
-# -------------- #
 # -- VERBATIM -- #
-# -------------- #
 
 # We have to take care of the last empty lines !!!
     def _add_empty_verbline(self):
-        for _ in range(self.nb_empty_verbline):
-            self.add_line("")
+        if self.nb_empty_verbline:
+            self.nbline -= self.nb_empty_verbline + 1
 
-        self.nb_empty_verbline = 0
+            for _ in range(self.nb_empty_verbline):
+                self.nbline += 1
+                self.add_line("")
+
+            self.nbline += 1
+            self.nb_empty_verbline = 0
 
     def add_line(self, line):
         """
@@ -429,3 +712,18 @@ This method is for adding the magic comment used for empty lines at the end of
 verbatim contents.
         """
         ...
+
+
+# -- CONTEXT MANAGER -- #
+
+    def __enter__(self):
+# We have to always build asts if the content is a string !
+        if self.build_asts \
+        or not isinstance(self.content, str):
+            self.build()
+
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.remove_asts:
+            self.remove_extras()

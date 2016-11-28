@@ -1,10 +1,10 @@
 QUERYPATH:block_1/verb
 MODE:verbatim
-
-
-
-end of the block "verbatim" is here !!!!!
+(3, '')
+(4, '')
+(5, '')
+(15, 'end of the block "verbatim" is here !!!!!')
 QUERYPATH:block_2/block_3/verb
 MODE:verbatim
-notablockhere::
-   OK ?
+(22, 'notablockhere::')
+(23, '   OK ?')

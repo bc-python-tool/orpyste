@@ -41,25 +41,20 @@ def test_data_read_all():
         ) as f:
             output = f.read().strip()
 
-        data_infos = READ_CLASS(
+        with READ_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
-        )
+        ) as data_infos:
+            outputfound = []
 
-        data_infos.build()
+            for oneinfo in data_infos:
+                if oneinfo.isblock():
+                    outputfound.append('QUERYPATH:{0}'.format(oneinfo.querypath))
+                    outputfound.append('MODE:{0}'.format(oneinfo.mode))
 
-        outputfound = []
+                elif oneinfo.isdata():
+                    outputfound.append('{0}'.format(oneinfo.rtu))
 
-        for oneinfo in data_infos:
-            if oneinfo.isblock():
-                outputfound.append('QUERYPATH:{0}'.format(oneinfo.querypath))
-                outputfound.append('MODE:{0}'.format(oneinfo.mode))
-
-            elif oneinfo.isdata():
-                outputfound.append('{0}'.format(oneinfo.rtu_data()))
-
-        outputfound = "\n".join(outputfound)
-
-        data_infos.remove()
+            outputfound = "\n".join(outputfound)
 
         assert output == outputfound

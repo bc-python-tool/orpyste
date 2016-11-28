@@ -149,10 +149,6 @@ class Clean(WalkInAST):
 prototype::
     see = parse.ast.AST , parse.walk.WalkInAST
 
-    arg-attr = pathlib.Path, str: content ;
-               see the documentation of ``parse.ast.AST``
-    arg-attr = str, dict: mode ;
-               see the documentation of ``parse.ast.AST``
     arg-attr = str: layout = "" ;
                see the dedicated section below
 
@@ -200,18 +196,17 @@ formatted. let's consider the following ¨python script where the variable
 this section, you can work directly with a ¨peuf file).
 
 python::
-    datas = Clean(
+    from orpyste.clean import Clean
+
+    with Clean(
         content = content,
         layout  = "aline wrap columns=50",
         mode    = {
             "container"    : "main",
             "keyval:: = <>": "test"
         }
-    )
-
-    datas.build()
-
-    content_cleaned = "\n".join(line for line in datas.view):
+    ) as datas:
+        content_cleaned = "\n".join(line for line in datas.view)
 
 
 How the preceding code works ?
@@ -228,6 +223,10 @@ How the preceding code works ?
     and also to wrap long values like the last one with ``3 and 3 and...``.
     As you can see several options can be used if they are separated by at least
     one space.
+
+    3) When you call the context manager, indeed the class uses, more or less,
+    the methods ``build`` when the context is opened, and ``remove_extras`` to
+    close the context (see the class ``parse.walk.WalkInAST``).
 
 
 The string value of ``content_cleaned`` is finally the following one which looks
@@ -329,9 +328,7 @@ info::
         self.layout = layout
 
 
-# ----------------------------------- #
 # -- SPECIAL SETTER FOR THE LAYOUT -- #
-# ----------------------------------- #
 
     @property
     def layout(self):
@@ -406,9 +403,7 @@ info::
             )
 
 
-# ------------------------ #
 # -- ADDITIONAL METHODS -- #
-# ------------------------ #
 
     def isnotfirstline(self):
         if not self._isnotfirstline:
@@ -582,9 +577,7 @@ prototype::
             self.walk_view.write((None, ""))
 
 
-# --------------------------- #
 # -- START AND END OF FILE -- #
-# --------------------------- #
 
     def start(self):
 # We have to take care of some extra stuffs !
@@ -654,9 +647,7 @@ prototype::
         self.view.write("")
 
 
-# ------------------ #
 # -- FOR COMMENTS -- #
-# ------------------ #
 
     def open_comment(self, kind):
         self._last_comments.append({
@@ -670,9 +661,7 @@ prototype::
         self._last_comments[-1][CONTENT_TAG].append(line)
 
 
-# ---------------- #
 # -- FOR BLOCKS -- #
-# ---------------- #
 
     @auto_add_extra
     def open_block(self, name):
@@ -720,9 +709,7 @@ prototype::
         ...
 
 
-# ------------------- #
 # -- (MULTI)KEYVAL -- #
-# ------------------- #
 
     @auto_add_extra
     def add_keyval(self, keyval):
@@ -737,9 +724,7 @@ prototype::
             self._infos[self._last_tag][LENMAX_TAG] = (keylen, seplen)
 
 
-# -------------- #
 # -- VERBATIM -- #
-# -------------- #
 
     @auto_add_extra
     def add_magic_comment(self):
