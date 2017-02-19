@@ -14,7 +14,9 @@ There are some importnat changes in this version.
 
 1. The real novelty is the possibility to use a context manager to work with the classes ``Read``, ``ReadBlock`` and ``Clean``. This is better than to work with the methods ``build`` and ``remove_extras`` *(this method was named ``remove`` before)*.
 
-1. chgt aussi flatdict and co !!!!!!!
+1. prise en compte complète du mdoe ``"multikeyval"``
+
+1. chgt aussi flatdict and co !!!!!!!^
 
 1. chgt important du comportement de rtu anciennement rtu_datas !!!
 

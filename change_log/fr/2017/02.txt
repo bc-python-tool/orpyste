@@ -1,0 +1,23 @@
+==========
+2017-02-19
+==========
+
+**Publication de la version 1.2.0-beta sur ¨pypi et ¨github :** ceci a été rendu possible après le gros chantier de ¨maj des documentations et des journeaux de bord en français et en anglais.
+
+
+==========
+2017-02-17
+==========
+
+**Un nouveau paramètrage pour la méthode ``ReadBlock.mydict`` :** on peut maintenant utiliser ``MINI_TAG = "mini"`` comme raccourci de ``"nosep nonb"``.
+
+
+==========
+2017-02-14
+==========
+
+**Du nouveau dans la classe ``data.Infos``.**
+
+    1) Correction d'un mini-bug : la méthode "attribut" ``rtu`` était mal implémentée (utilisation mal placée de ``tuple(...)``).
+
+    2) Ajout d'un itérateur ``yrtu`` afin d'avoir, si besoin, un comportement identique pour les classes ``data.Read`` et ``data.ReadBlock``.

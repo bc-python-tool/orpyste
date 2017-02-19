@@ -1,0 +1,5 @@
+==========
+2016-12-01
+==========
+
+**Modification du type de noms autorisés pour des blocs :** il est maintenant possible d'utiliser des tirets ``-`` (dorénavant ``LEGAL_BLOCK_NAME = "[\-\d_a-zA-Z]+"`` est une simple chaîne de caractères, et l'regex_fr associée est compilée par la classe ``parse.ast.AST``).

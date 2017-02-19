@@ -49,8 +49,12 @@ def test_data_read_all():
 
             for oneinfo in data_infos:
                 if oneinfo.isblock():
-                    outputfound.append('QUERYPATH:{0}'.format(oneinfo.querypath))
-                    outputfound.append('MODE:{0}'.format(oneinfo.mode))
+                    outputfound.append(
+                        'QUERYPATH:{0}'.format(oneinfo.querypath)
+                    )
+                    outputfound.append(
+                        'MODE:{0}'.format(oneinfo.mode)
+                    )
 
                 elif oneinfo.isdata():
                     outputfound.append('{0}'.format(oneinfo.rtu))

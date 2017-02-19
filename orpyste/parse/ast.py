@@ -2,12 +2,12 @@
 
 """
 prototype::
-    date = 2016-11-06
+    date = 2016-12-01
 
 
-This module contains classes so as to build an abstract syntax tree view of
-¨orpyste content, the tree view being stored in a file or in a string using
-the class ``orpyste.tools.ioview.IOView``.
+This module contains classes so as to build an abstract syntax tree view of an
+¨orpyste content. The tree view build can be stored in a file or in a string
+thanks to the class ``orpyste.tools.ioview.IOView``.
 """
 
 from collections import OrderedDict
@@ -68,7 +68,7 @@ for name in MODES:
     else:
         LONG_MODES[name[0]] = name
 
-LEGAL_BLOCK_NAME = re.compile("^[\d_a-zA-Z]+$")
+LEGAL_BLOCK_NAME = "[\-\d_a-zA-Z]+"
 
 # For the AST
 
@@ -397,7 +397,7 @@ prototype::
         if not isinstance(item, str):
             raise TypeError("a block name must be a string.")
 
-        if not LEGAL_BLOCK_NAME.search(item):
+        if not self.LEGAL_BLOCK_NAME_RE.search(item):
             raise ValueError("illegal value for a block name.")
 
         return (
@@ -624,10 +624,12 @@ warning::
 # We can use tuple to indicate several patterns, and we can also use a special
 # keyword ``not::`` for negate a regex (doing this in pure regex can be very
 # messy).
+    LEGAL_BLOCK_NAME_RE = re.compile("^{0}$".format(LEGAL_BLOCK_NAME))
+
     CTXTS_CONFIGS[BLOCK_TAG] = {
         OPEN: (
-            "^(?P<name>[\d_a-zA-Z]+)::$",
-            "not::^[\d_a-zA-Z]+\\\\::$"
+            "^(?P<name>{0})::$".format(LEGAL_BLOCK_NAME),
+            "not::^{0}\\\\::$".format(LEGAL_BLOCK_NAME)
         ),
         CLOSE           : CLOSED_BY_INDENT_ID,
         CLOSED_AT_END_ID: True
@@ -1048,7 +1050,7 @@ prototype::
             self.search_contents()
 
 
-# The partial view is not usefull in the idsk.
+# The partial view is not usefull in the disk.
         self._partial_view.remove()
 
 

@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-11-????
+    date = 2017-02-17
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -112,7 +112,7 @@ pyterm::
 
 Let suppose now that we want to find paths that finish with either
 path::``.py`` or path::``.txt``, and that can also be virtually or really
-found recursively when walking in a directory. Here is how to use ``regexify``.
+found recursivly when walking in a directory. Here is how to use ``regexify``.
 
 pyterm::
     >>> from orpyste.data import regexify
@@ -225,18 +225,58 @@ Here are some examples.
     def isend(self):
         return self.querypath == END_TAG
 
+
+    def yrtu(self):
+        """
+prototype::
+    see = self.rtu
+
+    yield = tuple(int, str, str, str)
+          | tuple(int, str) ;
+            the values yield looks like either ``(nbline, verbatim_line)`` for
+            a verbatim line, or ``(nbline, key, sep, value)`` for a key-value
+            content
+
+This method only yield "single" datas even for the block contents build by the
+class ``ReadBlock``.
+
+info::
+    "yrtu" is the acronym of "Yield Ready To Use".
+        """
+        rtu = self.rtu
+
+# [INLINE MODE]
+        if isinstance(rtu, tuple):
+            yield rtu
+
+# [BLOCK MODE] Key-value
+        elif isinstance(rtu, MKOrderedDict):
+            for (_, key), dicval in rtu.items():
+                yield (
+                    dicval["nbline"],
+                    key,
+                    dicval["sep"],
+                    dicval["value"]
+                )
+
+# [BLOCK MODE] Verbatim
+        else:
+            for dicval in rtu:
+                yield (dicval["nbline"], dicval["value"])
+
+
     @property
     def rtu(self):
         """
 prototype::
+    see = self.yrtu
+
     return = ? ;
              if we have no data, a ``ValueError`` exception is raised,
-             otherwise a friendly version of the datas is returned
+             otherwise a "friendly" version of the datas is returned
 
 
-The datas return are tuples of the following kinds where ``nbline`` refers to
-the number line in the ¨peuf content (this can be useful for raising errors to
-the user or for the ``"multikeyval"`` mode).
+The datas have one of the following formats.
 
     1) For a single verbatim content, a tuple ``(nbline, verbatim_line)`` is
     returned.
@@ -245,7 +285,7 @@ the user or for the ``"multikeyval"`` mode).
     is returned.
 
     3) For block contents, either a list of tuples ``(nbline, verbatim_line)``
-    or a ``MKOrderedDict`` is returned.
+    or an instance of ``MKOrderedDict`` is returned.
 
 
 info::
@@ -255,19 +295,21 @@ info::
             raise ValueError('no data available')
 
         elif self.mode == VERBATIM:
+# [SINGLE] Verbatim line
             if isinstance(self.data, str):
                 return (self.nbline, self.data)
 
+# [SEVERAL] Verbatim lines
             else:
-                return tuple(self.data)
+                return self.data
 
-# Single key-value
+# [SINGLE] Key-value
         elif isinstance(self.data, dict):
             return tuple(
                 [self.nbline] + [self.data[x] for x in KEYVAL_TAGS]
             )
 
-# Multi key-value
+# [SEVERAL] Key-value
         else:
             return self.data
 
@@ -727,13 +769,20 @@ _NO_DICT_KEY = {
 }
 
 MYDICT_TAGS = MYDICT_KIND_TAGS | NOTHING_TAGS
+MYDICT_TAGS.add(STD_TAG)
+
+MINI_TAG = "mini"
+
+MYDICT_ALIAS_TAGS = {
+    MINI_TAG: set([NOSEP_TAG, NONB_TAG])
+}
 
 
 class ReadBlock(Read):
     """
-=============================================================
-``ReadBlock`` is similar to ``Read`` but not exactly the same
-=============================================================
+===============================================================
+``ReadBlock`` is similar to ``Read`` but with major differences
+===============================================================
 
 The main difference between the classes ``ReadBlock`` and ``Read`` is that the
 former returns the datas block by block, whereas the second one gives the datas
@@ -796,19 +845,22 @@ python::
 
 
 Here is what is obtained when the code is launching in a terminal (the ouput
-has benn hand formatted). You can see that verbatim contents are stored line
+has been hand formatted). You can see that verbatim contents are stored line
 by line and not in a single string !
 
 term::
     MKOrderedDict([
-        (id=0, key='main/test',
-         value=MKOrderedDict([
-            (id=0, key='a', value={'sep': '=', 'nbline': 3, 'value': '1 + 9'}),
-            (id=0, key='b', value={'sep': '<>', 'nbline': 4, 'value': '2'}),
-            (id=0, key='c', value={'sep': '=', 'nbline': 5, 'value': '3 and 4'})
+        (id = 0, key = 'main/test',
+         value = MKOrderedDict([
+            (id = 0, key = 'a',
+             value = {'sep': '=', 'nbline': 3, 'value': '1 + 9'}),
+            (id = 0, key = 'b',
+             value = {'sep': '<>', 'nbline': 4, 'value': '2'}),
+            (id = 0, key = 'c',
+             value ={'sep': '=', 'nbline': 5, 'value': '3 and 4'})
         ])),
-        (id=0, key='main/sub_main/sub_sub_main/verb',
-         value=((11, 'line 1'), (12, 'line 2'), (13, 'line 3')))
+        (id = 0, key = 'main/sub_main/sub_sub_main/verb',
+         value = ((11, 'line 1'), (12, 'line 2'), (13, 'line 3')))
     ])
 
 
@@ -844,6 +896,107 @@ term::
     --- Without ID numbers ---
     main/test
     main/sub_main/sub_sub_main/verb
+
+
+===============================
+Working with other dictionaries
+===============================
+
+warning::
+    In this section we consider the same ¨peuf content as in the preceding one.
+    So we don't give all details in the ¨python snippets.
+
+
+Sometimes it is easier to work with a dictionary reflecting the tree structure
+of the blocks in the ¨peuf file. For that feature, you can use the property
+named ``treedict`` like in the following incomplete code.
+
+...python::
+    with ReadBlock(...) as datas:
+        pprint(datas.treedict)
+
+
+Here is what is obtained when the code is launching in a terminal (the ouput
+has been hand formatted).
+
+term::
+    RecuOrderedDict([
+        ('main',
+         RecuOrderedDict([
+            ('test',
+             RecuOrderedDict([
+                ('a',
+                 {'value': '1 + 9', 'sep': '=', 'nbline': 4}),
+                ('b',
+                 {'value': '2', 'sep': '<>', 'nbline': 5})
+             ])),
+            ('sub_main',
+             RecuOrderedDict([
+                ('sub_sub_main',
+                 RecuOrderedDict([
+                    ('verb',
+                     ({'value': 'line 1', 'nbline': 10},
+                      {'value': '    line 2', 'nbline': 11}))
+                 ]))
+             ]))
+         ]))
+    ])
+
+
+As you can see you will have to work with a ``RecuOrderedDict`` which is indeed
+implemented in the module ``parse.walk``.
+This kind of dictionary has useful functionnalities : for example, you can use
+``datas.treedict[['test', 'sub_main', 'sub_sub_main']]`` instead of
+``datas.treedict['test']['sub_main']['sub_sub_main']``.
+
+
+You can have a little more customizable dictionary thanks to the methdo
+``mydict``. Here is an example of use where we don't want to keep the
+separators and the numbers of the lines.
+
+...python::
+    with ReadBlock(...) as datas:
+        pprint(datas.mydict("std nosep nonb"))
+
+
+This will produce in a terminal the followin lines (the ouput has been hand
+formatted).
+
+term::
+    {
+        'main/test': {'b': '2', 'a': '1 + 9'},
+        'main/sub_main/sub_sub_main/verb': ('line 1', '    line 2')
+    }
+
+
+Here is another similar example of use but we a tree like dictionary.
+
+...python::
+    with ReadBlock(...) as datas:
+        pprint(datas.mydict("tree nosep nonb"))
+
+
+In that case, we obtain the following output in a terminal (some formattings
+have been done by hand).
+
+term::
+    RecuOrderedDict([
+        ('main',
+         RecuOrderedDict([
+            ('test',
+             RecuOrderedDict([
+                ('a', '1 + 9'),
+                ('b', '2')
+             ])),
+            ('sub_main',
+             RecuOrderedDict([
+                ('sub_sub_main',
+                 RecuOrderedDict([
+                    ('verb', ('line 1', '    line 2'))
+                 ]))
+             ]))
+         ]))
+    ])
 
 
 ========================================
@@ -945,8 +1098,8 @@ term::
 
 
 info::
-    Having number of lines allows to give fine informations to the user if one
-    of its data is bad.
+    Keeping the number of lines in the original ¨peuf file allows to give fine
+    informations to the user if one of its data is bad.
 
 
 =============================
@@ -981,6 +1134,8 @@ prototype::
 
         for oneinfo in self.walk_view:
             if oneinfo.isblock():
+                self._lastmode = oneinfo.mode
+
                 infosfound = query_pattern.search(oneinfo.querypath)
 
                 if infosfound:
@@ -991,8 +1146,6 @@ prototype::
                             nbline     = oneinfo.nbline
                         )
 
-                    self._lastmode = oneinfo.mode
-
                     if self._lastmode == VERBATIM:
                         self._infos = []
 
@@ -1000,7 +1153,6 @@ prototype::
                         self._infos = MKOrderedDict()
 
                     yield oneinfo
-
 
             elif infosfound:
                 self._addblockdata(oneinfo)
@@ -1089,8 +1241,9 @@ This method is an abstraction used by the property-method ``self.flatdict``.
 prototype::
     see = self.flatdict , self._recudict
 
-    return = dict ;
-             ????
+    return = parse.walk.RecuOrderedDict ;
+             a dictionary using a tree like structure similar to the one of the
+             blocks inside the ¨peuf file
         """
         self._keepthis = None
 
@@ -1128,8 +1281,14 @@ prototype::
 
     def _myvalue(self, stdict):
         """
-    see = sef.mydict
+prototype::
+    see = self.mydict
+
     arg = dict: stddict
+
+
+This method is used to only keep ¨infos wanted when a user calls the method
+``mydict`` with its own settings.
         """
 # Just keep what is wanted.
         for option in self._settings:
@@ -1148,7 +1307,14 @@ prototype::
 
     def _specialtodict(self, oneval):
         """
-MKOrderedDict ou RecuOrderedDict --> standard dict si possible !
+prototype::
+    see = self.mydict
+
+    arg = ?: oneval
+
+
+This method tries to convert recursively instances of ``MKOrderedDict`` and
+``RecuOrderedDict`` to standard dictionaries.
         """
         if isinstance(oneval, MKOrderedDict):
             newdict = {}
@@ -1161,7 +1327,7 @@ MKOrderedDict ou RecuOrderedDict --> standard dict si possible !
 
                 newdict[k] = self._specialtodict(v)
 
-            oneval = newdict
+            return newdict
 
         elif isinstance(oneval, RecuOrderedDict):
             newdict = {}
@@ -1169,38 +1335,50 @@ MKOrderedDict ou RecuOrderedDict --> standard dict si possible !
             for k, v in oneval.items():
                 newdict[k] = self._specialtodict(v)
 
-            oneval = newdict
+            return newdict
 
-        return oneval
+        else:
+            return oneval
+
 
     def mydict(self, kind):
         """
 prototype::
-    see = self.flatdict , self._recudict
+    arg = str: kind ;
+          this string indicates what kind of dictionary is wanted and also which
+          types of ¨infos must be kept
 
-    arg = str: format ;
-          ????
+    return = dict , MKOrderedDict , RecuOrderedDict ;
+             a dictionary keeping only special ¨infos
 
 
-    return = dict ;
-             ????
+info::
+    For the kinds of dictionary you can can use ``STD_TAG = "std"``,
+    ``FLAT_TAG = "flat"`` or ``TREE_TAG = "tree"``.
 
-format = "flat" comme flatdict
-format = "tree" comme treedict
+    To unkeep some ¨infos, you have the possibility to use
+    ``NOSEP_TAG = "nosep"``, ``NONB_TAG = "nonb"`` and ``NOVAL_TAG = "noval"``.
 
-format = "flat nosep" flatdict mais sans sep
-...etc !!!
+    You can also use ``MINI_TAG = "mini"`` as a shortcut for "nosep nonb"``.
 
-sortie dépend des choix faits
-
-on renvoie toujours donnés sous forme de chaîne si possible
-
-on travaille sur le flat dict toujours et si besoin on le transfrme en tree
+    For example, ``kind = "std nonb nosep"`` asks to try to build a standard
+    dictionary without keeping separators of keys and values, and to not keep
+    the numbers of lines in the original ¨peuf file.
         """
-        self._settings = set(x.strip() for x in kind.split(" "))
+        self._settings = set()
+
+        for param in kind.split(" "):
+            param = param.strip()
+
+            if param:
+                if param in MYDICT_ALIAS_TAGS:
+                    self._settings |= MYDICT_ALIAS_TAGS[param]
+
+                else:
+                    self._settings.add(param)
 
 # Unknown setting.
-        if not MYDICT_TAGS & self._settings:
+        if self._settings - MYDICT_TAGS:
             raise ValueError(
                 "unknown settings in {0}".format(self._settings)
             )
@@ -1210,7 +1388,7 @@ on travaille sur le flat dict toujours et si besoin on le transfrme en tree
             raise ValueError("illegal settings: nothing to keep")
 
 
-# Goo kind of dictionary wanted ?
+# Good kind of dictionary wanted ?
         if len(MYDICT_KIND_TAGS & self._settings) == 2:
             raise ValueError("flat or tree like dict ?")
 
@@ -1233,7 +1411,7 @@ on travaille sur le flat dict toujours et si besoin on le transfrme en tree
 
                 newdict[blockname] = newinfos
 
-# A recrusrive tree like dict ?.
+# A recursive tree like dict ?.
         if TREE_TAG in self._settings:
             newdict = self._recudict(newdict)
 
@@ -1289,7 +1467,8 @@ python::
 
 Launched in a terminal, we obtain the following output which has been hand
 formatted. As you can see, we use the format json::``[key, value]`` so as
-to store the keys and their coresponding value of the dictionary.
+to store the keys and their coresponding value of the dictionary (as you can
+see verbatim values are associated to a json::``null`` "key").
 
 json::
     [
@@ -1298,11 +1477,11 @@ json::
             [
                 [
                     [0, "a"],
-                    {"sep": "=", "nbline": 4, "value": "1 + 9"}
+                    {"nbline": 4, "value": "1 + 9", "sep": "="}
                 ],
                 [
                     [0, "b"],
-                    {"sep": "<>", "nbline": 5, "value": "2"}
+                    {"nbline": 5, "value": "2", "sep": "<>"}
                 ]
             ]
         ],

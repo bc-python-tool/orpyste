@@ -1,4 +1,51 @@
 ==========
+2016-11-28
+==========
+
+**New features for the module ``data``:** we continue to improve the way things work.
+
+    1) The method ``rtu`` of the class ``data.Infos`` returns ``(nbline, verbatim_line)`` or ``(nbline, key, sep, value)``.
+    This also allows the method "ReadBlock.flatdict" to return dictionaries of the same type for the datas.
+
+    2) Adding a method ``mydict`` that accepts various arguments to get a custom dictionary of datas.
+
+
+==========
+2016-11-22
+==========
+
+**New feature for the class ``data.ReadBlock``:** adding the property ``treedict`` taht gives the "recursive" equivalent of the ``flatdict`` because this last format is not always appropriate.
+
+
+==========
+2016-11-21
+==========
+
+**Significant changes that warrants a minor version number change: ** to fully support the use of the multikeyval mode, the following essential changes had to be made.
+
+    1) In the module ``parse.walk``, adding a ``MKOrderedDict`` which is a dictionary that accepts repeated use of the same key (in fact, this is a novelty of the package ¨mistool where it will be maintained).
+
+    2) Major changes in the class ``data.Infos``.
+
+        * The method ``rtu_data`` becomes the property ``rtu`` (so there are no more arguments). The code has been completely revised to take into account the ``multikeyval`` mode.
+
+        * Deleting the method ``short_rtu_data``.
+
+        * The argument `` islinebyline`` has been removed. The line number will always be retrieved to leave the responsibility for the application using ¨orpyste to take account of this ¨info.
+
+    3) Regarding ``data.ReadBlock``, here is what was done.
+
+        * The method ``flatdict`` has become a property without any customization arguments. We return a `` MKOrderedDict`` (cf ``parse.walk``).
+
+        * Deleting the methods ``recudict`` and ``nblineof``.
+
+        * The method ``jsonify`` becomes the property ``forjson``.
+
+        * The codes of ``forjson``, formerly ``jsonify``, and ``data.loadjson`` had to be updated. They will always **work** with the ``MKOrderedDict`` manufactured by the property ``flatdict``.
+        The format is more verbose but allows to manage both ``key`` and ``multikey``. This allows a third-party application that uses only the file ¨json, not ¨orpyste, to specify messages more precisely during the analysis stored in the ¨json object.
+
+
+==========
 2016-11-16
 ==========
 

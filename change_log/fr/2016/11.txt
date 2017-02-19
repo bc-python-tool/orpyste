@@ -2,78 +2,50 @@
 2016-11-28
 ==========
 
-----> date ok besoin de documenter partout !!!!! + ajouter test
-    + doc python ?
-    + doc fr ?
-    + readme ?
-    + tests ?
+**Du nouveau dans le module ``data`` :** on poursuit les améliorations.
+
+    1) La méthode ``rtu`` de la classe ``data.Infos`` renvoie des données du type ``(nbline, verbatim_line)`` ou ``(nbline, key, sep, value)``.
+    Ceci permet au passage à la méthode ``ReadBlock.flatdict`` de renvoyer des dictionnaires de même type pour les données.
+
+    2) Ajout d'une méthode ``mydict`` acceptant divers arguments afin d'obtenir un dictionnaire personnalisé des données.
 
 
-ajout de méthode, et no propréité, mydict paramétrable pour usage moins lourdingue mais flatdict et treedict très verbeux reste car utile
-    ---> flat ou tree et si possible via un dict standard (pour ne pas avoir à géré index si l'on sait que l'on sait et l'on veut que des clés unique)
-    ---> ne garde que les données sans numéro de ligne
-    ---> avec ou sans sep
+**¨Maj du module ``parse.walk`` :** mise à jour du code de MKOrderedDict relativement au package ¨mistool (la méthode magique ``__len__`` a été implémentée).
 
-remise à plat, on utilise toujours un dico {"nbline":..., "vlaue"; }
 
 ==========
 2016-11-22
 ==========
 
-----> date ok besoin de documenter partout !!!!! + ajouter test
-    + doc python ?
-    + doc fr ?
-    + readme ?
-    + tests ? penser à bloc et sous blocs !!!!!
-
-ajout de treedict car flatdict pas toujours bien appropié  du type RecuOrderedDict
+**Du nouveau dans la classe ``data.ReadBlock`` :** ajout de la propriété ``treedict`` donnant l'équivalent "récursif" de ``flatdict`` car ce dernier format n'est pas toujours approprié.
 
 
 ==========
 2016-11-21
 ==========
 
-----> date ok besoin de documenter partout !!!!! + ajouter test
-    + doc python ?
-    + doc fr ?
-    + readme ?
-    + tests ?
-
 **Refonte importante qui justifie un changement mineur de numéro de version:** pour supporter pleinement l'utilisation du mode ``multikeyval`` il a fallu effectuer les changements essentiels suivants.
 
     1) Dans le module ``parse.walk``, ajout d'une classe ``MKOrderedDict`` qui est un dictionnaire acceptant un usage répété d'une même clé (en fait, ceci est une nouveauté du package ¨mistool où elle sera maintenue).
 
-    2) ??????
-       ??????
-       ??????
-       ??????
-    De grosses modifications dans la classe ``Infos``.
+    2) De grosses modifications dans la classe ``data.Infos``.
 
-        * Changement complet de la méthode ``rtu_data`` pour prendre en compte le mode ``multikeyval``.
+        * La méthode ``rtu_data`` devient la propriété ``rtu`` (donc il n'y a plus d'arguments). Le code a été totalement revu afin de prendre en compte le mode ``multikeyval``.
 
-        * L'argument ``islinebyline`` a été supprimé. On récupère toujours le numéro de ligne. Charge à l'application utilisant ¨orpyste de ne pas tenir compte de cette ¨info. On cherche à n'avoir qu'un seul type de sorties car c'est plus simple à maintenir et aussi à utiliser même si l'on a parfois un peu de bruit.
+        * Suppression de la méthode ``short_rtu_data``.
 
-        * ``rtu_data`` renommé en ``rtu``
+        * L'argument ``islinebyline`` a été supprimé. On récupèrera toujours le numéro de ligne pour laisser la responsabilité à l'application utilisant ¨orpyste de tenir compte ou non de cette ¨info (on cherche à n'avoir qu'un seul type de sorties car c'est plus simple à maintenir et à utiliser même si cela crée un peu de bruit).
 
-        * Les arguments ``nosep`` des méthodes ``rtu_data`` et ``flatdict`` ont aussi été supprimés car dorénavant on récupère toujours le séparateur (pour la même raison que ci-dessus).
+    3) Concernant ``data.ReadBlock``, voici ce qui a été fait.
 
-        * La méthode ``rtu_data`` devient une propriété (utilisation en interne diu décorateur ``@property``).
+        * La méthode ``flatdict`` est devenue une propriété sans argument de personnalisation (pour la même raison que ci-dessus). On renvoie un ``MKOrderedDict`` (cf ``parse.walk``).
 
-        de meêm pour flatdict et recudict
+        * Suppression des méthodes ``recudict`` et ``nblineof``.
 
-        * Suppression de la méthode ``short_rtu_data`` et de ReadBlock.nblineof.
+        * La méthode ``jsonify`` devient la propriété ``forjson``.
 
-    3) pour data.ReadBlock
-
-        * ??????
-          ??????
-          ??????
-          ??????
-        La méthode ``data.ReadBlock.jsonify`` devient une propriété json
-
-        et la fonction ``data.loadjson`` ont dû être mises à jour. format plus verbeux par défaut mais du coup marche pour key et multikey d'où ce choix !!!!! aussi pour indication fine lors ananlyse plus poussé des avaleurs par prog tierce utilisant orpyste
-
-        * Suppression de la méthode ``recudict``.
+        * Les codes de ``forjson``, anciennement ``jsonify``, et de de la fonction ``data.loadjson`` ont dû être mis à jour. Ils se baseront **toujours** sur le ``MKOrderedDict`` fabriqué par la propriété ``flatdict``.
+        Le format est plus verbeux mais permet de gérer à la fois les modes ``key`` et ``multikey``. Ceci pour permettre à une application tierce n'utilisant que le fichier ¨json, et non ¨orpyste, d'indiquer plus finement des messages lors de l'analyse stockée dans l'objet ¨json.
 
 
 ==========
@@ -90,7 +62,7 @@ ajout de treedict car flatdict pas toujours bien appropié  du type RecuOrderedD
 2016-11-15
 ==========
 
-**Retour au nom ``tools``:** ceci répond à des spécifications personnelles de l'auteur de ¨orpyste (soyons cohérent avec nous-même).
+**Retour au nom de sous-module ``tools``:** ceci répond à des spécifications personnelles de l'auteur de ¨orpyste (soyons cohérent avec nous-même).
 
 
 ==========
