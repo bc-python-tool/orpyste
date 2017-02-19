@@ -1,27 +1,24 @@
 What about this package  ?
 ==========================
 
-**orPyste**, which is an anagram of **pyStore**, has been built so as to make easy to work with textual datas easy stored in a text file.
+**orPyste**, which is an anagram of **pyStore**, has been built to make easy to work with textual datas easy stored in a text file.
 
 ***If you want more informations and examples than thereafter, just take
 a look in the docstrings.***
 
 
-????? What's new in this version `1.2.0-beta` ?
+What's new in this version `1.2.0-beta` ?
 =========================================
 
-There are some importnat changes in this version.
+There are some important changes in this version.
 
-1. The real novelty is the possibility to use a context manager to work with the classes ``Read``, ``ReadBlock`` and ``Clean``. This is better than to work with the methods ``build`` and ``remove_extras`` *(this method was named ``remove`` before)*.
+1. The mode ``multikeyval``, for repeatable keys in the same block, has been totally implemented.
 
-1. prise en compte complète du mdoe ``"multikeyval"``
+1. You can now use a context manager with the classes ``Read``, ``ReadBlock`` and ``Clean``. By using ``with ... as ...:``, you let the package calls for you the methods ``build`` and ``remove_extras`` *(this last method had name ``remove`` before)*.
 
-1. chgt aussi flatdict and co !!!!!!!^
+1. The class ``ReadBlock`` no longer has the methods ``flatdict`` and ``recudict``. Instead, it has two properties ``flatdict`` and ``treedict`` that allow to work with ``dict`` like variables. For customized dictionaries, you can use the new method ``mydict``.
 
-1. chgt important du comportement de rtu anciennement rtu_datas !!!
-
-
-
+1. The old method ``rtu_datas`` of the class ``Infos`` has been replaced by the property ``rtu`` which outputs are easier to "understand", and there is also an iterator ``yrtu`` to work with the "same" kind of datas with the classes ``Read`` and ``ReadBlock``.
 
 
 I beg your pardon for my english...
@@ -141,7 +138,7 @@ book::
 ```
 
 
-Let's suppose that `user/example.peuf` is the path of our storing file. Using the following code shows how to read our datas *(the last command `datas.remove()` removes intermediate files build by `orpyste`)*.
+Let's suppose that `user/example.peuf` is the path of our storing file. Using the following code shows how to read our datas.
 
 ```python
 from pathlib import Path
@@ -150,7 +147,7 @@ import pprint
 from orpyste.data import Read
 
 with Read(
-    content = Path("x-debug-x.txt"),
+    content = Path("user/example.peuf"),
     mode    = {
         "container" : ":default:",
         "keyval:: =": "general",
@@ -161,22 +158,26 @@ with Read(
         if onedata.isblock():
             print('--- {0} ---'.format(onedata.querypath))
         elif onedata.isdata():
-            pprint.pprint(onedata.rtu_data())
+            pprint.pprint(onedata.rtu)
 ```
 
 Launching in a terminal, the script will produce the following output where you can note that a "querypath" like `book/general` indicates that the block `general` is inside the block `book`.
 
 ```
 --- book/general ---
-('author', '=', 'M. Nobody')
-('title', '=', 'Does this book have a title ?')
-('date', '=', '2012, May the 1st')
+(4, 'author', '=', 'M. Nobody')
+(5, 'title', '=', 'Does this book have a title ?')
+(6, 'date', '=', '2012, May the 1st')
 --- book/resume ---
-'This book is an ode to the passing time...'
-'A challenging thinking.'
+(9, 'This book is an ode to the passing time...')
+(10, 'A challenging thinking.')
 ```
 
-You can see that verbatim contents are given line by line, and that the separator between one key and its value is always indicated. This last behavior is due to the fact that you can use different separators if you want. Let's see an example of this with the following data file.
+You can see that verbatim contents are given line by line, and that the separator between one key and its value is always indicated. This last behavior is due to the fact that you can use different separators if you want.
+The number of lines in the original content are always given so as to let other applications the possibility to use them for messages.
+
+
+Let's see another example with the following data file.
 
 ```
 logic::
@@ -185,7 +186,7 @@ logic::
     A <== P
 ```
 
-This file is easy to read with the code above where `mode = "multikeyval:: <==> <== ==>"` is a shortcut for `mode = {"multikeyval:: <==> <== ==>": ":default:"}`. This setting allows multiple use of the same key.
+This file is easy to read with the code above where `mode = "multikeyval:: <==> <== ==>"` is a shortcut for `mode = {"multikeyval:: <==> <== ==>": ":default:"}`. This setting allows multiple uses of the same key.
 
 ```python
 from pathlib import Path
@@ -194,23 +195,23 @@ import pprint
 from orpyste.data import Read
 
 with Read(
-    content = Path("x-debug-x.txt"),
+    content = Path("user/example.peuf"),
     mode    = "multikeyval:: <==> <== ==>"
 ) as datas:
     for onedata in datas:
         if onedata.isblock():
             print('--- {0} ---'.format(onedata.querypath))
         elif onedata.isdata():
-            pprint.pprint(onedata.rtu_data())
+            pprint.pprint(onedata.rtu)
 ```
 
-The output below shows the necessity to always give the separators.
+The output below shows the necessity here to always have the separators.
 
 ```
 --- logic ---
-('A', '<==>', 'B')
-('A', '==>', 'B')
-('A', '<==', 'P')
+(3, 'A', '<==>', 'B')
+(4, 'A', '==>', 'B')
+(5, 'A', '<==', 'P')
 ```
 
 
@@ -223,7 +224,7 @@ We go back to our second example with the following file whose path is `user/exa
 book::
     general::
         author = M. Nobody
-        title  = Does this book have a title ?
+        title  = What is the title ?
         date   = 2012, May the 1st
 
     resume::
@@ -232,11 +233,10 @@ book::
 ```
 
 
-The class `ReadBlock` is a subclass of `Read` so you can use any methods working with `Read`. But the goal of `ReadBlock` is to work with dictionaries instead of reading datas line by line *(for large files this last choice is a better one)*. Let's see first the method `flatdict`.
+The class `ReadBlock` is a subclass of `Read` so you can use any methods working with `Read`. But the goal of `ReadBlock` is to work with dictionaries instead of reading datas line by line *(for large files this last choice is a better one)*. Let's see first the property `flatdict`.
 
 ```python
 from pathlib import Path
-import pprint
 
 from orpyste.data import ReadBlock
 
@@ -244,91 +244,125 @@ with ReadBlock(
     content = Path("user/example.peuf"),
     mode    = {
         "container" : ":default:",
-        "mk:: =": "general",
+        "keyval:: =": "general",
         "verbatim"  : "resume"
     }
 ) as datas:
-    print('--- Default ---')
-    pprint.pprint(datas.flatdict())
-
-    print('--- Without the separators ---')
-    pprint.pprint(datas.flatdict(nosep = True))
+    print(datas.flatdict)
 ```
 
 
-The code launched in one terminal gives us the following outputs.
+The code launched in one terminal gives us the following output *(which has been hand formatted)*.
 
 ```
---- Default ---
-OrderedDict([('book/general',
-              OrderedDict([('author', {'sep': '=', 'value': 'M. Nobody'}),
-                           ('title',
-                            {'sep': '=',
-                             'value': 'Does this book have a title ?'}),
-                           ('date',
-                            {'sep': '=', 'value': '2012, May the 1st'})])),
-             ('book/resume',
-              ['This book is an ode to the passing time...',
-               'A challenging thinking.'])])
---- Without the separators ---
-OrderedDict([('book/general',
-              OrderedDict([('author', 'M. Nobody'),
-                           ('title', 'Does this book have a title ?'),
-                           ('date', '2012, May the 1st')])),
-             ('book/resume',
-              ['This book is an ode to the passing time...',
-               'A challenging thinking.'])])
+MKOrderedDict([
+    (id=0,
+     key='book/general',
+     value=MKOrderedDict([
+        (id=0,
+         key='author',
+         value={'nbline': 4, 'value': 'M. Nobody', 'sep': '='}),
+        (id=0,
+         key='title',
+         value={'nbline': 5, 'value': 'What is the title ?', 'sep': '='}),
+        (id=0,
+         key='date',
+         value={'nbline': 6, 'value': '2012, May the 1st', 'sep': '='})
+     ])
+    ),
+    (id=0,
+     key='book/resume',
+     value=(
+        {'nbline': 9, 'value': 'This book is an ode to the passing time...'},
+        {'nbline': 10, 'value': 'A challenging thinking.'})
+    )
+])
 ```
 
 
-As you can see, the keys are "querypaths" and the values are the datas. You can also use the method `recudict` which produces a "recursive" dictionary. The following code is similar to the previous one except the end *(`[...]` indicates the first lines of the preceding code)*.
+As you can see, the keys are "querypaths" and the values are the datas. You can also use the property `treedict` which produces a dictionary with a structure similar to the one of the blocks in the content analyzed. The following code is merly the same as the previous one *(`[...]` indicates the first lines of the preceding code)*.
 
 ```python
 [...]
 
 with ReadBlock(...) as datas:
-    print('--- Default ---')
-    pprint.pprint(datas.recudict())
-
-    print('--- Without the separators ---')
-    pprint.pprint(datas.recudict(nosep = True))
+    print(datas.treedict)
 ```
 
 
-Here are the dictionaries produced *(the structure is similar to the organization of the blocks)*.
+Here are the dictionary produced *(the ouput has been hand formatted)*.
 
 ```
---- Default ---
-OrderedRecuDict([('book',
-                  OrderedRecuDict([('general',
-                                    OrderedDict([('author',
-                                                  {'sep': '=',
-                                                   'value': 'M. Nobody'}),
-                                                 ('title',
-                                                  {'sep': '=',
-                                                   'value': 'Does this book '
-                                                            'have a title ?'}),
-                                                 ('date',
-                                                  {'sep': '=',
-                                                   'value': '2012, May the '
-                                                            '1st'})])),
-                                   ('resume',
-                                    ['This book is an ode to the passing '
-                                     'time...',
-                                     'A challenging thinking.'])]))])
---- Without the separators ---
-OrderedRecuDict([('book',
-                  OrderedRecuDict([('general',
-                                    OrderedDict([('author', 'M. Nobody'),
-                                                 ('title',
-                                                  'Does this book have a title '
-                                                  '?'),
-                                                 ('date',
-                                                  '2012, May the 1st')])),
-                                   ('resume',
-                                    ['This book is an ode to the passing '
-                                     'time...',
-                                     'A challenging thinking.'])]))])
+RecuOrderedDict([
+    ('book',
+     RecuOrderedDict([
+        ('general',
+         RecuOrderedDict([
+            ('author',
+             {'nbline': 4, 'sep': '=', 'value': 'M. Nobody'}),
+            ('title',
+             {'nbline': 5, 'sep': '=', 'value': 'What is the title ?'}),
+            ('date',
+             {'nbline': 6, 'sep': '=', 'value': '2012, May the 1st'})
+         ])
+        ),
+        ('resume',
+         (
+            {'nbline': 9,
+             'value': 'This book is an ode to the passing time...'},
+            {'nbline': 10,
+             'value': 'A challenging thinking.'}
+         )
+        )
+     ])
+    )
+])
+```
+
+
+If you want to customize a little the dictionary build by ``ReadBlock``, you can use the method `mydict` like in the following example *(see the "docstrings" for more informations)*.
+
+```python
+[...]
+
+with ReadBlock(...) as datas:
+    print('--- Standard "flat" dict ---')
+    print(datas.mydict("std nosep nonb"))
+
+    print('--- Standard "tree" dict ---')
+    print(datas.mydict("tree std nosep nonb"))
+```
+
+
+We obtain here two standard dictionaries with neither separators, nor number lines.
+
+```
+--- Standard "flat" dict ---
+{
+    'book/general': {
+        'author': 'M. Nobody',
+        'date': '2012, May the 1st',
+        'title': 'Does this book have a title ?'
+    },
+    'book/resume': (
+        'This book is an ode to the passing time...'
+        'A challenging thinking.'
+    )
+}
+--- Standard "tree" dict ---
+{
+    'book': {
+        'general': {
+            'author': 'M. Nobody',
+            'date': '2012, May the 1st',
+            'title': 'Does this book have a title ?'
+        },
+        'resume': (
+            'This book is an ode to the passing time...',
+            'A challenging thinking.'
+        )
+    }
+}
 ```
 
 
@@ -390,7 +424,8 @@ with Read(
                 )
 
             else:
-                print(oneinfo.rtu_data())
+                for data_rtu in onedata.yrtu():
+                    print(data_rtu)
 ```
 
 
@@ -402,39 +437,39 @@ Query: main/test
 ================
 
 --- main/test [keyval] ---
-('a', '=', '1 + 9')
-('b', '<>', '2')
-('c', '=', '3 and 4')
+(4, 'a', '=', '1 + 9')
+(5, 'b', '<>', '2')
+(6, 'c', '=', '3 and 4')
 
 =========
 Query: **
 =========
 
 --- main/test [keyval] ---
-('a', '=', '1 + 9')
-('b', '<>', '2')
-('c', '=', '3 and 4')
+(4, 'a', '=', '1 + 9')
+(5, 'b', '<>', '2')
+(6, 'c', '=', '3 and 4')
 
 --- main/sub_main/sub_sub_main/verb [verbatim] ---
-line 1
-    line 2
-        line 3
+(11, 'line 1')
+(12, '    line 2')
+(13, '        line 3')
 
 =============
 Query: main/*
 =============
 
 --- main/test [keyval] ---
-('a', '=', '1 + 9')
-('b', '<>', '2')
-('c', '=', '3 and 4')
+(4, 'a', '=', '1 + 9')
+(5, 'b', '<>', '2')
+(6, 'c', '=', '3 and 4')
 ```
 
 
 Storing your datas in a `json` variable
 =======================================
 
-The class ``ReadBlock`` has a method `jsonify` that allows to store your datas in a `json` file *(the storing has to be done by you)*. The following code will give us just after the strucure used.
+The class `ReadBlock` has a method `forjson` that allows to store your datas in a `json` file *(the storing has to be done by you)*. The following code will give us just after the structure used.
 
 ```python
 from orpyste.data import ReadBlock
@@ -462,52 +497,45 @@ with ReadBlock(
         "verbatim"     : "verb"
     }
 ) as datas:
-    jsonobj = datas.jsonify()
+    jsonobj = datas.forjson
     print(jsonobj)
 ```
 
 
-Launched in a terminal, we obtain the following output which has been hand formatted. As you can see, we use the format `[key, value]` so as to store the keys and the values of the `python` dictionary given by the method `ReadBlock.flatdict`  and `ReadBlock.recudict` .
+Launched in a terminal, we obtain the following output which has been hand formatted. As you can see, we use the format `[key, value]` so as to store the keys and the values of the `python` dictionary given by the method `ReadBlock.flatdict` and `ReadBlock.recudict`. You can also note that for verbatim content we use a `null` key *(this is to ease other applications to extract informations from a "symmetric" `json` variable)*.
 
 ```json
-{
-    "kind": "flat",
-    "datas" : [
+[
+    [
+        [0, "main/test"],
         [
-            "main/test",
             [
-                [
-                    "a",
-                    [
-                        null,
-                        {"value": "1 + 9", "sep": "="}
-                    ]
-                ],
-                [
-                    "b",
-                    [
-                        null,
-                        {"value": "2", "sep": "<>"}]
-                    ],
-                [
-                    "c",
-                    [
-                        null,
-                        {"value": "3 and 4", "sep": "="}
-                    ]
-                ]
+                [0, "a"],
+                {"nbline": 4, "sep": "=", "value": "1 + 9"}
+            ],
+            [
+                [0, "b"],
+                {"nbline": 5, "sep": "<>", "value": "2"}
+            ],
+            [
+                [0, "c"],
+                {"nbline": 6, "sep": "=", "value": "3 and 4"}
             ]
-        ],
+        ]
+    ],
+    [
+        [0, "main/sub_main/sub_sub_main/verb"],
         [
-            "main/sub_main/sub_sub_main/verb",
+            null,
             [
-                null,
-                ["line 1", "    line 2", "        line 3"]
+                {"nbline": 11, "value": "line 1"},
+                {"nbline": 12, "value": "    line 2"},
+                {"nbline": 13, "value": "        line 3"}
             ]
         ]
     ]
-}
+]
 ```
 
 
-You can easily go back to the `python` dictionary thanks to the function `loadjson` that transforms one json variable stored in one string or in a file into a flat or recursive dictionary regarding to the method used ``ReadBlock.flatdict`` or ``ReadBlock.recudict``.
+You can easily go back to the `python` dictionary thanks to the function `loadjson` that transforms one json variable stored in one string or in a file into a flat dictionary that is an instance of the class `ReadBlock.MKOrderedDict`.
