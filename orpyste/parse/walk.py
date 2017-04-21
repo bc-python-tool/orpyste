@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-11-28
+    date = 2017-04-22
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in
@@ -103,7 +103,6 @@ pyterm::
         self._keyids       = {}
         self._len          = 0
 
-
     def __setitem__(self, key, val):
         if not isinstance(key, Hashable):
             raise KeyError("key must be hashable")
@@ -118,13 +117,11 @@ pyterm::
 
         self._len += 1
 
-
     def setitembyid(self, keyid, key, val):
         if (keyid, key) not in self._internaldict:
             self._len += 1
 
         self._internaldict[(keyid, key)] = val
-
 
     def __getitem__(self, key, keyid = None):
         keyfound = False
@@ -138,14 +135,12 @@ pyterm::
         if not keyfound:
             raise KeyError("key not used in the MKOrderedDict")
 
-
     def getitembyid(self, keyid, key):
         for (oneid, onekey), oneval in self._internaldict.items():
             if keyid == oneid and key == onekey:
                 return oneval
 
         raise KeyError("key not used in the MKOrderedDict")
-
 
     def items(self, noid = False):
         for id_key, oneval in self._internaldict.items():
@@ -155,7 +150,6 @@ pyterm::
             else:
                 yield id_key, oneval
 
-
     def __contains__(self, key):
         for (oneid, onekey), oneval in self._internaldict.items():
             if key == onekey:
@@ -163,10 +157,8 @@ pyterm::
 
         return False
 
-
     def __len__(self):
         return self._len
-
 
     def __eq__(self, other):
         if not isinstance(other, MKOrderedDict):
@@ -181,7 +173,6 @@ pyterm::
 
         return True
 
-
     def __str__(self):
         text = repr(self)
 
@@ -191,7 +182,6 @@ pyterm::
         text = text.replace("\n", "")
 
         return text
-
 
     def __repr__(self):
         text = ["MKOrderedDict(["]
@@ -366,6 +356,10 @@ warning::
         to be opened or closed, whereas ``content_in_comment`` allows to add a
         content met inside a comment.
 
+        * ``open_section`` and ``close_section`` are called when a section has
+        to be opened or closed, whereas ``section_title`` is for managing the
+        title of section.
+
         * ``open_block`` and ``close_block`` are methods called just before and
         after a block is opened or closed respectively.
 
@@ -392,7 +386,6 @@ warning::
 
         self.builddone = False
 
-
     def build(self):
 # We build the AST view.
         self.ast = self.AST(
@@ -417,6 +410,9 @@ warning::
 
 # We must keep all metadatas for fine tuning in the attribut ``self.metadata``
 # that contains all the necessary informations.
+            self.insection      = False
+            self._section_title = []
+
             self.incomment   = False
             self.indentlevel = -1
 
@@ -431,15 +427,48 @@ warning::
 
             for self.metadata in self.ast:
                 # --- IMPORTANT : UGLY DEBUG --- #
-                # print("--- @@@@@ ---", self.metadata,sep="\n");continue
+                # print("--- @@@ WALK @@@ ---", self.metadata,sep="\n");continue
 
                 kind = self.metadata[KIND_TAG]
                 self.nbline = self.metadata[NBLINE_TAG]
 
+# -- SECTION -- #
+                if kind == "section":
+                    if self.metadata[OPENCLOSE] == OPEN:
+                        if self.modes_stack:
+                            raise PeufError(
+                                "content before the first section"
+                            )
+
+                        self.insection = True
+                        self.open_section()
+
+                    else:
+                        titlesize = len(self._section_title)
+
+                        if titlesize == 0:
+                            raise PeufError(
+                                "empty title for a section"
+                            )
+
+                        elif titlesize != 1:
+                            raise PeufError(
+                                "title for a section not upon a single line"
+                            )
+
+                        if "\\" in self._section_title[0] \
+                        or "/" in self._section_title[0]:
+                            raise PeufError(
+                                "title can't contain << \ >> or << / >>"
+                            )
+
+                        self.section_title(self._section_title.pop(0))
+
+                        self.insection = False
+                        self.close_section()
 
 # -- COMMENT -- #
-
-                if kind.startswith("comment-"):
+                elif kind.startswith("comment-"):
                     if self.metadata[OPENCLOSE] == OPEN:
                         self.incomment = True
 
@@ -453,15 +482,15 @@ warning::
                         self.incomment = False
                         self.close_comment(kind[8:])
 
-
-# -- COMMENT LINE -- #
-
+# -- COMMENT LINE OR TITLE OF A SECTION -- #
                 elif kind == VERB_CONTENT_TAG:
-                    self.content_in_comment(self.metadata[CONTENT_TAG])
+                    if self.insection:
+                        self._section_title.append(self.metadata[CONTENT_TAG])
 
+                    else:
+                        self.content_in_comment(self.metadata[CONTENT_TAG])
 
 # -- EMPTY LINE -- #
-
                 elif kind == EMPTYLINE_TAG:
                     if self.incomment:
                         self.content_in_comment("")
@@ -469,9 +498,7 @@ warning::
                     elif self.last_mode == VERBATIM:
                         self.nb_empty_verbline += 1
 
-
 # -- BLOCK -- #
-
                 elif kind == BLOCK_TAG:
 # An opening block
                     if self.metadata[OPENCLOSE] == OPEN:
@@ -528,9 +555,7 @@ warning::
                         else:
                             self.last_mode = ""
 
-
 # -- MAGIC COMMENT -- #
-
                 elif kind == MAGIC_COMMENT:
                     if self.last_mode != VERBATIM:
                         raise PeufError(
@@ -541,16 +566,14 @@ warning::
                         self._add_empty_verbline()
                         self.add_magic_comment()
 
-
-# -- VERBATIM CONTENT -- #
-
+# -- VERBATIM CONTENT -- #   UTILE ??????
                 elif self.last_mode == VERBATIM:
                     self._add_empty_verbline()
-                    self.add_line(self.metadata[CONTENT_TAG][VAL_IN_LINE_TAG])
-
+                    self.add_line(
+                        self.metadata[CONTENT_TAG][VAL_IN_LINE_TAG]
+                    )
 
 # -- KEY-VAL CONTENT -- #
-
                 else:
                     content = self.metadata[CONTENT_TAG]
 
@@ -584,7 +607,6 @@ warning::
 
                         lastkeyval = content
 
-
 # -- END OF THE WALK -- #
 
             self.end()
@@ -592,7 +614,6 @@ warning::
         self.builddone = True
 
         return self
-
 
 # -- START AND END OF THE WALK -- #
 
@@ -611,7 +632,6 @@ This method is called just after the end of the walk.
     def remove_extras(self):
         self.ast.view.remove()
         self.walk_view.remove()
-
 
 # -- COMMENTS -- #
 
@@ -658,6 +678,25 @@ This method is for adding content inside a comment (see the methods
         """
         ...
 
+# -- SECTIONS -- #
+
+    def open_section(self):
+        """
+This method is for opening a section.
+        """
+        ...
+
+    def close_section(self):
+        """
+This method is for closing a section.
+        """
+        ...
+
+    def section_title(self, title):
+        """
+This method manages the title of a section.
+        """
+        ...
 
 # -- BLOCKS -- #
 
@@ -677,7 +716,6 @@ This method is for closing a block knowning its name.
         """
         ...
 
-
 # -- (MULTI)KEYVAL -- #
 
     def add_keyval(self, keyval):
@@ -690,7 +728,6 @@ This method is for adding a new key with its associated value and separator.
 All this informations are in the dictionary ``keyval``.
         """
         ...
-
 
 # -- VERBATIM -- #
 
@@ -722,7 +759,6 @@ This method is for adding the magic comment used for empty lines at the end of
 verbatim contents.
         """
         ...
-
 
 # -- CONTEXT MANAGER -- #
 

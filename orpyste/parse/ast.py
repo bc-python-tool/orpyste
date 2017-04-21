@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-12-01
+    date = 2017-04-22
 
 
 This module contains classes so as to build an abstract syntax tree view of an
@@ -35,6 +35,8 @@ prototype::
 # -------------------- #
 
 # TAGS
+
+SECTION_TAG = "section"
 
 BLOCK_TAG      = "block"
 MODE_TAG       = "mode"
@@ -250,9 +252,7 @@ argument ``mode`` will be interpreted as an illegal one.
     def __init__(self, mode):
         self.mode = mode
 
-
 # -- SPECIAL SETTER -- #
-
     @property
     def mode(self):
         return self._mode
@@ -262,9 +262,7 @@ argument ``mode`` will be interpreted as an illegal one.
         self._mode = value
         self.build()
 
-
 # -- LET'S BUILD THE AST -- #
-
     def build(self):
         """
 prototype::
@@ -285,9 +283,7 @@ prototype::
         else:
             raise TypeError("illegal type for the argument ``mode``.")
 
-
 # -- MODE DEFINED USING A SINGLE STRING -- #
-
     def _single_mode(self, mode):
         """
 prototype::
@@ -333,7 +329,6 @@ prototype::
                 )
             }
 
-
     def _build_from_str(self):
         """
 prototype::
@@ -348,9 +343,7 @@ prototype::
         self.allmodes = [self._single_mode(self.mode)]
         self.dicoview = {DEFAULT: 0}
 
-
 # -- MODE DEFINED USING A DICTIONARY -- #
-
     def _build_from_dict(self):
         """
 prototype::
@@ -380,9 +373,7 @@ prototype::
                 for oneblock in blocks:
                     self.dicoview[oneblock] = id_mode
 
-
 # -- MAGIC METHODS -- #
-
     def __getitem__(self, item):
         if item in self.dicoview:
             return self.allmodes[self.dicoview[item]]
@@ -391,7 +382,6 @@ prototype::
             return self.allmodes[self.dicoview[DEFAULT]]
 
         raise ValueError('unknown item and no default mode.')
-
 
     def __contains__(self, item):
         if not isinstance(item, str):
@@ -405,7 +395,6 @@ prototype::
             or
             DEFAULT in self.dicoview
         )
-
 
     def items(self):
         for block, id_block in self.dicoview.items():
@@ -538,41 +527,48 @@ Here is a very simple example showing how to build the AST view and how to walk
 in this view.
 
 pyterm:
+    >>> from pprint import pprint # For pretty printings of dictionaries.
     >>> from orpyste.parse.ast import AST
     >>> content = '''
+    ... ==========================
+    ... Section 1
+    ... must be on a single line !
+    ... ==========================
+
     ... test::
     ...     Missing a key-val first !
     ...     a = 3
     ... '''.strip()
-    >>> mode = {
-    ...     'container': ":default:",
-    ...     'keyval::=': "test",
-    ...     'verbatim' : "summary"
-    ... }
+    >>> mode = 'keyval::='
     >>> ast = AST(content = content, mode = mode)
     >>> ast.build()
-    >>> from pprint import pprint # For pretty printings of dictionaries.
     >>> for metadata in ast:
     ...     pprint(metadata)
+    {'kind': 'section', 'nbline': 1, 'openclose': 'open'}
+    {'content': 'Section 1', 'kind': ':verbatim:', 'nbline': 2}
+    {'content': 'must be on a single line !', 'kind': ':verbatim:', 'nbline': 3}
+    {'kind': 'section', 'nbline': 4, 'openclose': 'close'}
+    {'kind': ':emptyline:', 'nbline': 5}
     {'groups_found': {'name': 'test'},
      'kind': 'block',
-     'nbline': 1,
      'mode': 'keyval',
+     'nbline': 6,
      'openclose': 'open'}
     {'content': {'value_in_line': 'Missing a key-val first !'},
      'kind': ':content:',
-     'nbline': 2}
+     'nbline': 7}
     {'content': {'key': 'a', 'sep': '=', 'value': '3'},
      'kind': ':content:',
-     'nbline': 3}
-    {'kind': 'block', 'nbline': 3, 'openclose': 'close'}
+     'nbline': 8}
+    {'openclose': 'close', 'nbline': 8, 'kind': 'block'}
 
 
 warning::
     This class does not do any semantic analysis as we can see in the example
-    where the content of the block orpyste::``test`` starts with an inline value
-    instead of a key-value one. This will the job of ``parse.Walk`` to manage
-    semantic problems.
+    above where the title of the section is on two lines instead of a single
+    one, and the content of the block orpyste::``test`` starts with an inline
+    value instead of a key-value one. This will the job of ``parse.Walk`` to
+    manage semantic problems.
     """
 # CONFIGURATIONS OF THE CONTEXTS [human form]
 #
@@ -618,6 +614,14 @@ warning::
         CLOSED_AT_END_ID: True
     }
 
+# Sections.
+    CTXTS_CONFIGS[SECTION_TAG] =  {
+        OPEN            : "^={2,}$",
+        CLOSE           : "^={2,}$",
+        SUBCTXTS        : VERBATIM_ID,
+        CLOSED_AT_END_ID: False
+    }
+
 # ``CLOSE: CLOSED_BY_INDENT_ID`` indicates a context using indentation for its
 # content.
 #
@@ -641,7 +645,6 @@ warning::
     KEY_GRP_PATTERN   = "(?P<key>.*?)"
     VALUE_GRP_PATTERN = "(?P<value>.*)"
 
-
     def __init__(
         self,
         content,
@@ -657,9 +660,7 @@ warning::
         self.build_ctxts_rules()
         self.build_contents_rules()
 
-
 # -- SPECIAL SETTERS -- #
-
     @property
     def content(self):
         return self._content
@@ -691,7 +692,6 @@ warning::
         else:
             raise TypeError("invalid type for the attribut ``content``.")
 
-
     @property
     def mode(self):
         return self._mode
@@ -700,9 +700,7 @@ warning::
     def mode(self, value):
         self._mode = Mode(value)
 
-
 # -- INTERNAL CONTEXTS' RULES -- #
-
     def build_ctxts_rules(self):
         """
 prototype::
@@ -713,22 +711,28 @@ prototype::
              This will be the job of ``self.build_contents_rules`` to take care
              of lines of contents.
         """
-# MATCHERS FOR THE CONTEXTS [the E.T. experience]
+# MATCHERS FOR THE CONTEXTS [the E.T. experience] ;-)
 #
 # We build ¨python none human list for research with the following constraints.
 #
-#     1) We test all the open contexts and then the close ones.
-#     2) We stop as soon as we find a winning matching.
-#     3) We have to take care of subcontexts.
-#     4) We store the regex objects in a list (think about the subcontexts).
+#     1) We stop as soon as we find a winning matching.
+#     2) If a an opening context has been found just before, we have to test
+#        first its associated closing context which can be either a pattern or #        an indentation closing.
+#        Then we look for "all" the other opening and then closing contexts.
+#     3) If no open context has been found just before, we test first "all" the
+#        open contexts and then "all" the close ones.
+#     4) We have to take care of subcontexts.
+#     5) We store the regex objects in a list (think about the subcontexts).
 #
 # << Warning ! >> We add a matcher for empty line at the very beginning because
 # we want to keep them but we have also have to skip them when searching for
-# contexts.
+# contexts. So easy... :-(
         self.MATCHERS = [{
             True:                   # Boolean wanted.
-            [re.compile("^$")]      # Liste or regexes to test.
+            [re.compile("^$")]      # List of regexes to test.
         }]
+
+        self.CLOSING_ID_FROM_OPENING = {}
 
         self.CTXTINFOS_EMPTYLINE = CtxtInfos(
             kind       = EMPTYLINE_TAG,
@@ -799,6 +803,8 @@ prototype::
                         else:
                             indented = False
 
+                            self.CLOSING_ID_FROM_OPENING[kind] = id_matcher
+
                     else:
                         _openclose = AUTOCLOSE
                         indented    = False
@@ -849,9 +855,7 @@ prototype::
 
                 self.CTXTS_KINDS_SUBCTXTS[kind] = subctxts
 
-
 # -- INTERNAL CONTENTS' RULES -- #
-
     def build_contents_rules(self):
         """
 prototype::
@@ -924,7 +928,6 @@ prototype::
                 )
 
 # -- WALKING IN THE CONTENT -- #
-
     def nextline(self):
         """
 property::
@@ -945,9 +948,7 @@ property::
                     self._nbline += 1
                     yield line.rstrip()
 
-
 # -- INDENTATION -- #
-
     def manage_indent(self):
         """
 property::
@@ -972,9 +973,7 @@ property::
             self._line = " "*(self._level % 4) + self._line.lstrip()
             self._level //= 4
 
-
 # -- REGEXES -- #
-
     def match(self, text, infos):
         """
 property::
@@ -989,7 +988,7 @@ property::
              ``True`` or ``False`` whether something matches or not
         """
         for oneid in infos.id_matcher:
-            match_found = True
+            match_found        = True
             self._groups_found = {}
 
 # Looking for the first winning matching.
@@ -1012,12 +1011,10 @@ property::
             if match_found is True:
                 break
 
-# We have a winning mathcing.
+# We have a winning matching or not.
         return match_found
 
-
 # -- BUILD THE AST -- #
-
     def build(self):
         """
 prototype::
@@ -1028,101 +1025,117 @@ prototype::
         self._nbline = 0
         self._line   = None
 
-        self._level              = 0
-        self._levels_stack       = []
-        self._ctxts_stack        = []
+        self._verbatim = False
+
+        self._level        = 0
+        self._levels_stack = []
+
+        self._ctxts_opened_stack = []
         self._ctxt_sbctxts_stack = []
 
 # Intermediate AST only for contexts.
         with self._partial_view:
-            self._verbatim = False
-
-            for line in self.nextline():
-                self._line = line
+            for self._line in self.nextline():
                 self.manage_indent()
                 self.search_ctxts()
 
             self.close_ctxt_at_end()
 
-
 # Final AST with datas in contents.
         with self.view:
             self.search_contents()
 
-
 # The partial view is not usefull in the disk.
         self._partial_view.remove()
 
-
 # -- LOOKING FOR CONTEXTS -- #
-
     def search_ctxts(self):
         """
 prototype::
     action = this method looks for contexts which can be either opening or
              closing blocks or comments, or empty lines, or lines of contents.
         """
-        nocontextfound = True
+        ctxtfound            = False
+        mustclose_otherctxts = False
 
-        for ctxtinfos in self.CTXTS_MATCHERS:
+# Do we close the last context opened ?
+        if self._ctxts_opened_stack:
+            closeby_id = self.CLOSING_ID_FROM_OPENING.get(
+                self._ctxts_opened_stack[-1].kind,
+                None
+            )
+
+            if closeby_id:
+                ctxtinfos = self.CTXTS_MATCHERS[closeby_id]
+
+                if self.match(self._line, ctxtinfos):
+                    ctxtfound = True
+
+# Other contexts must be searched.
+        if not ctxtfound:
+            for ctxtinfos in self.CTXTS_MATCHERS:
 # Not a subcontext ?
-            if self._ctxt_sbctxts_stack \
-            and (
-                ctxtinfos.openclose,
-                ctxtinfos.kind
-            ) not in self._ctxt_sbctxts_stack[-1]:
-                continue
+                if self._ctxt_sbctxts_stack \
+                and (
+                    ctxtinfos.openclose,
+                    ctxtinfos.kind
+                ) not in self._ctxt_sbctxts_stack[-1]:
+                    continue
 
-# A new context.
-            if self.match(self._line, ctxtinfos):
-                nocontextfound = False
+# A new context found.
+                if self.match(self._line, ctxtinfos):
+                    ctxtfound            = True
+                    mustclose_otherctxts = bool(ctxtinfos.openclose == OPEN)
+                    break
+
+# Unvisible new context (be careful of indentation closing)
+        if not ctxtfound:
+            ctxtinfos            = self.CTXTINFOS_CONTENT
+            mustclose_otherctxts = True
 
 # Level can be forced to infinity.
-                if ctxtinfos.kind in self.CTXTS_KINDS_WITH_INF_LEVELS \
-                and ctxtinfos.openclose != AUTOCLOSE:
-                    self._level = self.INFINITY
+        if ctxtinfos.kind in self.CTXTS_KINDS_WITH_INF_LEVELS \
+        and ctxtinfos.openclose != AUTOCLOSE:
+            self._level = self.INFINITY
 
-# A new opening context.
-                if ctxtinfos.openclose == OPEN:
-                    self._ctxts_stack.append(ctxtinfos)
+# Close previous contexts.
+        if mustclose_otherctxts:
+            self.close_indented_ctxts(ctxtinfos)
+
+# Add an opening context in the stack.
+        if ctxtinfos.openclose == OPEN:
+            self._ctxts_opened_stack.append(ctxtinfos)
 
 # Do we have to use subcontexts ?
-                    if ctxtinfos.kind in self.CTXTS_KINDS_SUBCTXTS:
-                        self._ctxt_sbctxts_stack.append(
-                            self.CTXTS_KINDS_SUBCTXTS[ctxtinfos.kind]
-                        )
+            if ctxtinfos.kind in self.CTXTS_KINDS_SUBCTXTS:
+                self._ctxt_sbctxts_stack.append(
+                    self.CTXTS_KINDS_SUBCTXTS[ctxtinfos.kind]
+                )
 
 # A closing context.
-                elif ctxtinfos.openclose == CLOSE:
-                    if not self._ctxts_stack:
-                        raise ASTError(
-                            "wrong closing context: see line #{0}".format(
-                                self._nbline
-                            )
-                        )
+        elif ctxtinfos.openclose == CLOSE:
+            if not self._ctxts_opened_stack:
+                raise ASTError(
+                    "wrong closing context: see line #{0}".format(
+                        self._nbline
+                    )
+                )
 
-                    lastctxt = self._ctxts_stack.pop(-1)
+            lastctxt = self._ctxts_opened_stack.pop(-1)
 
-                    if lastctxt.kind != ctxtinfos.kind:
-                        raise ASTError(
-                            "wrong closing context: " \
-                            + "see line no.{0} and context \"{1}\"".format(
-                                self._nbline, ctxtinfos.kind
-                            )
-                        )
+            if lastctxt.kind != ctxtinfos.kind:
+                raise ASTError(
+                    "wrong closing context: " \
+                    + "see line no.{0} and context \"{1}\"".format(
+                        self._nbline, ctxtinfos.kind
+                    )
+                )
 
-                    self._ctxt_sbctxts_stack.pop(-1)
-
-                break
-
-# Not a visible new context (be careful of indentation closing)
-        if nocontextfound:
-            ctxtinfos = self.CTXTINFOS_CONTENT
+            self._ctxt_sbctxts_stack.pop(-1)
+            self._levels_stack.pop(-1)
 
 # We can store the new and eventually close some old contexts.
-        self.close_indented_ctxts(ctxtinfos)
         self.store_one_ctxt(ctxtinfos)
-
 
     def must_close_indented_ctxt(self):
         """
@@ -1131,11 +1144,7 @@ prototype::
              ``True`` or ``False`` whether we have to close or not the actual
              context due to the indentation
         """
-        if self._levels_stack:
-            return self._level <= self._levels_stack[-1]
-
-        return False
-
+        return self._levels_stack and self._level <= self._levels_stack[-1]
 
     def close_indented_ctxts(self, ctxtinfos):
         """
@@ -1143,23 +1152,50 @@ prototype::
     action = this method closes all contexts that use indentation for their
              content.
         """
-# Empty lines, autoclosed context or context with infinite level are the only
-# contexts that can't close an indented context.
-        if ctxtinfos != self.CTXTINFOS_EMPTYLINE \
+# Sections close all blocks !
+        if ctxtinfos.kind == SECTION_TAG:
+            if ctxtinfos.openclose == OPEN:
+                while self._ctxts_opened_stack:
+                    self._levels_stack.pop(-1)
+
+                    lastctxt = self._ctxts_opened_stack.pop(-1)
+
+                    if not lastctxt.indented:
+                        break
+
+                    self.store_one_ctxt(
+                        CtxtInfos(
+                            kind      = lastctxt.kind,
+                            openclose = CLOSE
+                        ),
+                        not_add_groups_alone = False
+                    )
+
+            self._ctxts_opened_stack = self._levels_stack = []
+
+# Not a section. What can't close an indented contexts ?
+#     * Verbatim contents
+#     * Empty lines
+#     * Autoclosed context
+#     * Comments
+        elif self._ctxts_opened_stack \
+        and not self._ctxts_opened_stack[-1].verbatim \
+        and ctxtinfos != self.CTXTINFOS_EMPTYLINE \
         and ctxtinfos.openclose != AUTOCLOSE \
-        and self._level != self.INFINITY:
+        and not ctxtinfos.kind.startswith(COMMENT_TAG):
             if self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY:
                 while self.must_close_indented_ctxt():
                     self._levels_stack.pop(-1)
 
-                    lastctxt = self._ctxts_stack.pop(-1)
+                    lastctxt = self._ctxts_opened_stack.pop(-1)
 
                     self.store_one_ctxt(
                         CtxtInfos(
-                            kind                 = lastctxt.kind,
-                            openclose            = CLOSE),
-                            not_add_groups_alone = False
+                            kind      = lastctxt.kind,
+                            openclose = CLOSE
+                        ),
+                        not_add_groups_alone = False
                     )
 
 # We update the stack of levels.
@@ -1189,6 +1225,9 @@ prototype::
             else:
                 self._level = 0
 
+# Ugly patch !
+        if self._level == self.INFINITY:
+            self._level = 0
 
     def close_ctxt_at_end(self):
         """
@@ -1196,8 +1235,8 @@ prototype::
     action = this method closes all contexts than can be closed automatically
              at the very end of the ¨orpyste file
         """
-        while self._ctxts_stack:
-            lastctxt_kind = self._ctxts_stack.pop(-1).kind
+        while self._ctxts_opened_stack:
+            lastctxt_kind = self._ctxts_opened_stack.pop(-1).kind
 
             if lastctxt_kind not in self.CTXTS_KINDS_CLOSED_AT_END:
                 raise ASTError(
@@ -1211,9 +1250,7 @@ prototype::
                 CtxtInfos(kind = lastctxt_kind, openclose = CLOSE)
             )
 
-
 # -- LOOKING FOR DATAS IN CONTENTS -- #
-
     def search_contents(self):
         """
 prototype::
@@ -1225,6 +1262,9 @@ prototype::
         self._nb_emptylines = 0
 
         for onemeta in self.next_partial_meta():
+            # # --- IMPORTANT : UGLY DEBUG --- #
+            # print("AST >>>", onemeta);continue
+
 # The big messe of empty lines in verbatim content.
 # One new block.
             if onemeta[KIND_TAG] == BLOCK_TAG:
@@ -1282,7 +1322,6 @@ prototype::
 # We can add the metadatas.
             self.add(onemeta)
 
-
     def last_block_is_container(self):
         """
 prototype::
@@ -1295,21 +1334,16 @@ prototype::
 
         return True
 
-
 # -- STORING THE METADATAS -- #
-
     def add(self, metadatas):
         self.view.write(metadatas)
-
 
     def add_partial(self, metadatas):
         self._partial_view.write(metadatas)
 
-
     def next_partial_meta(self):
         for x in self._partial_view:
             yield x
-
 
     def store_one_ctxt(self, ctxtinfos, not_add_groups_alone = True):
         metadatas = {
@@ -1325,22 +1359,22 @@ prototype::
                 metadatas[OPENCLOSE] = ctxtinfos.openclose
 
         if ctxtinfos.verbatim:
-            verbatim = self._groups_found.get(CONTENT_TAG, None)
+            verbatimstart = self._groups_found.get(CONTENT_TAG, None)
 
-            if verbatim is not None:
+            if verbatimstart is not None:
                 del self._groups_found[CONTENT_TAG]
 
         else:
-            verbatim = None
+            verbatimstart = None
 
         if not_add_groups_alone and self._groups_found:
             metadatas[GRPS_FOUND_TAG] = self._groups_found
 
-        if verbatim is not None:
-            verbatim = {
+        if verbatimstart is not None:
+            verbatimstart = {
                 KIND_TAG   : VERB_CONTENT_TAG,
                 NBLINE_TAG : self._nbline,
-                CONTENT_TAG: verbatim,
+                CONTENT_TAG: verbatimstart,
             }
 
 # We have to keep extra indentations !
@@ -1368,14 +1402,15 @@ prototype::
             metadatas[KIND_TAG]    = VERB_CONTENT_TAG
             metadatas[CONTENT_TAG] = ""
 
-        if ctxtinfos.openclose == CLOSE:
-            metadatas, verbatim = verbatim, metadatas
+        if verbatimstart and ctxtinfos.openclose == CLOSE:
+            metadatas, verbatimstart = verbatimstart, metadatas
 
         if metadatas:
             self.add_partial(metadatas)
 
-        if verbatim:
-            self.add_partial(verbatim)
+        if ctxtinfos.verbatim:
+            if verbatimstart:
+                self.add_partial(verbatimstart)
 
             if ctxtinfos.openclose == OPEN:
                 self._verbatim = True
@@ -1388,9 +1423,7 @@ prototype::
             new_metadatas[OPENCLOSE] = CLOSE
             self.add_partial(new_metadatas)
 
-
 # -- MAGIC METHOD -- #
-
     def __iter__(self):
         for x in self.view:
             yield x

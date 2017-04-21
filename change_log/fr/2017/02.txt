@@ -1,15 +1,22 @@
 ==========
+2017-02-22
+==========
+
+**Application de la ¨pep8 sur les lignes vides :** on n'utilise plus qu'un seul espace pour séparer les méthodes d'une même classe.
+
+
+==========
 2017-02-19
 ==========
 
-**Publication de la version 1.2.0-beta sur ¨pypi et ¨github :** ceci a été rendu possible après le gros chantier de ¨maj des documentations et des journeaux de bord en français et en anglais.
+**Nouvelle version version::``1.2.0-beta``:** ceci a été rendu possible après le gros chantier de ¨maj des documentations et des journaux de bord en français et en anglais.
 
 
 ==========
 2017-02-17
 ==========
 
-**Un nouveau paramètrage pour la méthode ``ReadBlock.mydict`` :** on peut maintenant utiliser ``MINI_TAG = "mini"`` comme raccourci de ``"nosep nonb"``.
+**Une nouvelle option pour la méthode ``ReadBlock.mydict``:** on peut maintenant utiliser ``MINI_TAG = "mini"`` comme raccourci de ``"nosep nonb"``.
 
 
 ==========

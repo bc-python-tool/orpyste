@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2016-07-21
+    date = 2017-04-22
 
 
 This module contains a class `Clean` for formating a ¨peuf file following some
@@ -22,6 +22,8 @@ SIZE_TAG = "size"
 
 INDENTLEVEL_TAG = "indentlevel"
 LENMAX_TAG      = "lenmax"
+
+SECTION_DECO_CHAR = "="
 
 COMMENT_DECO = {
     OPEN: {
@@ -83,7 +85,7 @@ PATTERNS_VAL_LAYOUTS = {
 
 
 DEFAULT_LAYOUTS = {
-    SPACES        : 2,
+    SPACES        : 1,
     SPACES_COMMENT: 1,
     COLUMNS       : 80,
     ALIGN         : False,
@@ -153,9 +155,9 @@ prototype::
                see the dedicated section below
 
 
-===========
-One example
-===========
+=================================
+One example (without any section)
+=================================
 
 The aim of this class is to produce standarized versions of ¨peuf files. Let's
 consider the following uggly ¨peuf file.
@@ -327,7 +329,6 @@ info::
 
         self.layout = layout
 
-
 # -- SPECIAL SETTER FOR THE LAYOUT -- #
 
     @property
@@ -402,7 +403,6 @@ info::
                 value
             )
 
-
 # -- ADDITIONAL METHODS -- #
 
     def isnotfirstline(self):
@@ -427,13 +427,11 @@ prototype::
 
         return text
 
-
     def add_empty(self):
         """
 Sometimes, we need to add an empty meaningless content. This method does this.
         """
         self.walk_view.write((None, ""))
-
 
     def wrap(self, text):
         """
@@ -496,7 +494,6 @@ prototype::
 # Nothing to do !
         return text
 
-
     def add_extra(self):
 # Comments to be added ?
         if self._last_comments == []:
@@ -550,7 +547,6 @@ prototype::
 
                     self.add_next_comment()
 
-
     def add_next_comment(self, mustaddspaces = True):
         onecomment = self._last_comments.pop(0)
 
@@ -571,11 +567,9 @@ prototype::
         if mustaddspaces:
             self.add_spaces(SPACES_COMMENT)
 
-
     def add_spaces(self, kind):
         for _ in range(self._layout[kind]):
             self.walk_view.write((None, ""))
-
 
 # -- START AND END OF FILE -- #
 
@@ -591,6 +585,7 @@ prototype::
     def end(self):
 # The final job can be done !
         self.view = IOView("list")
+        text = ""
 
         with self.view:
 # We have to follow the user's layout !
@@ -644,8 +639,19 @@ prototype::
                 self.view.write(text)
 
 # An empty line at the end !
-        self.view.write("")
+        if text:
+            self.view.write("")
 
+# -- FOR SECTIONS -- #
+
+    def section_title(self, title):
+        deco = SECTION_DECO_CHAR * len(title)
+
+        self.add_spaces(SPACES)
+        self.add_spaces(SPACES)
+        self.walk_view.write((SECTION_TAG, deco))
+        self.walk_view.write((SECTION_TAG, title))
+        self.walk_view.write((SECTION_TAG, deco))
 
 # -- FOR COMMENTS -- #
 
@@ -656,10 +662,8 @@ prototype::
             CONTENT_TAG: []
         })
 
-
     def content_in_comment(self, line):
         self._last_comments[-1][CONTENT_TAG].append(line)
-
 
 # -- FOR BLOCKS -- #
 
@@ -708,7 +712,6 @@ prototype::
     def close_block(self, name):
         ...
 
-
 # -- (MULTI)KEYVAL -- #
 
     @auto_add_extra
@@ -723,13 +726,11 @@ prototype::
 
             self._infos[self._last_tag][LENMAX_TAG] = (keylen, seplen)
 
-
 # -- VERBATIM -- #
 
     @auto_add_extra
     def add_magic_comment(self):
         self.walk_view.write((MAGIC_COMMENT, "////"))
-
 
     @auto_add_extra
     def add_line(self, line):

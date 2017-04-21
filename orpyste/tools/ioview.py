@@ -51,7 +51,6 @@ so as to store datas. Here is how to use this class.
         self.mode = LONG_IO_TYPES.get(mode, mode)
         self.path = path
 
-
     def __enter__(self):
         if self.mode == LIST:
             self.datas = []
@@ -72,10 +71,8 @@ so as to store datas. Here is how to use this class.
         else:
             raise ValueError("unknown mode.")
 
-
     def __exit__(self, type, value, traceback):
         ...
-
 
     def _writeinlist(self, value):
         self.datas.append(value)
@@ -83,7 +80,6 @@ so as to store datas. Here is how to use this class.
     def _iterinlist(self):
         for data in self.datas:
             yield data
-
 
     def _writeinfile(self, value):
         pickle.dump(value, self.datas.open(mode = "ab"))
@@ -97,10 +93,8 @@ so as to store datas. Here is how to use this class.
             except EOFError:
                 ...
 
-
     def __iter__(self):
         yield from self.iter()
-
 
     def remove(self):
         if self.mode != LIST \

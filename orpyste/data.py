@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2017-02-17
+    date = 2017-04-22
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -212,7 +212,6 @@ Here are some examples.
         self.data      = data
         self.nbline    = nbline
 
-
     def isblock(self):
         return self.querypath not in [None, START_TAG, END_TAG]
 
@@ -224,7 +223,6 @@ Here are some examples.
 
     def isend(self):
         return self.querypath == END_TAG
-
 
     def yrtu(self):
         """
@@ -263,7 +261,6 @@ info::
         else:
             for dicval in rtu:
                 yield (dicval["nbline"], dicval["value"])
-
 
     @property
     def rtu(self):
@@ -312,7 +309,6 @@ info::
 # [SEVERAL] Key-value
         else:
             return self.data
-
 
     def __str__(self):
         text = ['mode = {0}'.format(repr(self.mode))]
@@ -662,15 +658,18 @@ term::
     """
 
 # -- START AND END OF THE WALK -- #
-
     def start(self):
         self._verblines = []
         self._keyval    = []
         self._qpath     = []
 
+# -- NO SECTION ALLOWED HERE ! -- #
+    def open_section(self):
+        raise ValueError(
+            "section forbiden with this class : use the module ``section``"
+        )
 
 # -- FOR BLOCKS -- #
-
     def open_block(self, name):
         self._qpath.append(name)
 
@@ -687,9 +686,7 @@ term::
     def close_block(self, name):
         self._qpath.pop(-1)
 
-
 # -- DATAS: (MULTI)KEYVAL & VERBATIM -- #
-
     @adddata
     def add_keyval(self, keyval):
         ...
@@ -698,9 +695,7 @@ term::
     def add_line(self, line):
         ...
 
-
 # -- USER FRIENDLY ITERATORS -- #
-
     def __iter__(self):
         """
 prorotype::
@@ -721,7 +716,6 @@ This iterator is very basic.
         yield START_BLOCK
         yield from self["**"]
         yield END_BLOCK
-
 
     def __getitem__(self, querypath):
         """
@@ -1119,7 +1113,6 @@ way to use queries remains the same.
     ):
         super().__init__(content, mode, encoding)
 
-
     def __getitem__(self, querypath):
         """
 prototype::
@@ -1167,7 +1160,6 @@ prototype::
         self._infos    = None
         self._lastmode = None
 
-
     def _addblockdata(self, onedata):
         if self._lastmode == VERBATIM:
             nbline, line = onedata.rtu
@@ -1185,7 +1177,6 @@ prototype::
                 SEP_TAG   : sep,
                 VAL_TAG   : val
             }
-
 
     @property
     def flatdict(self):
@@ -1234,7 +1225,6 @@ This method is an abstraction used by the property-method ``self.flatdict``.
 
         return newdict
 
-
     @property
     def treedict(self):
         """
@@ -1278,32 +1268,30 @@ prototype::
 
         return value
 
-
-    def _myvalue(self, stdict):
+    def _myvalue(self, onedico):
         """
 prototype::
     see = self.mydict
 
-    arg = dict: stddict
+    arg = dict, MKOrderedDict: onedico
 
 
 This method is used to only keep ¨infos wanted when a user calls the method
 ``mydict`` with its own settings.
         """
-# Just keep what is wanted.
-        for option in self._settings:
-            if option in NOTHING_TAGS:
-                infotag = _NO_DICT_KEY[option]
+        # print("---", "self._removethis", self._removethis, "_myvalue(self, onedico)", onedico, sep="\n")
 
-                if infotag in stdict:
-                    del stdict[infotag]
+# Just keep what is wanted.
+        for infotoremove in self._removethis:
+            if infotoremove in onedico:
+                del onedico[infotoremove]
 
 # Juste one key-val association ==> only keep the value (this is a choice !)
-        if len(stdict.keys()) == 1:
-            for _, value in stdict.items():
-                stdict = value
+        if len(onedico) == 1:
+            for _, value in onedico.items():
+                onedico = value
 
-        return stdict
+        return onedico
 
     def _specialtodict(self, oneval):
         """
@@ -1339,7 +1327,6 @@ This method tries to convert recursively instances of ``MKOrderedDict`` and
 
         else:
             return oneval
-
 
     def mydict(self, kind):
         """
@@ -1387,6 +1374,12 @@ info::
         if NOTHING_TAGS <= self._settings:
             raise ValueError("illegal settings: nothing to keep")
 
+# Infos to remove.
+        self._removethis = []
+
+        for option in self._settings:
+            if option in NOTHING_TAGS:
+                self._removethis.append(_NO_DICT_KEY[option])
 
 # Good kind of dictionary wanted ?
         if len(MYDICT_KIND_TAGS & self._settings) == 2:
@@ -1396,8 +1389,8 @@ info::
         newdict = MKOrderedDict()
 
         for (_, blockname), infos in self.flatdict.items():
-# Verbatim content
-            if isinstance(infos, tuple):
+# Verbatim
+            if isinstance(infos, list):
                 newdict[blockname] = tuple(
                     self._myvalue(oneval) for oneval in infos
                 )
@@ -1421,7 +1414,6 @@ info::
 
 # The job has been done !
         return newdict
-
 
     @property
     def forjson(self):
@@ -1498,7 +1490,6 @@ json::
     ]
         """
         return dumps(self._recujson(self.flatdict))
-
 
     def _recujson(self, onevar):
         """

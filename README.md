@@ -7,8 +7,14 @@ What about this package  ?
 a look in the docstrings.***
 
 
-What's new in this version `1.2.0-beta` ?
+What's new in this version `1.3.0-beta` ?
 =========================================
+
+One useful new feature : you can now aggregate different virtual ¨peuf files inside a single physicial one using sections.
+
+
+What was new in the preceding version `1.2.0-beta` ?
+====================================================
 
 There are some important changes in this version.
 
@@ -539,3 +545,48 @@ Launched in a terminal, we obtain the following output which has been hand forma
 
 
 You can easily go back to the `python` dictionary thanks to the function `loadjson` that transforms one json variable stored in one string or in a file into a flat dictionary that is an instance of the class `ReadBlock.MKOrderedDict`.
+
+
+How to use sections ?
+=====================
+
+The following partial snippet shows how to use sections which allow to work with virtual files containing classical `peuf` contents indicating by `...` here.
+
+```
+==
+Section 1
+==
+
+...
+
+
+==
+Section 2 after the section 1
+==
+
+...
+```
+
+
+Above we have used minimal forms for naming sections using only two equal signs. You can use more signs and maybe you would prefer the following convention.
+
+```
+=========
+Section 1
+=========
+
+...
+
+
+=============================
+Section 2 after the section 1
+=============================
+
+...
+```
+
+
+Working with this kind of `peuf` files needs to import `Read` or `ReadBlock` from `orpyste.section` instead of `orpyste.data`.
+
+
+For querypaths and also json representations, the sections are indicated using brackets around their name.
