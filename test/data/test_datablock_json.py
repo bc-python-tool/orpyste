@@ -13,7 +13,7 @@ from mistool.os_use import PPath
 # -- MODULE TESTED -- #
 # ------------------- #
 
-from orpyste import data
+from orpyste import section
 
 
 # ----------------------- #
@@ -23,8 +23,8 @@ from orpyste import data
 THIS_DIR  = PPath(__file__).parent
 DATAS_DIR = THIS_DIR / "datas_for_tests"
 
-READBLOCK_CLASS = data.ReadBlock
-LOADJSON        = data.loadjson
+READBLOCK_SECTION_CLASS = section.ReadBlock
+LOADJSON                = section.loadjson
 
 
 # --------------- #
@@ -42,7 +42,7 @@ def test_datablock_json():
         ) as f:
             output = f.read().strip()
 
-        with READBLOCK_CLASS(
+        with READBLOCK_SECTION_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
         ) as data_infos:

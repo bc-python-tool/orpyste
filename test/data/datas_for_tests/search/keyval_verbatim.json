@@ -5,7 +5,11 @@
         "verbatim"     : "verb"
     },
     "search": {
-        "main/test": 2,
-        "main/sub_main/sub_sub_main/verb": 11
+        "main/test"                      : [2],
+        "main/sub_main/sub_sub_main/verb": [11],
+        "main/*"                         : [2],
+        "main/**"                        : [2, 11],
+        "*"                              : [],
+        "**"                             : [2, 11]
     }
 }

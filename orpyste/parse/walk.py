@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2017-04-22
+    date = 2017-07-31
 
 
 This module contains a class ``WalkInAST`` to be subclassed so as to walk in
@@ -301,6 +301,32 @@ pyterm::
             return False
 
 
+# ----------------------------------- #
+# -- DECORATOR(S) FOR THE LAZY MAN -- #
+# ----------------------------------- #
+
+def newcontent(meth):
+    """
+prototype::
+    see = WalkInAST
+
+    type = decorator
+
+    arg = method: meth ;
+          one method of the class ``WalkInAST``
+
+
+This decorator "indicates" that something has been found.
+    """
+    def newmeth(self, *args, **kwargs):
+        self._methodname = meth.__name__
+        self.add_extra()
+
+        return meth(self, *args, **kwargs)
+
+    return newmeth
+
+
 # ------------- #
 # -- WALKING -- #
 # ------------- #
@@ -410,8 +436,11 @@ warning::
 
 # We must keep all metadatas for fine tuning in the attribut ``self.metadata``
 # that contains all the necessary informations.
-            self.insection      = False
-            self._section_title = []
+            self.datashasbeenfound = False
+            self.isfirstsection   = True
+
+            self.insection        = False
+            self._section_title   = []
 
             self.incomment   = False
             self.indentlevel = -1
@@ -435,12 +464,16 @@ warning::
 # -- SECTION -- #
                 if kind == "section":
                     if self.metadata[OPENCLOSE] == OPEN:
-                        if self.modes_stack:
+                        if self.isfirstsection \
+                        and self.datashasbeenfound:
                             raise PeufError(
-                                "content before the first section"
+                                "datas found before the first section"
                             )
 
-                        self.insection = True
+                        self.insection         = True
+                        self.datashasbeenfound = True
+                        self.isfirstsection    = False
+
                         self.open_section()
 
                     else:
@@ -509,6 +542,8 @@ warning::
 
                         name = self.metadata[GRPS_FOUND_TAG][NAME_TAG]
                         self.names_stack.append(name)
+
+                        self.datashasbeenfound = True
                         self.open_block(name)
 
 # For block with a content, we have to augment the value of the indentation.

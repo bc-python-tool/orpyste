@@ -25,8 +25,7 @@ import pypandoc
 # ----------------- #
 
 readme = Path(__file__).parent / 'README.md'
-
-longdesc = pypandoc.convert(str(readme), 'rst')
+longdesc = pypandoc.convert(str(readme), 'rst', format='md')
 
 
 # ----------------- #
@@ -36,7 +35,7 @@ longdesc = pypandoc.convert(str(readme), 'rst')
 setup(
 # General
     name         = "orpyste",
-    version      = "1.3.0-beta",
+    version      = "1.3.1-beta",
     url          = 'https://github.com/bc-python-tools/orpyste',
     license      = 'GPLv3',
     author       = "Christophe BAL",

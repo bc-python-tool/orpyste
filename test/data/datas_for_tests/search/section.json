@@ -1,0 +1,20 @@
+{
+    "mode": {
+        "container"    : ":default:",
+        "keyval:: = <>": "test",
+        "verbatim"     : "verb"
+    },
+    "search": {
+        "main/test"                        : [],
+        "main/sub_main/sub_sub_main/verb"  : [],
+        "main/*"                           : [],
+        "main/**"                          : [],
+        "*"                                : [],
+        "**"                               : [5, 16],
+        "*/main/test"                      : [5],
+        "*/main/sub_main/sub_sub_main/verb": [16],
+        "*/main/*"                         : [5],
+        "*/main/**"                        : [5, 16],
+        "<*2>/main/**"                     : [16]
+    }
+}

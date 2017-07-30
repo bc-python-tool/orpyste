@@ -1,0 +1,40 @@
+==========
+2017-07-30
+==========
+
+warning::
+    Dernière rédaction du journal de bord en français ! À l'avenir, seul l'anglais sera utilisé pour que l'auteur profite plus de son vélo...
+
+
+**Correction de bugs dans ``parse.ast`` :** voici les sales bêtes qui ont été éradiquées.
+
+    1) Si on indentait un titre de section alors il était tout de même interprété à tors comme étant encore un titre de section. Ce bug corrigé, on retrouve le fait que les commentaires ne doivent pas être indentés.
+    Il a fallu revoir la méthode ``ast.AST.manage_indent`` qui est maintenant utilisée à l'intérieur de ``ast.AST.search_ctxts``.
+
+    2) Un commentaire sur plusieurs lignes à la fin de bloc empêchait que le dit bloc soit fermé.
+
+
+**Amélioration et correction de bugs dans le module ``data`` :** voici ce qui a été fait.
+
+    1) Les "querypaths" utilisant des sections était mal définis. En fait, cette fonctionnalité n'avait été tout simplement pas testée ! Comme les crochets ``[...]`` ont une signification dans les ¨regex_frs ¨python, on utilise à la place ``<...>`` pour indiquer une section dans les "querypaths".
+
+    2) La classe ``data.Infos`` n'utilise plus de listes pour stocker les ¨infos. On préfère à la place des uplets. Au passage, la méthode ``rtu`` a été bien nettoyée.
+
+    3) Les codes des méthodes ``flatdict`` et ``_builddict`` de la classe ``data.ReadBlock`` ont été bien nettoyées.
+
+
+**Amélioration et correction de bugs dans le module ``clean`` :** voici ce qui a été fait (même s'il reste à prendre en compte les espaces paramétrés par l'utilisateur).
+
+    1) Prise en compte des sections.
+
+    2) Correction d'un gros bug : si un commentaire était juste avant un bloc au tout début du fichier ¨peuf alors il était mis en forme dans le bloc et non avant celui-ci.
+
+
+**Ajout de nouveaux tests :** voici les ¨nlles fonctionnalités surveillées.
+
+    1) Les sections.
+
+    2) Les recherches via des "querypaths".
+
+
+**¨Chgt de version :** on passe à la version version::``1.3.1-beta`` à cause du "nouvel-ancien" fonctionnement des commentaires, ainsi qu'au ¨chgt des "querypaths" vis à vis des sections (voir ci-dessous).

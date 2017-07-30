@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2017-04-22
+    date = 2017-07-30
 
 
 This module is for reading and extractings easily ¨infos in ¨peuf files.
@@ -40,9 +40,11 @@ This decorator is used each time that a new data has to be stored.
         else:
             nbline = self.nbline
 
+        data = args[0]
+
         self.walk_view.write(
             Infos(
-                data   = args[0],
+                data   = data,
                 mode   = self.last_mode,
                 nbline = nbline
             )
@@ -195,8 +197,8 @@ Here are some examples.
     * ``mode = "keyval"`` and ``querypath = "main/test"``.
     * ``mode = "keyval"`` and ``data = {'sep = '=', 'key = 'a', 'value = '1'}``.
     * ``mode = VERBATIM`` and ''querypath = "main/sub_main/verb"''.
-    * ``mode = "verbatim"`` and ``data = ""``.
     * ``mode = "verbatim"`` and ``data = "One line..."``.
+    * ``mode = "verbatim"`` and ``data = ("Line #1", "Line #2", ...)``.
     * ... ¨etc.
     """
 
@@ -209,8 +211,12 @@ Here are some examples.
     ):
         self.querypath = querypath
         self.mode      = mode
-        self.data      = data
         self.nbline    = nbline
+
+        if isinstance(data, list):
+            data = tuple(data)
+
+        self.data = data
 
     def isblock(self):
         return self.querypath not in [None, START_TAG, END_TAG]
@@ -243,12 +249,8 @@ info::
         """
         rtu = self.rtu
 
-# [INLINE MODE]
-        if isinstance(rtu, tuple):
-            yield rtu
-
 # [BLOCK MODE] Key-value
-        elif isinstance(rtu, MKOrderedDict):
+        if isinstance(rtu, MKOrderedDict):
             for (_, key), dicval in rtu.items():
                 yield (
                     dicval["nbline"],
@@ -256,6 +258,10 @@ info::
                     dicval["sep"],
                     dicval["value"]
                 )
+
+# [INLINE MODE - Unusefull but none blocking behavior]
+        elif isinstance(rtu[0], int):
+            yield rtu
 
 # [BLOCK MODE] Verbatim
         else:
@@ -266,8 +272,6 @@ info::
     def rtu(self):
         """
 prototype::
-    see = self.yrtu
-
     return = ? ;
              if we have no data, a ``ValueError`` exception is raised,
              otherwise a "friendly" version of the datas is returned
@@ -281,8 +285,8 @@ The datas have one of the following formats.
     2) For a single key-value content, a tuple ``(nbline, key, sep, value)``
     is returned.
 
-    3) For block contents, either a list of tuples ``(nbline, verbatim_line)``
-    or an instance of ``MKOrderedDict`` is returned.
+    3) For block contents, either a tuple of dictionaries ``{'nbline': ...,
+    'value': ...}`` or an instance of ``MKOrderedDict`` is returned.
 
 
 info::
@@ -291,14 +295,9 @@ info::
         if self.data is None:
             raise ValueError('no data available')
 
-        elif self.mode == VERBATIM:
 # [SINGLE] Verbatim line
-            if isinstance(self.data, str):
-                return (self.nbline, self.data)
-
-# [SEVERAL] Verbatim lines
-            else:
-                return self.data
+        elif isinstance(self.data, str):
+            return (self.nbline, self.data)
 
 # [SINGLE] Key-value
         elif isinstance(self.data, dict):
@@ -307,6 +306,7 @@ info::
             )
 
 # [SEVERAL] Key-value
+# [SEVERAL] Verbatim lines
         else:
             return self.data
 
@@ -483,24 +483,21 @@ term::
     nbline    = <<8>>
     ---
     mode      = <<keyval>>
-    data      = <<{'sep': '=', 'key': 'a', 'value': '1 + 9'}>>
+    data      = <<{'sep': '=', 'value': '1 + 9', 'key': 'a'}>>
     querypath = <<None>>
     nbline    = <<11>>
     ---
-    mode      = <<keyval>>
-    data      = <<{'sep': '<>', 'key': 'b', 'value': '2'}>>
-    querypath = <<None>>
-    nbline    = <<12>>
-    ---
-    mode      = <<keyval>>
-    data      = <<{'sep': '=', 'key': 'c', 'value': '3 and 4'}>>
-    querypath = <<None>>
-    nbline    = <<16>>
+    [...]
     ---
     mode      = <<verbatim>>
     data      = <<None>>
     querypath = <<main/sub_main/sub_sub_main/verb>>
     nbline    = <<21>>
+    ---
+    mode      = <<verbatim>>
+    data      = <<line 1>>
+    querypath = <<None>>
+    nbline    = <<22>>
     ---
     [...]
     ---
@@ -774,9 +771,9 @@ MYDICT_ALIAS_TAGS = {
 
 class ReadBlock(Read):
     """
-===============================================================
-``ReadBlock`` is similar to ``Read`` but with major differences
-===============================================================
+=============================================================
+``ReadBlock`` is similar to ``Read`` but not exactly the same
+=============================================================
 
 The main difference between the classes ``ReadBlock`` and ``Read`` is that the
 former returns the datas block by block, whereas the second one gives the datas
@@ -818,7 +815,7 @@ Working with a friendly dictionary
 
 The property ``flatdict`` gives an ordered dictionnary with keys equal to
 ``(id, querypaths)`` where ``id`` is an id number allowing the use of the same
-"paths" for blocks in differnt places of a ¨peuf content.
+"paths" for blocks in different places of a ¨peuf content.
 Let's consider the following code where ``content`` is the string given in the
 first section.
 
@@ -844,19 +841,24 @@ by line and not in a single string !
 
 term::
     MKOrderedDict([
-        (id = 0, key = 'main/test',
-         value = MKOrderedDict([
-            (id = 0, key = 'a',
-             value = {'sep': '=', 'nbline': 3, 'value': '1 + 9'}),
-            (id = 0, key = 'b',
-             value = {'sep': '<>', 'nbline': 4, 'value': '2'}),
-            (id = 0, key = 'c',
-             value ={'sep': '=', 'nbline': 5, 'value': '3 and 4'})
-        ])),
-        (id = 0, key = 'main/sub_main/sub_sub_main/verb',
-         value = ((11, 'line 1'), (12, 'line 2'), (13, 'line 3')))
+        (
+            id=0, key='main/test',
+            value=MKOrderedDict([
+                (id=0, key='a',
+                 value={'value': '1 + 9', 'sep': '=', 'nbline': 3}),
+                (id=0, key='b',
+                 value={'value': '2', 'sep': '<>', 'nbline': 4}),
+                (id=0, key='c',
+                 value={'value': '3 and 4', 'sep': '=', 'nbline': 5})
+                ])
+        ),
+        (
+            id=0, key='main/sub_main/sub_sub_main/verb',
+            value=({'value': 'line 1', 'nbline': 11},
+                   {'value': 'line 2', 'nbline': 12},
+                   {'value': 'line 3', 'nbline': 13})
+        )
     ])
-
 
 As you can see you will have to work with a ``MKOrderedDict`` which is indeed
 implemented in the module ``parse.walk``. This is necessary regarding to the
@@ -915,25 +917,20 @@ has been hand formatted).
 
 term::
     RecuOrderedDict([
-        ('main',
-         RecuOrderedDict([
-            ('test',
-             RecuOrderedDict([
-                ('a',
-                 {'value': '1 + 9', 'sep': '=', 'nbline': 4}),
-                ('b',
-                 {'value': '2', 'sep': '<>', 'nbline': 5})
-             ])),
-            ('sub_main',
-             RecuOrderedDict([
-                ('sub_sub_main',
-                 RecuOrderedDict([
-                    ('verb',
-                     ({'value': 'line 1', 'nbline': 10},
-                      {'value': '    line 2', 'nbline': 11}))
-                 ]))
-             ]))
-         ]))
+        ('main', RecuOrderedDict([
+            ('test', RecuOrderedDict([
+                ('a', {'value': '1 + 9', 'sep': '=', 'nbline': 3}),
+                ('b', {'value': '2', 'sep': '<>', 'nbline': 4}),
+                ('c', {'value': '3 and 4', 'sep': '=', 'nbline': 5})
+            ])),
+            ('sub_main', RecuOrderedDict([
+                ('sub_sub_main', RecuOrderedDict([
+                    ('verb', ({'value': 'line 1', 'nbline': 11},
+                              {'value': 'line 2', 'nbline': 12},
+                              {'value': 'line 3', 'nbline': 13}))
+                ]))
+            ]))
+        ]))
     ])
 
 
@@ -950,7 +947,7 @@ separators and the numbers of the lines.
 
 ...python::
     with ReadBlock(...) as datas:
-        pprint(datas.mydict("std nosep nonb"))
+        print(datas.mydict("std nosep nonb"))
 
 
 This will produce in a terminal the followin lines (the ouput has been hand
@@ -958,8 +955,8 @@ formatted).
 
 term::
     {
-        'main/test': {'b': '2', 'a': '1 + 9'},
-        'main/sub_main/sub_sub_main/verb': ('line 1', '    line 2')
+        'main/test': {'b': '2', 'c': '3 and 4', 'a': '1 + 9'},
+        'main/sub_main/sub_sub_main/verb': ('line 1', 'line 2', 'line 3')
     }
 
 
@@ -975,21 +972,18 @@ have been done by hand).
 
 term::
     RecuOrderedDict([
-        ('main',
-         RecuOrderedDict([
-            ('test',
-             RecuOrderedDict([
+        ('main', RecuOrderedDict([
+            ('test', RecuOrderedDict([
                 ('a', '1 + 9'),
-                ('b', '2')
-             ])),
-            ('sub_main',
-             RecuOrderedDict([
-                ('sub_sub_main',
-                 RecuOrderedDict([
-                    ('verb', ('line 1', '    line 2'))
-                 ]))
-             ]))
-         ]))
+                ('b', '2'),
+                ('c', '3 and 4')
+            ])),
+            ('sub_main', RecuOrderedDict([
+                ('sub_sub_main', RecuOrderedDict([
+                    ('verb', ('line 1', 'line 2', 'line 3'))
+                ]))
+            ]))
+        ]))
     ])
 
 
@@ -1022,7 +1016,7 @@ python::
 
 
 Launching in a terminal, we see the following output (for the long dictionary,
-new lines have been added by hand).
+the ouput has been hand formatted).
 
 term::
     ---
@@ -1035,10 +1029,13 @@ term::
     querypath = <<main/test>>
     ---
     mode      = <<keyval>>
-    data      = <<MKOrderedDict([(id=0, key='a', value={'value': '1 + 9',
-                'nbline': 3, 'sep': '='}), (id=0, key='b', value={'value': '2',
-                'nbline': 4, 'sep': '<>'}), (id=0, key='c', value={'value': '3
-                and 4', 'nbline': 5, 'sep': '='})])>>
+    data      = <<MKOrderedDict([
+                    (id=0, key='a',
+                     value={'value': '1 + 9', 'nbline': 3, 'sep': '='}),
+                    (id=0, key='b',
+                     value={'value': '2', 'nbline': 4, 'sep': '<>'}),
+                    (id=0, key='c',
+                     value={'value': '3 and 4', 'nbline': 5, 'sep': '='})])>>
     querypath = <<None>>
     ---
     mode      = <<verbatim>>
@@ -1046,7 +1043,9 @@ term::
     querypath = <<main/sub_main/sub_sub_main/verb>>
     ---
     mode      = <<verbatim>>
-    data      = <<[(11, 'line 1'), (12, 'line 2'), (13, 'line 3')]>>
+    data      = <<({'value': 'line 1', 'nbline': 11},
+                   {'value': 'line 2', 'nbline': 12},
+                   {'value': 'line 3', 'nbline': 13})>>
     querypath = <<None>>
     ---
     mode      = <<None>>
@@ -1057,8 +1056,7 @@ term::
 The iteration still gives instances of the class ``Infos`` but with different
 kinds of datas regarding to the ones obtained with the class ``Read``.
 
-    1) For a verbatim content, a list of ``(nbline, verbatim_line)`` like
-    tuples is returned.
+    1) For a verbatim content, a tuple of dictionaries is returned.
 
     2) For a key-value content, the method returns a ``MKOrderedDict``
     dictionary.
@@ -1083,17 +1081,19 @@ is indeed an ordered one).
 term::
     --- main/test ---
     MKOrderedDict([
-        (id=0, key='a', value={'sep': '=', 'value': '1 + 9', 'nbline': 3}),
-        (id=0, key='b', value={'sep': '<>', 'value': '2', 'nbline': 4}),
-        (id=0, key='c', value={'sep': '=', 'value': '3 and 4', 'nbline': 5})
+        (id=0, key='a', value={'value': '1 + 9', 'nbline': 3, 'sep': '='}),
+        (id=0, key='b', value={'value': '2', 'nbline': 4, 'sep': '<>'}),
+        (id=0, key='c', value={'value': '3 and 4', 'nbline': 5, 'sep': '='})
     ])
     --- main/sub_main/sub_sub_main/verb ---
-    ((11, 'line 1'), (12, 'line 2'), (13, 'line 3'))
+    [{'nbline': 11, 'value': 'line 1'},
+     {'nbline': 12, 'value': 'line 2'},
+     {'nbline': 13, 'value': 'line 3'}]
 
 
 info::
-    Keeping the number of lines in the original ¨peuf file allows to give fine
-    informations to the user if one of its data is bad.
+    The number of lines in the original ¨peuf file aree kept such as to give
+    fine informations to the user if one of its data is corrupted.
 
 
 =============================
@@ -1187,8 +1187,6 @@ prototype::
     return = parse.walk.MKOrderedDict ;
              an easy-to-use dictionary with keys equal to flat query paths
         """
-        self._keepthis = []
-
         return self._builddict()
 
     def _builddict(self):
@@ -1202,26 +1200,7 @@ This method is an abstraction used by the property-method ``self.flatdict``.
                 lastkey = info.querypath
 
             elif info.isdata():
-                val = info.rtu
-
-                if self._keepthis:
-# Verbatim datas
-                    if isinstance(val, tuple):
-                        newval = tuple(x[VAL_TAG] for x in val)
-
-# Key-val datas
-                    else:
-                        newval = deepcopy(val)
-
-                        for k, v in newval.items():
-                            print(">>>", k, v)
-                            print("   ", type(k), type(v))
-
-# Keep anything !
-                else:
-                    newval = val
-
-                newdict[lastkey] = newval
+                newdict[lastkey] = info.rtu
 
         return newdict
 
@@ -1235,8 +1214,6 @@ prototype::
              a dictionary using a tree like structure similar to the one of the
              blocks inside the ¨peuf file
         """
-        self._keepthis = None
-
         return self._recudict(value = self.flatdict)
 
     def _recudict(self, value):
@@ -1253,18 +1230,9 @@ prototype::
                         )
                     )
 
-                newval = {}
-
-                for k in self._keepthis:
-                    newval[k] = val[k]
-
                 newdict[key] = self._recudict(val)
 
             return newdict
-
-        # if isinstance(value, OrderedDict) \
-        # or isinstance(value, dict):
-        #     return value
 
         return value
 
@@ -1390,7 +1358,7 @@ info::
 
         for (_, blockname), infos in self.flatdict.items():
 # Verbatim
-            if isinstance(infos, list):
+            if isinstance(infos, tuple):
                 newdict[blockname] = tuple(
                     self._myvalue(oneval) for oneval in infos
                 )

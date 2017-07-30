@@ -7,10 +7,16 @@ What about this package  ?
 a look in the docstrings.***
 
 
+What's new in this version `1.3.1-beta` ?
+=========================================
+
+Sections and comments can't no longer be indented (indeed for sections this feature was a bug).
+
+
 What's new in this version `1.3.0-beta` ?
 =========================================
 
-One useful new feature : you can now aggregate different virtual ¨peuf files inside a single physicial one using sections.
+One useful new feature : you can now aggregate different virtual ¨peuf files inside a single physical one using sections.
 
 
 What was new in the preceding version `1.2.0-beta` ?
@@ -56,9 +62,15 @@ joueur_2::
 Writing this with XML could be done like this :
 
 ```xml
-<joueur_1 date="1985" sexe="masculin" score="18974" alias="Super Mario"/>
+<joueur_1 date="1985"
+          sexe="masculin"
+          score="18974"
+          alias="Super Mario"/>
 
-<joueur_2 date="1991" sexe="féminin" score="32007" alias="Sonic"/>
+<joueur_2 date="1991"  
+          sexe="féminin"
+          score="32007" 
+          alias="Sonic"/>
 ```
 
 Using JSON, we could use the following variable.
@@ -86,7 +98,7 @@ As you can see, for simple datas, `orpyste` gives a very simple and efficient wa
 How to write files readable by `orpyste` ?
 ==========================================
 
-The specification of the files readeable by `orpyste` is named `peuf`. So the two questions become : *"What is a well formatted `peuf` file ?"*.
+The specification of the files readable by `orpyste` is named `peuf`. So the question becomes : *"What is a well formatted `peuf` file ?"*.
 To answer this, let's look at the following example.
 
 ```
@@ -117,13 +129,13 @@ Let's explain the content of the preceding example.
 
 1. Datas are structured in blocks which can be of three different kinds.
 
-  * A block is indicated using two consecutive double points and its content is indented.
+    * A block is indicated using two consecutive double points and its content is indented.
 
-  * A block can be a container like the block `book`. This is for gathering different blocks.
+    * A block can be a container like the block `book`. This is for gathering different blocks.
 
-  * The block `general` stores key-value datas with the possibility to choose the separators. **Here we have used `=` but it is not an obligation.** You can also choose to allow or not multiple use of the same key.
+    * The block `general` stores key-value datas with the possibility to choose the separators. **Here we have used `=` but it is not an obligation.** You can also choose to allow or not multiple use of the same key.
 
-  * The last kind of blocks is for a verbatim content. The last empty lines are removed except if you use the magic comment `////` as we have done. In our example the block `resume` has a content made of `This book is an ode to the passing time...` followed by two empty lines.
+    * The last kind of blocks is for a verbatim content. The last empty lines are removed except if you use the magic comment `////` as we have done. In our example the block `resume` has a content made of `This book is an ode to the passing time...` followed by two empty lines.
 
 
 Reading the datas line by line
@@ -589,4 +601,4 @@ Section 2 after the section 1
 Working with this kind of `peuf` files needs to import `Read` or `ReadBlock` from `orpyste.section` instead of `orpyste.data`.
 
 
-For querypaths and also json representations, the sections are indicated using brackets around their name.
+For querypaths and also json representations, the sections are indicated by putting their name inside `<...>`.

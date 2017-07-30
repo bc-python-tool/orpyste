@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2017-04-22
+    date = 2017-07-27
 
 
 This module contains classes so as to build an abstract syntax tree view of an
@@ -81,6 +81,11 @@ COMMENT_SINGLELINE            = "{0}-{1}".format(COMMENT_TAG, SINGLELINE)
 COMMENT_MULTILINES            = "{0}-{1}".format(COMMENT_TAG, MULTILINES)
 COMMENT_MULTILINES_SINGLELINE = "{0}-{1}-{2}".format(
     COMMENT_TAG, MULTILINES , SINGLELINE
+)
+
+COMMENTS_ON_JUST_ONELINE = (
+    COMMENT_SINGLELINE,
+    COMMENT_MULTILINES_SINGLELINE
 )
 
 MAGIC_COMMENT = "magic-comment"
@@ -571,7 +576,12 @@ warning::
     manage semantic problems.
     """
 # CONFIGURATIONS OF THE CONTEXTS [human form]
-#
+    SPACES_PATTERN = "[ \\t]*"
+    LINE_PATTERN   = "^.*$"
+
+    KEY_GRP_PATTERN   = "(?P<key>.*?)"
+    VALUE_GRP_PATTERN = "(?P<value>.*)"
+
 # The CTXTS_CONFIGS are sorted from the first to be tested to the last one.
 
     CLOSED_BY_INDENT_ID, CLOSED_AT_END_ID, VERBATIM_ID = range(3)
@@ -632,18 +642,18 @@ warning::
 
     CTXTS_CONFIGS[BLOCK_TAG] = {
         OPEN: (
-            "^(?P<name>{0})::$".format(LEGAL_BLOCK_NAME),
-            "not::^{0}\\\\::$".format(LEGAL_BLOCK_NAME)
+            "^{0}(?P<name>{1})::$".format(
+                SPACES_PATTERN,
+                LEGAL_BLOCK_NAME
+            ),
+            "not::^{0}{1}\\\\::$".format(
+                SPACES_PATTERN,
+                LEGAL_BLOCK_NAME
+)
         ),
         CLOSE           : CLOSED_BY_INDENT_ID,
         CLOSED_AT_END_ID: True
     }
-
-    SPACES_PATTERN = "[ \\t]*"
-    LINE_PATTERN   = "^.*$"
-
-    KEY_GRP_PATTERN   = "(?P<key>.*?)"
-    VALUE_GRP_PATTERN = "(?P<value>.*)"
 
     def __init__(
         self,
@@ -970,7 +980,9 @@ property::
                 else:
                     break
 
-            self._line = " "*(self._level % 4) + self._line.lstrip()
+            self._oldline = self._line
+
+            self._line = " "*(self._level % 4) + self._oldline.lstrip()
             self._level //= 4
 
 # -- REGEXES -- #
@@ -1036,7 +1048,6 @@ prototype::
 # Intermediate AST only for contexts.
         with self._partial_view:
             for self._line in self.nextline():
-                self.manage_indent()
                 self.search_ctxts()
 
             self.close_ctxt_at_end()
@@ -1088,6 +1099,9 @@ prototype::
                     mustclose_otherctxts = bool(ctxtinfos.openclose == OPEN)
                     break
 
+# Now that a context has been found, or not, we can manage indentation.
+        self.manage_indent()
+
 # Unvisible new context (be careful of indentation closing)
         if not ctxtfound:
             ctxtinfos            = self.CTXTINFOS_CONTENT
@@ -1133,8 +1147,11 @@ prototype::
 
             self._ctxt_sbctxts_stack.pop(-1)
             self._levels_stack.pop(-1)
+            self._level = 0
 
 # We can store the new and eventually close some old contexts.
+        # # --- UGLY DEBUG --- #
+        # print("AST -->", ctxtinfos)
         self.store_one_ctxt(ctxtinfos)
 
     def must_close_indented_ctxt(self):
@@ -1177,12 +1194,12 @@ prototype::
 #     * Verbatim contents
 #     * Empty lines
 #     * Autoclosed context
-#     * Comments
+#     * Comments on a single line
         elif self._ctxts_opened_stack \
         and not self._ctxts_opened_stack[-1].verbatim \
         and ctxtinfos != self.CTXTINFOS_EMPTYLINE \
         and ctxtinfos.openclose != AUTOCLOSE \
-        and not ctxtinfos.kind.startswith(COMMENT_TAG):
+        and ctxtinfos.kind not in COMMENTS_ON_JUST_ONELINE:
             if self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY:
                 while self.must_close_indented_ctxt():
@@ -1262,8 +1279,8 @@ prototype::
         self._nb_emptylines = 0
 
         for onemeta in self.next_partial_meta():
-            # # --- IMPORTANT : UGLY DEBUG --- #
-            # print("AST >>>", onemeta);continue
+            # --- IMPORTANT : UGLY DEBUG --- #
+            # print("AST >>>", onemeta, "\n" + " "*7, self._levels_stack);continue
 
 # The big messe of empty lines in verbatim content.
 # One new block.
@@ -1379,7 +1396,11 @@ prototype::
 
 # We have to keep extra indentations !
         if ctxtinfos.kind == SPE_CONTENT_TAG:
-            if self._levels_stack \
+            if self._ctxts_opened_stack[-1].kind[:7] == "comment":
+                extra      = ""
+                self._line = self._oldline
+
+            elif self._levels_stack \
             and self._levels_stack[-1] != self.INFINITY \
             and self._level != self.INFINITY:
                 if self._levels_stack \
@@ -1391,6 +1412,7 @@ prototype::
 
             else:
                 extra = ""
+
 
             metadatas[CONTENT_TAG] = "{0}{1}".format(extra, self._line)
 

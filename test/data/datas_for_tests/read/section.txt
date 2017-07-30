@@ -1,0 +1,10 @@
+QUERYPATH:<Section 1>/main/test
+MODE:keyval
+(6, 'a', '=', '1 + 9')
+(7, 'b', '<>', '2')
+(8, 'c', '=', '3 and 4')
+QUERYPATH:<Section 2>/main/verb
+MODE:verbatim
+(16, 'line 1')
+(17, 'line 2')
+(18, 'line 3')

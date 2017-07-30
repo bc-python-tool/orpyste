@@ -1,6 +1,5 @@
 content::
 // comment in 1st container.
-
     subcontent::
 /*
     comment
@@ -9,12 +8,9 @@ content::
 
     container.
 */
-
         test::
 // comment in a block.
-
             aaa = 1
-
 
 test::
     a = 2

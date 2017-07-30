@@ -1,0 +1,47 @@
+==========
+2017-07-31
+==========
+
+**One feature missing in the class ``walk.WalkInAST`` :** now the first section cannot be preceded by some datas.
+
+
+==========
+2017-07-30
+==========
+
+warning::
+    So as to do more cycling, the author will now just write an english log will all the details (maybe the author will be improved his english by this way)
+
+
+**Somme bugs corrected in ``parse.ast`` :** here are the dirty bugs that have been exterminated.
+
+    1) When titles of sections was indented, they remain titles of sections. That was not wanted ! This bug killed, we retreive the fact comments can't be indented.
+    All of this needed to refactor the method ``ast.AST.manage_indent`` which is now just used by ``ast.AST.search_ctxts``.
+
+    2) One comment over several lines at the end of one block disallow the closing of the block.
+
+
+**Improvements and correction of bugs in the module ``data`` :** here is what has been done.
+
+    1) The "querypaths" using sections was bad defined. Indeed this feature was never tested ! Because hooks ``[...]`` are meaningful in Python regexes, we use instead ``<...>`` to indicate one section in the "querypaths".
+
+    2) The class ``data.Infos`` does no longer use lists for storing informations. We prefer tuples. At the same time, the method ``rtu`` has been cleaned.
+
+    3) The codes of the methods ``flatdict`` and ``_builddict`` of the class ``data.ReadBlock`` has been cleaned.
+
+
+**Improvements and correction of bugs in the module ``clean`` :** here is what has been done (even if it remains to manage user's settings for spaces).
+
+    1) Real management of sections.
+
+    2) Correction of on big bug : if one comment was just before one block at the begining of the ¨peuf file then it was printed inside the block and not before.
+
+
+**New tests :** here are the new features monitored.
+
+    1) The sections.
+
+    2) Searching with "querypaths".
+
+
+**Change of version :** we go to the version version::``1.3.1-beta`` because of "new-old" behavior of comments, and also because of the new specification for sections inside the "querypaths" (see indications above).

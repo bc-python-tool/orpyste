@@ -1,0 +1,18 @@
+==
+Section 1
+==
+main::
+    test::
+        a = 1 + 9
+        b <>  2
+        c = 3 and 4
+
+
+=========
+Section 2
+==
+main::
+    verb::
+        line 1
+        line 2
+        line 3

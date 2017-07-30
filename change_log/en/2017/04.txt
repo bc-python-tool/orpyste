@@ -1,0 +1,18 @@
+==========
+2017-04-22
+==========
+
+**One new module ``section``:** you can now gather contents within sections (this allows to store different datas of the same kind in just one file). This needed the following changes.
+
+    1) The module ``section`` has two classes ``Read`` and ``ReadBlock`` which are the twin sisters of the classes ``data.Read`` et ``data.ReadBlock`` (technicly speaking, we surclass the last classes by just implementing the managment of des sections which are seen as "folders" in the "querypaths" ; OOP is so sweet).
+
+    2) The classes ``data.Read`` et ``data.ReadBlock`` has been adapted so as to raise an error if a section is used.
+
+    3) The class ``clean.Clean`` has been updated for taking care of sections.
+
+    4) The class ``parse.walk.WalkInAST`` checks titles of sections, and she has three new methods for managing sections (opening, closing and title).
+
+    5) The class ``parse.ast.AST`` has been modified for allowing the use of sections. This has needed to change the codes of the methods ``build_ctxts_rules``, ``search_ctxts``, ``close_indented_ctxts`` and ``manage_indent`` so as to take care of orpyste::``==`` which can be either a closing or an opening tag (it will be cool to use a generalistic tool because all this small modifications are so boring !).
+
+
+**New version version::``1.3.0-beta`` :** the minor changes are justified by the introduction of sections for the ¨peuf files.

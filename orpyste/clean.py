@@ -2,7 +2,7 @@
 
 """
 prototype::
-    date = 2017-04-22
+    date = 2017-07-30
 
 
 This module contains a class `Clean` for formating a ¨peuf file following some
@@ -61,9 +61,19 @@ PATTERNS_BOOL_LAYOUTS = {
 
 # << WARNING ! >> Keep the following lines in case of future more advanced
 # features !
-VAL_LAYOUTS \
-= COLUMNS, SPACES, SPACES_BLOCK, SPACES_COMMENT \
-= "columns", "spaces", "spaces-block", "spaces-comment"
+VAL_LAYOUTS = (
+    COLUMNS,
+    SPACES,
+    SPACES_SECTION,
+    SPACES_BLOCK,
+    SPACES_COMMENT
+) = (
+    "columns",
+    "spaces",
+    "spaces-section",
+    "spaces-block",
+    "spaces-comment"
+)
 
 LONG_VAL_LAYOUTS = {
     "".join(y[0] for y in x.split('-')): x
@@ -83,16 +93,18 @@ PATTERNS_VAL_LAYOUTS = {
     for abrev, name in LONG_VAL_LAYOUTS.items()
 }
 
-
-DEFAULT_LAYOUTS = {
-    SPACES        : 1,
-    SPACES_COMMENT: 1,
-    COLUMNS       : 80,
-    ALIGN         : False,
-    WRAP          : False
-}
+# ``SPACES_BLOCK`` has by default the same value as ``SPACES``.
+#
 # ``WRAP_KEYVAL`` and ``WRAP_VERBATIM`` have by default the same value
 # as ``WRAP``.
+DEFAULT_LAYOUTS = {
+    SPACES         : 1,
+    SPACES_SECTION : 2,
+    SPACES_COMMENT : 0,
+    COLUMNS        : 80,
+    ALIGN          : False,
+    WRAP           : False
+}
 
 ALL_LAYOUTS = set(BOOL_LAYOUTS) | set(VAL_LAYOUTS)
 
@@ -283,8 +295,9 @@ Here are all the options of the argument ``layout``.
     3) ``"spaces"`` or ``"s"`` allows to define the number of empty lines after
     blocks and comments. You can use more precisely ``"spaces-comment"`` or
     ``"sc"`` only for spacing after comments, and ``"spaces-block"`` or ``"sb"``
-    only for spacing after blocks. By default, ``"spaces-comment = 1"`` and
-    ``"spaces-block = 2"``.
+    only for spacing after blocks.
+    By default, ``"spaces-section = 2"``, ``"spaces-block = 1"`` and
+    ``"spaces-comment = 0"``.
 
     4) ``"wrap"`` or ``"w"`` makes the cleaned content hard wrapped. There are
     also ``"wrap-verbatim"`` or ``"wv"``, and ``"wrap-keyval"`` or ``"wk"`` only
@@ -303,11 +316,12 @@ info::
 
     python::
         DEFAULT_LAYOUTS = {
-            SPACES        : 2,
-            SPACES_COMMENT: 1,
-            COLUMNS       : 80,
-            ALIGN         : False,
-            WRAP: False
+            SPACES         : 1,
+            SPACES_SECTION : 2,
+            SPACES_COMMENT : 0,
+            COLUMNS        : 80,
+            ALIGN          : False,
+            WRAP           : False
         }
 
     You can use this class attribut so as to alwways use the same setting
@@ -499,7 +513,7 @@ prototype::
         if self._last_comments == []:
             return
 
-# Verbatim is verbatim !!!
+# Verbatim is verbatim ! Comments stay where they was !
         if self.last_mode == VERBATIM:
             while(self._last_comments):
                 self.add_next_comment(mustaddspaces = False)
@@ -513,8 +527,8 @@ prototype::
                 if not self.isnotfirstline():
                     self._iscommentendblock = True
 
-                    while(self._last_comments):
-                        self.add_next_comment()
+                while(self._last_comments):
+                    self.add_next_comment()
 
 # Comments at the end of an opening block (this is our
 # choice !)
@@ -578,6 +592,7 @@ prototype::
         self._infos             = {}
         self._last_comments     = []
         self._isnotfirstline    = False
+        self._startingsection   = False
         self._isnotfirstkeyval  = False
         self._iscommentendblock = False
 
@@ -644,14 +659,18 @@ prototype::
 
 # -- FOR SECTIONS -- #
 
+    @auto_add_extra
     def section_title(self, title):
+        if self.isnotfirstline():
+            self.add_spaces(SPACES_SECTION)
+
         deco = SECTION_DECO_CHAR * len(title)
 
-        self.add_spaces(SPACES)
-        self.add_spaces(SPACES)
         self.walk_view.write((SECTION_TAG, deco))
         self.walk_view.write((SECTION_TAG, title))
         self.walk_view.write((SECTION_TAG, deco))
+
+        self._startingsection = True
 
 # -- FOR COMMENTS -- #
 
@@ -704,6 +723,7 @@ prototype::
         )
 
         self._iscommentendblock = False
+        self._startingsection   = False
 
         if self.last_mode == CONTAINER:
             self._isnotfirstline = False

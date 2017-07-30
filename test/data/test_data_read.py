@@ -13,7 +13,7 @@ from mistool.os_use import PPath
 # -- MODULE TESTED -- #
 # ------------------- #
 
-from orpyste import data
+from orpyste import section
 
 
 # ----------------------- #
@@ -23,7 +23,7 @@ from orpyste import data
 THIS_DIR  = PPath(__file__).parent
 DATAS_DIR = THIS_DIR / "datas_for_tests"
 
-READ_CLASS = data.Read
+READ_SECTION_CLASS = section.Read
 
 
 # --------------- #
@@ -41,7 +41,7 @@ def test_data_read_all():
         ) as f:
             output = f.read().strip()
 
-        with READ_CLASS(
+        with READ_SECTION_CLASS(
             content = jsonpath.with_ext("peuf"),
             mode    = mode
         ) as data_infos:
