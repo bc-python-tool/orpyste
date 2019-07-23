@@ -24,8 +24,13 @@ import pypandoc
 # -- README FILE -- #
 # ----------------- #
 
-readme = Path(__file__).parent / 'README.md'
-longdesc = pypandoc.convert(str(readme), 'rst', format='md')
+READ_ME_FILE = Path(__file__).parent / 'README.md'
+
+with READ_ME_FILE.open(
+    mode     = "r",
+    encoding = "utf-8"
+) as file:
+    longdesc = file.read()
 
 
 # ----------------- #
@@ -36,14 +41,15 @@ setup(
 # General
     name         = "orpyste",
     version      = "1.3.1-beta",
-    url          = 'https://github.com/bc-python-tools/orpyste',
+    url          = 'https://github.com/bc-python/orpyste',
     license      = 'GPLv3',
     author       = "Christophe BAL",
     author_email = "projetmbc@gmail.com",
 
 # Descritions
-    long_description = longdesc,
-    description      = "orPyste is a tool to store and read simple structured datas in TXT files using a human efficient syntax.",
+    long_description              = longdesc,
+    long_description_content_type = "text/markdown",
+    description                   = "orPyste is a tool to store and read simple structured datas in TXT files using a human efficient syntax.",
 
 # What to add ?
     packages = find_packages(),

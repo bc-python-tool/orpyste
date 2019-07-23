@@ -1,8 +1,7 @@
 How to launch all the tests ?
 =============================
 
-You have to install the very last working version of
-[misTool](https://github.com/bc-python-tools/mistool)
-and also
-[Hypothesis](http://hypothesis.works).
-You can use ``pip`` to do that.
+You have to install the following packages. You can use ``pip`` to do that.
+
+  1. [misTool](https://github.com/bc-python-tools/mistool)
+  1. [Hypothesis](http://hypothesis.works)

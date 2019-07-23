@@ -10,12 +10,12 @@
 ==========
 
 warning::
-    So as to do more cycling, the author will now just write an english log will all the details (maybe the author will be improved his english by this way)
+    So as to do more cycling, from now the author will just write an english log with all the details (maybe the author will improve his english by this way).
 
 
 **Somme bugs corrected in ``parse.ast`` :** here are the dirty bugs that have been exterminated.
 
-    1) When titles of sections was indented, they remain titles of sections. That was not wanted ! This bug killed, we retreive the fact comments can't be indented.
+    1) When titles of sections was indented, they remain titles of sections. That was not wanted ! This bug killed, we retreive the fact that comments can't be indented.
     All of this needed to refactor the method ``ast.AST.manage_indent`` which is now just used by ``ast.AST.search_ctxts``.
 
     2) One comment over several lines at the end of one block disallow the closing of the block.
@@ -34,7 +34,7 @@ warning::
 
     1) Real management of sections.
 
-    2) Correction of on big bug : if one comment was just before one block at the begining of the ¨peuf file then it was printed inside the block and not before.
+    2) Correction of one big bug : if one comment was just before one block at the begining of the ¨peuf file then it was printed inside the block and not before.
 
 
 **New tests :** here are the new features monitored.
