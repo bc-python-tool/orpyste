@@ -1,10 +1,22 @@
-What about this package  ?
-==========================
+About this package
+==================
 
 **orPyste**, which is an anagram of **pyStore**, has been built to make easy to work with textual datas easy stored in a text file.
 
 ***If you want more informations and examples than thereafter, just take
 a look in the docstrings.***
+
+
+I beg your pardon for my english...
+===================================
+
+English is not my native language, so be nice if you notice misunderstandings, misspellings or grammatical errors in my documents and my codes.
+
+
+What's new in this version `1.3.2-beta` ?
+=========================================
+
+This version only updates settings for ¨pypi.
 
 
 What's new in this version `1.3.1-beta` ?
@@ -31,12 +43,6 @@ There are some important changes in this version.
 1. The class ``ReadBlock`` no longer has the methods ``flatdict`` and ``recudict``. Instead, it has two properties ``flatdict`` and ``treedict`` that allow to work with ``dict`` like variables. For customized dictionaries, you can use the new method ``mydict``.
 
 1. The old method ``rtu_datas`` of the class ``Infos`` has been replaced by the property ``rtu`` which outputs are easier to "understand", and there is also an iterator ``yrtu`` to work with the "same" kind of datas with the classes ``Read`` and ``ReadBlock``.
-
-
-I beg your pardon for my english...
-===================================
-
-English is not my native language, so be nice if you notice misunderstandings, misspellings or grammatical errors in my documents and my codes.
 
 
 Why yet another tiny language to store textual datas ?
